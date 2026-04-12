@@ -13,7 +13,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    origin: "https://park-smart-eight.vercel.app",
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true,
   },
@@ -25,7 +25,7 @@ io.on('connection', (socket) => {
 });
 
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+ origin: "https://park-smart-eight.vercel.app",
   credentials: true,
 }));
 app.use(express.json());
