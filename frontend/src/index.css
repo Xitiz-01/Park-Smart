@@ -909,11 +909,12 @@ label {
   color: #9ca3af;
 }
 .checkbox-container {
-  margin: 20px 0;
+  grid-column: 1 / -1;  /* 🔥 THIS FIXES YOUR ISSUE */
+  margin-top: 10px;
 }
 
 .checkbox-wrapper {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 10px;
   font-size: 14px;
@@ -925,5 +926,4 @@ label {
   width: 16px;
   height: 16px;
   accent-color: #3b82f6;
-  cursor: pointer;
 }

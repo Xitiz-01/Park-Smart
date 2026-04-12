@@ -91,7 +91,7 @@ export default function VehiclesPage() {
                   onChange={e => setForm({ ...form, color: e.target.value })} />
               </div>
             </div>
-            <div className="checkbox-container">
+      <div className="checkbox-container">
   <label className="checkbox-wrapper">
     <input
       type="checkbox"
