@@ -42,6 +42,9 @@ app.use('/api/vehicles', require('./routes/vehicleRoutes'));
 app.get('/', (req, res) => {
   res.json({ message: 'Parking System API is running' });
 });
+app.get("/api", (req, res) => {
+  res.send("API is working");
+});
 
 // Error handler
 app.use((err, req, res, next) => {
