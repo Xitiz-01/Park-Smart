@@ -908,3 +908,22 @@ label {
   font-size: 12px;
   color: #9ca3af;
 }
+.checkbox-container {
+  margin: 20px 0;
+}
+
+.checkbox-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.checkbox-wrapper input {
+  width: 16px;
+  height: 16px;
+  accent-color: #3b82f6;
+  cursor: pointer;
+}

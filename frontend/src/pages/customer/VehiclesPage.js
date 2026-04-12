@@ -91,13 +91,18 @@ export default function VehiclesPage() {
                   onChange={e => setForm({ ...form, color: e.target.value })} />
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-              <input type="checkbox" id="isDefault" checked={form.isDefault}
-                onChange={e => setForm({ ...form, isDefault: e.target.checked })} style={{ width: 16, height: 16 }} />
-              <label htmlFor="isDefault" style={{ fontSize: 14, color: 'var(--text-secondary)', cursor: 'pointer' }}>
-                Set as default vehicle
-              </label>
-            </div>
+            <div className="checkbox-container">
+  <label className="checkbox-wrapper">
+    <input
+      type="checkbox"
+      checked={form.isDefault}
+      onChange={(e) =>
+        setForm({ ...form, isDefault: e.target.checked })
+      }
+    />
+    <span>Set as default vehicle</span>
+  </label>
+</div>
             <div style={{ display: 'flex', gap: 12 }}>
               <button type="button" onClick={() => setShowForm(false)} className="btn btn-outline">Cancel</button>
               <button type="submit" className="btn btn-primary" disabled={saving}>
