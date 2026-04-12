@@ -150,28 +150,32 @@ export default function VehiclesPage() {
             {/* GRID END */}
 
             {/* ✅ CHECKBOX OUTSIDE GRID */}
-            <div style={{ margin: '10px 0 20px 0' }}>
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  fontSize: 14,
-                  color: 'var(--text-secondary)',
-                  cursor: 'pointer'
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={form.isDefault}
-                  onChange={(e) =>
-                    setForm({ ...form, isDefault: e.target.checked })
-                  }
-                  style={{ width: 16, height: 16 }}
-                />
-                <span>Set as default vehicle</span>
-              </label>
-            </div>
+           <div style={{ width: '100%', margin: '10px 0 20px 0' }}>
+  <label
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'flex-start',  // 🔥 IMPORTANT
+      gap: 10,
+      fontSize: 14,
+      color: 'var(--text-secondary)',
+      cursor: 'pointer',
+      width: '100%'
+    }}
+  >
+    <input
+      type="checkbox"
+      checked={form.isDefault}
+      onChange={(e) =>
+        setForm({ ...form, isDefault: e.target.checked })
+      }
+      style={{ width: 16, height: 16 }}
+    />
+    <span style={{ textAlign: 'left' }}>
+      Set as default vehicle
+    </span>
+  </label>
+</div>
 
             {/* BUTTONS */}
             <div style={{ display: 'flex', gap: 12 }}>
