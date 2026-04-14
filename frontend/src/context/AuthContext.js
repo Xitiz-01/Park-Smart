@@ -37,14 +37,20 @@ const login = async (credentials) => {
 };
   
 
-  const register = async (data) => {
+ const register = async (data) => {
+  try {
     const res = await authAPI.register(data);
     const { token, user } = res.data;
+
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
     setUser(user);
+
     return user;
-  };
+  } catch (error) {
+    throw error; 
+  }
+};
 
   const logout = () => {
     localStorage.removeItem('token');
