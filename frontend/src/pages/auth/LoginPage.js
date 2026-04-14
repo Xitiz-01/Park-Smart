@@ -78,12 +78,13 @@ export default function LoginPage() {
           </p>
 
           {/* Demo credentials hint */}
-          <div style={{
+         {/* <div style={{
             marginTop: 16, padding: '12px 16px', background: 'var(--bg-secondary)',
             border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: 12, color: 'var(--text-muted)'
           }}>
             <strong style={{ color: 'var(--yellow)' }}>Admin login:</strong> Create an admin by seeding via the API after registering.
           </div>
+          */}
         </div>
 
         <p style={{ textAlign: 'center', marginTop: 20 }}>
