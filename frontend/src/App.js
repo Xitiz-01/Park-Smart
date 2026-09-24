@@ -100,7 +100,7 @@ const AppRoutes = () => {
 
 function App() {
   return (
-    <Router>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
         <AppRoutes />
         <Toaster
@@ -111,7 +111,7 @@ function App() {
               color: '#f1f5f9',
               border: '1px solid #1e2d4a',
               borderRadius: '8px',
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
             },
             success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
             error:   { iconTheme: { primary: '#ef4444', secondary: '#fff' } },

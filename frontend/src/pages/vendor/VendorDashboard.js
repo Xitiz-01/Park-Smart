@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { MapPin, CalendarDays, IndianRupee, BadgeCheck, ParkingSquare, CircleParking } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, BadgeCheck, CalendarDays, CircleParking, IndianRupee, MapPin, ParkingSquare, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { vendorsAPI } from '../../services/api';
+import LoadingState from '../../components/ui/LoadingState';
+import MetricCard from '../../components/ui/MetricCard';
+import PageHeader from '../../components/ui/PageHeader';
+import StatusBadge from '../../components/ui/StatusBadge';
 
 export default function VendorDashboard() {
   const [data, setData] = useState(null);
@@ -14,34 +19,44 @@ export default function VendorDashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="loading-spinner"><div className="spinner" /></div>;
-
+  if (loading) return <LoadingState cards={4} />;
   const stats = data?.stats || { parkingLocations: 0, totalSlots: 0, availableSlots: 0, occupiedSlots: 0, activeBookings: 0, totalEarnings: 0 };
-  const cards = [
-    ['Vendor Status', data?.vendorStatus || 'active', 'var(--green)', <BadgeCheck size={21} />],
-    ['Parking Locations', stats.parkingLocations, 'var(--accent)', <MapPin size={21} />],
-    ['Total Slots', stats.totalSlots, 'var(--accent)', <ParkingSquare size={21} />],
-    ['Available Slots', stats.availableSlots, 'var(--green)', <CircleParking size={21} />],
-    ['Occupied / Reserved', stats.occupiedSlots, 'var(--yellow)', <ParkingSquare size={21} />],
-    ['Active Bookings', stats.activeBookings, 'var(--yellow)', <CalendarDays size={21} />],
-    ['Total Earnings', `₹${stats.totalEarnings}`, 'var(--green)', <IndianRupee size={21} />],
-  ];
+  const total = stats.totalSlots || 0;
+  const availablePct = total ? (stats.availableSlots / total) * 100 : 0;
+  const occupiedPct = total ? (stats.occupiedSlots / total) * 100 : 0;
 
   return (
     <div className="fade-in">
-      <div className="page-header"><h1>Vendor Dashboard</h1><p>Your ParkSmart business overview</p></div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 16 }}>
-        {cards.map(([label, value, color, icon]) => (
-          <div className="card" key={label} style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-            <div style={{ color, background: `${color}20`, borderRadius: 10, padding: 12 }}>{icon}</div>
-            <div><div style={{ fontSize: 23, fontWeight: 700, textTransform: label === 'Vendor Status' ? 'capitalize' : 'none' }}>{value}</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>{label}</div></div>
+      <PageHeader eyebrow="Operations overview" title="Your parking business, at a glance" description="Live inventory and booking signals across every managed location." actions={<Link to="/vendor/locations/new" className="btn btn-primary"><Plus size={16} /> Add location</Link>} />
+      <section className="dashboard-metrics">
+        <MetricCard label="Parking locations" value={stats.parkingLocations} icon={<MapPin size={20} />} detail="Managed facilities" />
+        <MetricCard label="Available slots" value={stats.availableSlots} icon={<CircleParking size={20} />} tone="green" detail={`${stats.totalSlots} total spaces`} />
+        <MetricCard label="Active bookings" value={stats.activeBookings} icon={<CalendarDays size={20} />} tone="amber" detail="Currently in progress" />
+        <MetricCard label="Total earnings" value={`₹${stats.totalEarnings}`} icon={<IndianRupee size={20} />} tone="violet" detail="Recorded payments" />
+      </section>
+
+      <div className="dashboard-grid">
+        <section className="card">
+          <div className="panel-head"><h2>Live slot operations</h2><Link to="/vendor/slots">Manage slots <ArrowRight size={13} /></Link></div>
+          <div className="legend-row">
+            <span className="legend-item"><i style={{ background: 'var(--green)' }} />Available <strong>{stats.availableSlots}</strong></span>
+            <span className="legend-item"><i style={{ background: 'var(--yellow)' }} />Occupied / reserved <strong>{stats.occupiedSlots}</strong></span>
+            <span className="legend-item"><i style={{ background: '#334155' }} />Other <strong>{Math.max(0, total - stats.availableSlots - stats.occupiedSlots)}</strong></span>
           </div>
-        ))}
-      </div>
-      <div className="card" style={{ marginTop: 24 }}>
-        <h2 style={{ fontSize: 17, marginBottom: 8 }}>Live parking operations</h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Location, slot, and booking totals are calculated from your vendor-owned parking data. Earnings remain ₹0 until payment processing is introduced.</p>
+          <div className="occupancy-track" aria-label="Slot utilisation">
+            <span className="occupancy-segment" style={{ width: `${availablePct}%`, background: 'var(--green)' }} />
+            <span className="occupancy-segment" style={{ width: `${occupiedPct}%`, background: 'var(--yellow)' }} />
+          </div>
+          <p style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 15 }}>Totals are calculated from your vendor-owned parking data and update with live booking activity.</p>
+        </section>
+        <aside className="card">
+          <div className="panel-head"><h2>Account readiness</h2><StatusBadge status={data?.vendorStatus || 'active'} /></div>
+          <div className="quick-actions">
+            <Link to="/vendor/locations" className="quick-action"><span><MapPin size={18} /></span><div><strong>Parking locations</strong><small>Review address and pricing</small></div><ArrowRight size={14} /></Link>
+            <Link to="/vendor/bookings" className="quick-action"><span><BadgeCheck size={18} /></span><div><strong>Incoming bookings</strong><small>Track customer activity</small></div><ArrowRight size={14} /></Link>
+            <Link to="/vendor/slots" className="quick-action"><span><ParkingSquare size={18} /></span><div><strong>Slot inventory</strong><small>Add or update spaces</small></div><ArrowRight size={14} /></Link>
+          </div>
+        </aside>
       </div>
     </div>
   );

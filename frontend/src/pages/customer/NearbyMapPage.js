@@ -316,7 +316,29 @@ export default function NearbyMapPage() {
         </div>
       </div>
 
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+      <div className="map-workspace">
+        <aside className="map-results" aria-label="Nearby parking results">
+          <div className="map-results-head"><div><strong>Nearby results</strong><span>Sorted by distance</span></div><span className="badge badge-blue">{slots.length + externalPlaces.length}</span></div>
+          <div className="map-result-list">
+            {slots.slice(0, 7).map((slot) => (
+              <article className="map-result-item" key={slot._id}>
+                <div className="map-result-title"><strong>{slot.parkingLocation?.name || `Slot ${slot.slotNumber}`}</strong><span className={`badge ${slot.status === 'available' ? 'badge-green' : slot.status === 'occupied' ? 'badge-red' : 'badge-yellow'}`}>{slot.status}</span></div>
+                <p><MapPin size={12} /> {slot.location.label}</p>
+                <div className="map-result-meta"><span>{slot.distanceKm} km away</span><strong>₹{slot.pricePerHour}/hr</strong></div>
+                {slot.status === 'available' && <Link to={`/dashboard/book/${slot._id}`} className="btn btn-primary btn-sm">Reserve {slot.slotNumber}</Link>}
+              </article>
+            ))}
+            {externalPlaces.slice(0, Math.max(0, 7 - slots.length)).map((place) => (
+              <article className="map-result-item" key={place.id}>
+                <div className="map-result-title"><strong>{place.name}</strong><span className="badge badge-blue">Public</span></div>
+                <p><MapPin size={12} /> {place.location.label}</p>
+                <div className="map-result-meta"><span>{place.distanceKm} km away</span><span>Capacity {place.capacity || 'unknown'}</span></div>
+              </article>
+            ))}
+            {!loading && !slots.length && !externalPlaces.length && <div className="empty-state"><MapPin size={32} /><h3>No results in this area</h3><p>Try a larger radius or a different location.</p></div>}
+          </div>
+        </aside>
+        <div className="map-canvas">
         <MapContainer center={[center.lat, center.lng]} zoom={15} style={{ height: '560px', width: '100%' }}>
           <RecenterMap center={center} />
           <TileLayer
@@ -391,6 +413,7 @@ export default function NearbyMapPage() {
             </Marker>
           ))}
         </MapContainer>
+        </div>
       </div>
     </div>
   );

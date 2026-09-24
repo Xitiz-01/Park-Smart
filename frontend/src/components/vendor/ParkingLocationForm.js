@@ -94,11 +94,11 @@ export default function ParkingLocationForm({ initialLocation, onSubmit, saving 
       </section>
       <section className="card">
         <h2 style={{ fontSize: 17, marginBottom: 16 }}>Operating Hours</h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {DAYS.map((day) => { const hours = form.operatingHours[day] || defaultHours[day]; return <div key={day} style={{ display: 'grid', gridTemplateColumns: '110px 80px 90px 1fr 1fr', alignItems: 'center', gap: 10 }}>
-            <strong style={{ textTransform: 'capitalize', fontSize: 13 }}>{day}</strong>
-            <label style={{ fontSize: 12 }}><input type="checkbox" checked={hours.open} onChange={(e) => updateDay(day, { open: e.target.checked })} /> Open</label>
-            <label style={{ fontSize: 12 }}><input type="checkbox" checked={hours.allDay} disabled={!hours.open} onChange={(e) => updateDay(day, { allDay: e.target.checked })} /> 24 hrs</label>
+        <div className="operating-hours">
+          {DAYS.map((day) => { const hours = form.operatingHours[day] || defaultHours[day]; return <div key={day} className="hours-row">
+            <strong>{day}</strong>
+            <label className="hours-toggle"><input type="checkbox" checked={hours.open} onChange={(e) => updateDay(day, { open: e.target.checked })} /> Open</label>
+            <label className="hours-toggle"><input type="checkbox" checked={hours.allDay} disabled={!hours.open} onChange={(e) => updateDay(day, { allDay: e.target.checked })} /> 24 hrs</label>
             <input className="form-input" type="time" disabled={!hours.open || hours.allDay} value={hours.openTime} onChange={(e) => updateDay(day, { openTime: e.target.value })} />
             <input className="form-input" type="time" disabled={!hours.open || hours.allDay} value={hours.closeTime} onChange={(e) => updateDay(day, { closeTime: e.target.value })} />
           </div>; })}

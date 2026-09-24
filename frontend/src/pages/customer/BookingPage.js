@@ -137,8 +137,14 @@ export default function BookingPage() {
   return (
     <div className="fade-in" style={{ maxWidth: 680, margin: '0 auto' }}>
       <div className="page-header">
-        <h1>Reserve Slot</h1>
-        <p>Fill in your booking details</p>
+        <h1>Reserve your space</h1>
+        <p>Confirm the details below, then complete payment.</p>
+      </div>
+
+      <div className="booking-steps" aria-label="Booking progress">
+        <div className="active"><span>1</span><strong>Details</strong></div><i />
+        <div className={paymentOpen ? 'active' : ''}><span>2</span><strong>Payment</strong></div><i />
+        <div><span>3</span><strong>Confirmed</strong></div>
       </div>
 
       {/* Slot summary */}
@@ -184,7 +190,7 @@ export default function BookingPage() {
           </div>
 
           {/* Time */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="booking-time-grid">
             <div className="form-group">
               <label className="form-label">Start Time</label>
               <input type="datetime-local" className="form-input" value={form.startTime}

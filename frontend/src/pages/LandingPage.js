@@ -1,86 +1,152 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Clock, Shield, Zap, ArrowRight, Car } from 'lucide-react';
+import {
+  ArrowRight,
+  Building2,
+  CalendarCheck2,
+  CheckCircle2,
+  Gauge,
+  MapPin,
+  Navigation,
+  ParkingCircle,
+  Radio,
+  ShieldCheck,
+  Sparkles,
+  Store,
+  UsersRound,
+  Zap,
+} from 'lucide-react';
+import Brand from '../components/ui/Brand';
 
 const features = [
-  { icon: <Clock size={22} />, title: 'Real-Time Availability', desc: 'Live slot status updated instantly across all zones.' },
-  { icon: <MapPin size={22} />, title: 'Smart Slot Guidance', desc: 'Navigate directly to your reserved slot with ease.' },
-  { icon: <Shield size={22} />, title: 'Secure Booking', desc: 'JWT-protected accounts with encrypted data.' },
-  { icon: <Zap size={22} />, title: 'Instant Reservations', desc: 'Reserve your spot in seconds, no queues.' },
+  { icon: Radio, title: 'Live availability', desc: 'See current slot status and make a confident choice before you arrive.' },
+  { icon: Navigation, title: 'Location-aware discovery', desc: 'Explore nearby parking on a map or scan clear, filterable listings.' },
+  { icon: CalendarCheck2, title: 'Simple reservations', desc: 'Select a slot, add your vehicle, and keep every booking in one place.' },
+  { icon: ShieldCheck, title: 'Role-based control', desc: 'Purpose-built workspaces keep drivers, operators, and admins focused.' },
+];
+
+const audiences = [
+  { icon: UsersRound, label: 'For drivers', copy: 'Find, compare, reserve, and manage parking without the usual guesswork.' },
+  { icon: Store, label: 'For operators', copy: 'Manage locations, slots, and incoming bookings from one live workspace.' },
+  { icon: Gauge, label: 'For admins', copy: 'Monitor system activity and keep users, inventory, and vendors moving.' },
 ];
 
 export default function LandingPage() {
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
-      {/* Navbar */}
-      <nav style={{ borderBottom: '1px solid var(--border)', padding: '16px 0' }}>
-        <div className="container flex items-center justify-between">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Car color="var(--accent)" size={28} />
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>
-              PARK<span style={{ color: 'var(--accent)' }}>SMART</span>
-            </span>
+    <div className="landing-page">
+      <nav className="landing-nav" aria-label="Primary navigation">
+        <div className="container landing-nav-inner">
+          <Link to="/" aria-label="ParkSmart home"><Brand /></Link>
+          <div className="landing-nav-links">
+            <a href="#platform">Platform</a>
+            <a href="#built-for">Built for</a>
           </div>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <Link to="/login" className="btn btn-outline btn-sm">Login</Link>
-            <Link to="/register" className="btn btn-primary btn-sm">Register</Link>
+          <div className="landing-nav-actions">
+            <Link to="/login" className="btn btn-ghost btn-sm">Sign in</Link>
+            <Link to="/register" className="btn btn-primary btn-sm">Get started <ArrowRight size={15} /></Link>
           </div>
         </div>
       </nav>
 
-      {/* Hero */}
-      <section style={{ padding: '100px 0 80px', textAlign: 'center' }}>
-        <div className="container">
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            background: 'var(--accent-glow)', border: '1px solid rgba(59,130,246,0.3)',
-            borderRadius: 20, padding: '6px 16px', marginBottom: 28, fontSize: 13, color: 'var(--accent)'
-          }}>
-            <Zap size={14} /> Real-Time Parking Intelligence
-          </div>
-          <h1 style={{
-            fontFamily: 'var(--font-display)', fontSize: 'clamp(36px, 6vw, 64px)',
-            fontWeight: 700, lineHeight: 1.15, marginBottom: 20,
-            color: 'var(--text-primary)'
-          }}>
-            Find &amp; Reserve<br />
-            <span style={{ color: 'var(--accent)' }}>Parking Instantly</span>
-          </h1>
-          <p style={{ maxWidth: 520, margin: '0 auto 40px', color: 'var(--text-secondary)', fontSize: 17, lineHeight: 1.7 }}>
-            Real-time slot availability, smart guidance, and hassle-free reservations — all in one system.
-          </p>
-          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link to="/register" className="btn btn-primary btn-lg">
-              Get Started <ArrowRight size={18} />
-            </Link>
-            <Link to="/login" className="btn btn-outline btn-lg">Sign In</Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section style={{ padding: '60px 0 100px' }}>
-        <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}>
-            {features.map((f, i) => (
-              <div key={i} className="card" style={{ transition: 'transform 0.2s, border-color 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent)'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
-              >
-                <div style={{ color: 'var(--accent)', marginBottom: 14 }}>{f.icon}</div>
-                <h3 style={{ fontWeight: 700, marginBottom: 8, color: 'var(--text-primary)' }}>{f.title}</h3>
-                <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>{f.desc}</p>
+      <main>
+        <section className="landing-hero">
+          <div className="container hero-grid">
+            <div className="hero-copy fade-in">
+              <span className="eyebrow"><Sparkles size={14} /> Live parking intelligence for modern cities</span>
+              <h1>Parking, without<br />the <span>searching.</span></h1>
+              <p className="hero-lede">Find available parking, reserve with confidence, and arrive knowing your space is ready. ParkSmart turns a daily frustration into a smooth journey.</p>
+              <div className="hero-actions">
+                <Link to="/register" className="btn btn-primary btn-lg">Find your space <ArrowRight size={18} /></Link>
+                <Link to="/login" className="btn btn-outline btn-lg">I already have an account</Link>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+              <div className="hero-proof">
+                <span><CheckCircle2 size={16} /> Live slot status</span>
+                <span><CheckCircle2 size={16} /> Secure booking</span>
+                <span><CheckCircle2 size={16} /> Operator tools</span>
+              </div>
+            </div>
 
-      {/* Footer */}
-      <footer style={{ borderTop: '1px solid var(--border)', padding: '24px 0', textAlign: 'center' }}>
-        <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
-          © 2024 ParkSmart – Real-Time Parking Slot Availability Analysis &amp; Guidance System
-        </p>
+            <div className="mobility-visual" aria-label="Illustration of the ParkSmart parking experience">
+              <div className="visual-orbit orbit-one" /><div className="visual-orbit orbit-two" />
+              <div className="map-plane">
+                <span className="map-road road-one" /><span className="map-road road-two" />
+                <span className="map-point point-one"><MapPin size={15} /></span>
+                <span className="map-point point-two"><MapPin size={15} /></span>
+                <span className="map-point point-three"><MapPin size={15} /></span>
+              </div>
+              <div className="parking-deck">
+                <div className="deck-head"><span><ParkingCircle size={19} /> Nearby parking</span><i>Live</i></div>
+                <div className="parking-bays">
+                  <span className="bay bay-open">P</span><span className="bay bay-busy">P</span><span className="bay bay-open">P</span>
+                  <span className="bay bay-open">P</span><span className="bay bay-hold">P</span><span className="bay bay-open">P</span>
+                </div>
+                <div className="deck-footer"><span><i className="dot open" /> Available</span><span><i className="dot hold" /> Reserved</span></div>
+              </div>
+              <div className="visual-card visual-card-route"><Navigation size={18} /><span><small>Next step</small>Navigate to your slot</span></div>
+              <div className="visual-card visual-card-signal"><Zap size={17} /><span><small>Status</small>Updated in real time</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section className="journey-strip" aria-label="ParkSmart booking journey">
+          <div className="container journey-inner">
+            <span>One effortless journey</span>
+            <div><b>01</b> Find nearby</div><ArrowRight size={16} />
+            <div><b>02</b> Reserve a slot</div><ArrowRight size={16} />
+            <div><b>03</b> Arrive &amp; park</div>
+          </div>
+        </section>
+
+        <section className="landing-section" id="platform">
+          <div className="container">
+            <div className="section-heading">
+              <span className="page-eyebrow">A calmer parking experience</span>
+              <h2>Everything you need to move with confidence.</h2>
+              <p>Clarity at every step, from the first search to the final booking.</p>
+            </div>
+            <div className="feature-grid">
+              {features.map(({ icon: Icon, title, desc }, index) => (
+                <article className="feature-card" key={title}>
+                  <div className="feature-number">0{index + 1}</div>
+                  <div className="feature-icon"><Icon size={21} /></div>
+                  <h3>{title}</h3><p>{desc}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="landing-section audience-section" id="built-for">
+          <div className="container audience-layout">
+            <div className="audience-intro">
+              <span className="page-eyebrow">One connected platform</span>
+              <h2>Designed for every side of the parking experience.</h2>
+              <p>Each workspace reveals exactly what that role needs—without clutter or crossed wires.</p>
+              <Link to="/register" className="text-link">Create your account <ArrowRight size={16} /></Link>
+            </div>
+            <div className="audience-cards">
+              {audiences.map(({ icon: Icon, label, copy }) => (
+                <article className="audience-card" key={label}>
+                  <span><Icon size={19} /></span><div><h3>{label}</h3><p>{copy}</p></div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="landing-cta">
+          <div className="container">
+            <div className="cta-panel">
+              <div className="cta-icon"><Building2 size={28} /></div>
+              <div><span className="page-eyebrow">Ready when you are</span><h2>Your next parking spot is closer than you think.</h2></div>
+              <Link to="/register" className="btn btn-light btn-lg">Start with ParkSmart <ArrowRight size={18} /></Link>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="landing-footer">
+        <div className="container"><Brand compact /><p>Real-time parking availability and guidance.</p><span>© 2026 ParkSmart</span></div>
       </footer>
     </div>
   );
