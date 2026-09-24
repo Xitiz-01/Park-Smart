@@ -7,14 +7,13 @@ const connectDB = require('./config/db');
 
 dotenv.config();
 
-connectDB();
-
 const app = express();
 const server = http.createServer(app);
+const allowedOrigins = [process.env.CLIENT_URL, 'http://localhost:3000', 'https://park-smart-eight.vercel.app'].filter(Boolean);
 const io = new Server(server, {
   cors: {
-    origin: "https://park-smart-eight.vercel.app",
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    origin: allowedOrigins,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     credentials: true,
   },
 });
@@ -25,7 +24,7 @@ io.on('connection', (socket) => {
 });
 
 app.use(cors({
- origin: "https://park-smart-eight.vercel.app",
+  origin: allowedOrigins,
   credentials: true,
 }));
 app.use(express.json());
@@ -39,6 +38,7 @@ app.use('/api/slots', require('./routes/slotRoutes'));
 app.use('/api/bookings', require('./routes/bookingRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/vehicles', require('./routes/vehicleRoutes'));
+app.use('/api/vendors', require('./routes/vendorRoutes'));
 
 // Health check
 app.get('/', (req, res) => {
@@ -55,6 +55,12 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
-});
+if (require.main === module) {
+  connectDB().then(() => {
+    server.listen(PORT, () => {
+      console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
+    });
+  });
+}
+
+module.exports = { app, server };

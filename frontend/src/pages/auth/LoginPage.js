@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import { Car, Eye, EyeOff } from 'lucide-react';
+import { getDefaultRoute } from '../../utils/authRouting';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -19,7 +20,7 @@ export default function LoginPage() {
     try {
       const user = await login(form);
       toast.success(`Welcome back, ${user.name}!`);
-      navigate(user.role === 'admin' ? '/admin' : '/dashboard');
+      navigate(getDefaultRoute(user));
     } catch (err) {
       toast.error(err.response?.data?.message || 'Login failed');
     } finally {

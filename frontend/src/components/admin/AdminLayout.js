@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LayoutDashboard, MapPin, CalendarDays, Users, LogOut, Car, Shield } from 'lucide-react';
+import { LayoutDashboard, MapPin, CalendarDays, Users, LogOut, Car, Shield, Store } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const navItems = [
@@ -9,6 +9,7 @@ const navItems = [
   { to: '/admin/slots',    icon: <MapPin size={18} />,          label: 'Slots' },
   { to: '/admin/bookings', icon: <CalendarDays size={18} />,    label: 'Bookings' },
   { to: '/admin/users',    icon: <Users size={18} />,           label: 'Users' },
+  { to: '/admin/vendors',  icon: <Store size={18} />,           label: 'Vendor Management' },
 ];
 
 export default function AdminLayout() {

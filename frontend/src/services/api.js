@@ -73,6 +73,19 @@ export const adminAPI = {
   getDashboard: () => API.get('/admin/dashboard'),
   getUsers: () => API.get('/admin/users'),
   toggleUser: (id) => API.put(`/admin/users/${id}/toggle`),
+  getVendors: (params) => API.get('/admin/vendors', { params }),
+  getVendor: (id) => API.get(`/admin/vendors/${id}`),
+  approveVendor: (id) => API.patch(`/admin/vendors/${id}/approve`),
+  rejectVendor: (id) => API.patch(`/admin/vendors/${id}/reject`),
+  suspendVendor: (id) => API.patch(`/admin/vendors/${id}/suspend`),
+};
+
+// Vendors
+export const vendorsAPI = {
+  register: (data) => API.post('/vendors/register', data),
+  getMyProfile: () => API.get('/vendors/me'),
+  updateMyProfile: (data) => API.put('/vendors/me', data),
+  getDashboard: () => API.get('/vendors/dashboard'),
 };
 
 export default API;

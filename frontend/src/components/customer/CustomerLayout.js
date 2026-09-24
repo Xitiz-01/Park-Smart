@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Car, LayoutDashboard, MapPin, CalendarDays, Truck, User, LogOut, Menu, X } from 'lucide-react';
+import { Car, LayoutDashboard, MapPin, CalendarDays, Truck, User, LogOut, Store } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const navItems = [
@@ -17,6 +17,13 @@ export default function CustomerLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const vendorItem = user?.vendorProfile
+    ? {
+        to: user.role === 'vendor' && user.vendorProfile.vendorStatus === 'active' ? '/vendor' : '/vendor/status',
+        icon: <Store size={18} />,
+        label: user.role === 'vendor' ? 'Vendor Portal' : 'Vendor Application',
+      }
+    : { to: '/vendor/apply', icon: <Store size={18} />, label: 'Become a Vendor' };
 
   const handleLogout = () => {
     logout();
@@ -48,7 +55,7 @@ export default function CustomerLayout() {
 
       {/* Nav */}
       <nav style={{ flex: 1, padding: '12px 12px' }}>
-        {navItems.map((item) => (
+        {[...navItems, vendorItem].map((item) => (
           <NavLink key={item.to} to={item.to} end={item.to === '/dashboard'}
             style={({ isActive }) => ({
               display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',

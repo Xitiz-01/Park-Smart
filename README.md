@@ -70,6 +70,25 @@ REACT_APP_API_URL=http://localhost:5000/api
 4. Find your user, click Edit, change `role` from `"customer"` to `"admin"`
 5. Log out and log back in — you'll land on the Admin Panel
 
+## Vendor onboarding (Phase 1)
+
+Vendor access uses an approval workflow rather than a public role selector:
+
+1. A customer submits an application at `/vendor/apply`.
+2. ParkSmart creates a separate `VendorProfile` with a pending status; the user remains a customer.
+3. An admin reviews the application under **Admin → Vendor Management**.
+4. Approval changes the user's role to `vendor` and activates the vendor profile.
+5. Rejection retains the application record. Suspension removes operational vendor access immediately.
+
+JWTs contain only the user ID. Protected requests reload the current user and vendor status from MongoDB, so approval and suspension apply to already-issued tokens without requiring a token refresh.
+
+For older records that have no role field, an optional idempotent migration is available:
+
+```bash
+cd backend
+npm run migrate:user-roles
+```
+
 ---
 
 ## Seeding Parking Slots
@@ -129,3 +148,21 @@ parking-system/
 | PUT | /api/bookings/:id/checkout | Admin | Check out |
 | GET | /api/admin/dashboard | Admin | Dashboard stats |
 | GET | /api/admin/users | Admin | All users |
+| POST | /api/vendors/register | Customer | Submit vendor application |
+| GET | /api/vendors/me | Authenticated | View own vendor profile/status |
+| PUT | /api/vendors/me | Authenticated | Edit safe vendor profile fields |
+| GET | /api/vendors/dashboard | Approved vendor | Vendor dashboard metrics |
+| GET | /api/admin/vendors | Admin | List vendor applications |
+| GET | /api/admin/vendors/:id | Admin | View vendor application |
+| PATCH | /api/admin/vendors/:id/approve | Admin | Approve vendor |
+| PATCH | /api/admin/vendors/:id/reject | Admin | Reject vendor |
+| PATCH | /api/admin/vendors/:id/suspend | Admin | Suspend active vendor |
+
+## Tests
+
+The vendor integration suite requires a disposable MongoDB server. It always uses and deletes only the database named `parksmart-phase1-test`.
+
+```bash
+cd backend
+TEST_MONGODB_URI=mongodb://127.0.0.1:27028 npm run test:integration
+```

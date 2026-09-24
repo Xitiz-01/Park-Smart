@@ -24,13 +24,26 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminSlots from './pages/admin/AdminSlots';
 import AdminBookings from './pages/admin/AdminBookings';
 import AdminUsers from './pages/admin/AdminUsers';
+import AdminVendors from './pages/admin/AdminVendors';
+
+// Vendor Pages
+import VendorLayout from './components/vendor/VendorLayout';
+import VendorDashboard from './pages/vendor/VendorDashboard';
+import VendorProfile from './pages/vendor/VendorProfile';
+import VendorApplication from './pages/vendor/VendorApplication';
+import VendorStatus from './pages/vendor/VendorStatus';
+import VendorPlaceholder from './pages/vendor/VendorPlaceholder';
+import { getDefaultRoute } from './utils/authRouting';
 
 // Protected Route
-const ProtectedRoute = ({ children, adminOnly = false }) => {
+const ProtectedRoute = ({ children, roles, approvedVendor = false }) => {
   const { user, loading } = useAuth();
   if (loading) return <div className="loading-spinner"><div className="spinner" /></div>;
   if (!user) return <Navigate to="/login" replace />;
-  if (adminOnly && user.role !== 'admin') return <Navigate to="/dashboard" replace />;
+  if (roles && !roles.includes(user.role)) return <Navigate to={getDefaultRoute(user)} replace />;
+  if (approvedVendor && user.vendorProfile?.vendorStatus !== 'active') {
+    return <Navigate to="/vendor/status" replace />;
+  }
   return children;
 };
 
@@ -40,8 +53,8 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} /> : <LoginPage />} />
-      <Route path="/register" element={user ? <Navigate to="/dashboard" /> : <RegisterPage />} />
+      <Route path="/login" element={user ? <Navigate to={getDefaultRoute(user)} /> : <LoginPage />} />
+      <Route path="/register" element={user ? <Navigate to={getDefaultRoute(user)} /> : <RegisterPage />} />
 
       {/* Customer Routes */}
       <Route path="/dashboard" element={<ProtectedRoute><CustomerLayout /></ProtectedRoute>}>
@@ -55,11 +68,20 @@ const AppRoutes = () => {
       </Route>
 
       {/* Admin Routes */}
-      <Route path="/admin" element={<ProtectedRoute adminOnly><AdminLayout /></ProtectedRoute>}>
+      <Route path="/admin" element={<ProtectedRoute roles={['admin']}><AdminLayout /></ProtectedRoute>}>
         <Route index element={<AdminDashboard />} />
         <Route path="slots" element={<AdminSlots />} />
         <Route path="bookings" element={<AdminBookings />} />
         <Route path="users" element={<AdminUsers />} />
+        <Route path="vendors" element={<AdminVendors />} />
+      </Route>
+
+      <Route path="/vendor/apply" element={<ProtectedRoute roles={['customer']}><VendorApplication /></ProtectedRoute>} />
+      <Route path="/vendor/status" element={<ProtectedRoute roles={['customer', 'vendor']}><VendorStatus /></ProtectedRoute>} />
+      <Route path="/vendor" element={<ProtectedRoute roles={['vendor']} approvedVendor><VendorLayout /></ProtectedRoute>}>
+        <Route index element={<VendorDashboard />} />
+        <Route path="profile" element={<VendorProfile />} />
+        <Route path=":section" element={<VendorPlaceholder />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" />} />

@@ -9,11 +9,23 @@ export const AuthProvider = ({ children }) => {
   });
   const [loading, setLoading] = useState(true);
 
+  const saveSessionUser = (account, vendorProfile = null) => {
+    const nextUser = account ? { ...account, vendorProfile } : null;
+    if (nextUser) localStorage.setItem('user', JSON.stringify(nextUser));
+    else localStorage.removeItem('user');
+    setUser(nextUser);
+    return nextUser;
+  };
+
+  const refreshUser = async () => {
+    const res = await authAPI.getProfile();
+    return saveSessionUser(res.data.user, res.data.vendorProfile);
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      authAPI.getProfile()
-        .then((res) => setUser(res.data.user))
+      refreshUser()
         .catch(() => { localStorage.removeItem('token'); localStorage.removeItem('user'); setUser(null); })
         .finally(() => setLoading(false));
     } else {
@@ -24,13 +36,10 @@ export const AuthProvider = ({ children }) => {
 const login = async (credentials) => {
   try {
     const res = await authAPI.login(credentials);
-    const { token, user } = res.data;
+    const { token, user, vendorProfile } = res.data;
 
     localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-    setUser(user);
-
-    return user;
+    return saveSessionUser(user, vendorProfile);
   } catch (error) {
     throw error; 
   }
@@ -40,13 +49,10 @@ const login = async (credentials) => {
  const register = async (data) => {
   try {
     const res = await authAPI.register(data);
-    const { token, user } = res.data;
+    const { token, user, vendorProfile } = res.data;
 
     localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-    setUser(user);
-
-    return user;
+    return saveSessionUser(user, vendorProfile);
   } catch (error) {
     throw error; 
   }
@@ -59,7 +65,16 @@ const login = async (credentials) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading, isAdmin: user?.role === 'admin' }}>
+    <AuthContext.Provider value={{
+      user,
+      login,
+      register,
+      logout,
+      refreshUser,
+      loading,
+      isAdmin: user?.role === 'admin',
+      isApprovedVendor: user?.role === 'vendor' && user?.vendorProfile?.vendorStatus === 'active',
+    }}>
       {children}
     </AuthContext.Provider>
   );
