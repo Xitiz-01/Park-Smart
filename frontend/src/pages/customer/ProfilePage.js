@@ -52,7 +52,7 @@ export default function ProfilePage() {
           <User size={16} /> <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)' }}>Personal Information</span>
         </div>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
-          <span className="badge badge-blue" style={{ fontSize: 13, padding: '4px 12px' }}>
+          <span className="badge badge-info" style={{ fontSize: 13, padding: '4px 12px' }}>
             {user?.role === 'admin' ? '🛡 Admin' : '👤 Customer'}
           </span>
           <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{user?.email}</span>

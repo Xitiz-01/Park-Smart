@@ -5,11 +5,11 @@ import { format } from 'date-fns';
 import { LogIn, LogOut, RefreshCw } from 'lucide-react';
 
 const StatusBadge = ({ status }) => {
-  const map = { upcoming: 'badge-blue', active: 'badge-green', completed: 'badge-purple', cancelled: 'badge-red' };
-  return <span className={`badge ${map[status] || 'badge-blue'}`}>{status}</span>;
+  const map = { upcoming: 'badge-info', active: 'badge-green', completed: 'badge-coral', cancelled: 'badge-red' };
+  return <span className={`badge ${map[status] || 'badge-info'}`}>{status}</span>;
 };
 const PaymentBadge = ({ status }) => {
-  const map = { paid: 'badge-green', pending: 'badge-yellow', refunded: 'badge-purple' };
+  const map = { paid: 'badge-green', pending: 'badge-yellow', refunded: 'badge-coral' };
   return <span className={`badge ${map[status] || 'badge-yellow'}`}>{status || 'pending'}</span>;
 };
 
@@ -79,7 +79,7 @@ export default function AdminBookings() {
       {/* Filter tabs */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
         {['', 'upcoming', 'active', 'completed', 'cancelled'].map(s => (
-          <button key={s} onClick={() => setFilter(s)} style={{
+          <button className="filter-chip" key={s} onClick={() => setFilter(s)} style={{
             padding: '7px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer',
             background: filter === s ? 'var(--accent)' : 'var(--bg-card)',
             color: filter === s ? '#fff' : 'var(--text-secondary)',

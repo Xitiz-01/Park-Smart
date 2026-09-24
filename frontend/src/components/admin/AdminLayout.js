@@ -11,5 +11,5 @@ const navItems = [
 ];
 
 export default function AdminLayout() {
-  return <AppShell navItems={navItems} roleLabel="Admin control" accent="violet" />;
+  return <AppShell navItems={navItems} roleLabel="Admin control" accent="graphite" />;
 }

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { slotsAPI } from '../../services/api';
 import { MapPin, Zap, Shield, Wind, Filter } from 'lucide-react';
 
-const TYPE_COLORS = { standard: 'var(--accent)', compact: 'var(--green)', disabled: 'var(--yellow)', ev: 'var(--purple)' };
+const TYPE_COLORS = { standard: 'var(--accent)', compact: 'var(--green)', disabled: 'var(--yellow)', ev: 'var(--ps-coral)' };
 const TYPE_LABELS = { standard: 'Standard', compact: 'Compact', disabled: 'Accessible', ev: 'EV Charging' };
 
 const SlotCard = ({ slot }) => {
@@ -42,7 +42,7 @@ const SlotCard = ({ slot }) => {
       <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
         {slot.features?.hasCCTV && <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)' }}><Shield size={12} />CCTV</div>}
         {slot.features?.hasCover && <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)' }}><Wind size={12} />Covered</div>}
-        {slot.features?.hasEVCharger && <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--purple)' }}><Zap size={12} />EV Charger</div>}
+        {slot.features?.hasEVCharger && <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--ps-coral)' }}><Zap size={12} />EV Charger</div>}
       </div>
 
       {/* Price & Action */}

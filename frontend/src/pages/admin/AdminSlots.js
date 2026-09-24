@@ -7,7 +7,7 @@ const emptyForm = { slotNumber: '', floor: 'G', zone: 'A', type: 'standard', sta
 
 const StatusBadge = ({ status }) => {
   const map = { available: 'badge-green', occupied: 'badge-red', reserved: 'badge-yellow', maintenance: 'badge-yellow' };
-  return <span className={`badge ${map[status] || 'badge-blue'}`}>{status}</span>;
+  return <span className={`badge ${map[status] || 'badge-info'}`}>{status}</span>;
 };
 
 export default function AdminSlots() {

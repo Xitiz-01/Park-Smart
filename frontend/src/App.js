@@ -107,14 +107,15 @@ function App() {
           position="top-right"
           toastOptions={{
             style: {
-              background: '#161d2f',
-              color: '#f1f5f9',
-              border: '1px solid #1e2d4a',
-              borderRadius: '8px',
+              background: '#fffefb',
+              color: '#262a2e',
+              border: '1px solid #ddd8ce',
+              borderRadius: '10px',
+              boxShadow: '0 12px 30px rgba(50, 45, 35, 0.12)',
               fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
             },
-            success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
-            error:   { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+            success: { iconTheme: { primary: '#147d6f', secondary: '#fff' } },
+            error:   { iconTheme: { primary: '#c94a4a', secondary: '#fff' } },
           }}
         />
       </AuthProvider>

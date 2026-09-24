@@ -4,7 +4,7 @@ const tones = {
   approved: 'success', active: 'success', available: 'success', paid: 'success',
   pending: 'warning', upcoming: 'info', reserved: 'warning', maintenance: 'warning',
   rejected: 'danger', suspended: 'danger', cancelled: 'danger', occupied: 'danger', inactive: 'neutral',
-  completed: 'violet', refunded: 'violet',
+  completed: 'coral', refunded: 'coral',
 };
 
 export default function StatusBadge({ status, children }) {

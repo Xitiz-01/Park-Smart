@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import Brand from '../ui/Brand';
 import { useAuth } from '../../context/AuthContext';
 
-export default function AppShell({ navItems, roleLabel, identity, accent = 'blue' }) {
+export default function AppShell({ navItems, roleLabel, identity, accent = 'emerald' }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();

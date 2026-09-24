@@ -40,7 +40,7 @@ export default function CustomerDashboard() {
       <section className="dashboard-metrics" aria-label="Parking statistics">
         <MetricCard label="Available now" value={slotStats?.available ?? '—'} icon={<MapPin size={20} />} tone="green" detail="Ready to reserve" />
         <MetricCard label="Occupied slots" value={slotStats?.occupied ?? '—'} icon={<ParkingSquare size={20} />} tone="red" detail="Live inventory" />
-        <MetricCard label="Total spaces" value={slotStats?.total ?? '—'} icon={<CarFront size={20} />} tone="blue" detail="Across all locations" />
+        <MetricCard label="Total spaces" value={slotStats?.total ?? '—'} icon={<CarFront size={20} />} tone="graphite" detail="Across all locations" />
         <MetricCard label="Occupancy" value={`${occupancyPct}%`} icon={<Clock3 size={20} />} tone="amber" detail="Current utilisation" />
       </section>
 

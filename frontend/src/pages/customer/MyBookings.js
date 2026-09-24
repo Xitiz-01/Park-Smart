@@ -6,19 +6,19 @@ import { CalendarDays, MapPin, Car, XCircle } from 'lucide-react';
 
 const StatusBadge = ({ status }) => {
   const map = {
-    upcoming:  { cls: 'badge-blue',   label: 'Upcoming' },
+    upcoming:  { cls: 'badge-info',   label: 'Upcoming' },
     active:    { cls: 'badge-green',  label: 'Active' },
-    completed: { cls: 'badge-purple', label: 'Completed' },
+    completed: { cls: 'badge-coral', label: 'Completed' },
     cancelled: { cls: 'badge-red',    label: 'Cancelled' },
   };
-  const s = map[status] || { cls: 'badge-blue', label: status };
+  const s = map[status] || { cls: 'badge-info', label: status };
   return <span className={`badge ${s.cls}`}>{s.label}</span>;
 };
 const PaymentBadge = ({ status }) => {
   const map = {
     paid: { cls: 'badge-green', label: 'Paid' },
     pending: { cls: 'badge-yellow', label: 'Pending' },
-    refunded: { cls: 'badge-purple', label: 'Refunded' },
+    refunded: { cls: 'badge-coral', label: 'Refunded' },
   };
   const s = map[status] || { cls: 'badge-yellow', label: status || 'pending' };
   return <span className={`badge ${s.cls}`}>{s.label}</span>;
@@ -73,7 +73,7 @@ export default function MyBookings() {
       {/* Filter tabs */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
         {['', 'upcoming', 'active', 'completed', 'cancelled'].map((s) => (
-          <button key={s} onClick={() => setFilter(s)} style={{
+          <button className="filter-chip" key={s} onClick={() => setFilter(s)} style={{
             padding: '7px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none',
             background: filter === s ? 'var(--accent)' : 'var(--bg-card)',
             color: filter === s ? '#fff' : 'var(--text-secondary)',

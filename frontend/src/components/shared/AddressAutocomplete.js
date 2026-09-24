@@ -49,9 +49,9 @@ export default function AddressAutocomplete({ value, onChange, onSelect }) {
       {loading && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>Searching addresses…</div>}
       {message && <div style={{ fontSize: 12, color: 'var(--yellow)', marginTop: 6 }}>{message}</div>}
       {suggestions.length > 0 && (
-        <div style={{ position: 'absolute', zIndex: 1000, top: 'calc(100% + 5px)', left: 0, right: 0, background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', borderRadius: 8, boxShadow: '0 16px 35px rgba(0,0,0,.45)', overflow: 'hidden' }}>
+        <div className="suggestion-menu" style={{ position: 'absolute', zIndex: 1000, top: 'calc(100% + 5px)', left: 0, right: 0, background: 'var(--ps-surface)', border: '1px solid var(--border-light)', borderRadius: 8, boxShadow: 'var(--ps-shadow-md)', overflow: 'hidden' }}>
           {suggestions.map((suggestion) => (
-            <button type="button" key={`${suggestion.providerPlaceId}:${suggestion.latitude}`} onClick={() => choose(suggestion)}
+            <button className="suggestion-option" type="button" key={`${suggestion.providerPlaceId}:${suggestion.latitude}`} onClick={() => choose(suggestion)}
               style={{ width: '100%', display: 'flex', gap: 10, textAlign: 'left', padding: '11px 13px', color: 'var(--text-primary)', background: 'transparent', borderBottom: '1px solid var(--border)', lineHeight: 1.4 }}>
               <MapPin size={16} color="var(--accent)" style={{ flexShrink: 0, marginTop: 2 }} />
               <span>{suggestion.formattedAddress}</span>

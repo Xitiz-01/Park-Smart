@@ -11,12 +11,12 @@ import 'leaflet/dist/leaflet.css';
 const DEFAULT_CENTER = { lat: 28.6139, lng: 77.2090 };
 const NEARBY_CACHE_KEY = 'nearby_slots_cache_v2';
 const STATUS_COLORS = {
-  available: '#10b981',
-  occupied: '#ef4444',
-  reserved: '#f59e0b',
-  maintenance: '#9ca3af',
+  available: '#2f855a',
+  occupied: '#c94a4a',
+  reserved: '#e9a23b',
+  maintenance: '#92968f',
 };
-const EXTERNAL_MARKER_COLOR = '#3b82f6';
+const EXTERNAL_MARKER_COLOR = '#333333';
 const toRadians = (deg) => (deg * Math.PI) / 180;
 const calculateDistanceMeters = (lat1, lng1, lat2, lng2) => {
   const earthRadius = 6371000;
@@ -32,14 +32,14 @@ const calculateDistanceMeters = (lat1, lng1, lat2, lng2) => {
 const createSlotIcon = (status) =>
   L.divIcon({
     className: '',
-    html: `<div style="width:16px;height:16px;border-radius:999px;background:${STATUS_COLORS[status] || '#60a5fa'};border:2px solid #ffffff;box-shadow:0 0 0 2px rgba(0,0,0,0.2);"></div>`,
+    html: `<div style="width:16px;height:16px;border-radius:999px;background:${STATUS_COLORS[status] || '#147d6f'};border:2px solid #ffffff;box-shadow:0 0 0 2px rgba(37,37,37,0.18);"></div>`,
     iconSize: [16, 16],
     iconAnchor: [8, 8],
   });
 const createExternalIcon = () =>
   L.divIcon({
     className: '',
-    html: `<div style="width:16px;height:16px;border-radius:999px;background:${EXTERNAL_MARKER_COLOR};border:2px solid #ffffff;box-shadow:0 0 0 2px rgba(0,0,0,0.2);"></div>`,
+    html: `<div style="width:16px;height:16px;border-radius:999px;background:${EXTERNAL_MARKER_COLOR};border:2px solid #ffffff;box-shadow:0 0 0 2px rgba(37,37,37,0.18);"></div>`,
     iconSize: [16, 16],
     iconAnchor: [8, 8],
   });
@@ -318,7 +318,7 @@ export default function NearbyMapPage() {
 
       <div className="map-workspace">
         <aside className="map-results" aria-label="Nearby parking results">
-          <div className="map-results-head"><div><strong>Nearby results</strong><span>Sorted by distance</span></div><span className="badge badge-blue">{slots.length + externalPlaces.length}</span></div>
+          <div className="map-results-head"><div><strong>Nearby results</strong><span>Sorted by distance</span></div><span className="badge badge-info">{slots.length + externalPlaces.length}</span></div>
           <div className="map-result-list">
             {slots.slice(0, 7).map((slot) => (
               <article className="map-result-item" key={slot._id}>
@@ -330,7 +330,7 @@ export default function NearbyMapPage() {
             ))}
             {externalPlaces.slice(0, Math.max(0, 7 - slots.length)).map((place) => (
               <article className="map-result-item" key={place.id}>
-                <div className="map-result-title"><strong>{place.name}</strong><span className="badge badge-blue">Public</span></div>
+                <div className="map-result-title"><strong>{place.name}</strong><span className="badge badge-info">Public</span></div>
                 <p><MapPin size={12} /> {place.location.label}</p>
                 <div className="map-result-meta"><span>{place.distanceKm} km away</span><span>Capacity {place.capacity || 'unknown'}</span></div>
               </article>
@@ -345,12 +345,12 @@ export default function NearbyMapPage() {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          <Circle center={[center.lat, center.lng]} radius={radius} pathOptions={{ color: '#3b82f6', fillOpacity: 0.08 }} />
+          <Circle center={[center.lat, center.lng]} radius={radius} pathOptions={{ color: '#147d6f', fillOpacity: 0.08 }} />
           <Marker
             position={[center.lat, center.lng]}
             icon={L.divIcon({
               className: '',
-              html: '<div style="width:14px;height:14px;border-radius:999px;background:#3b82f6;border:2px solid #fff;"></div>',
+              html: '<div style="width:14px;height:14px;border-radius:999px;background:#147d6f;border:2px solid #fff;"></div>',
               iconSize: [14, 14],
               iconAnchor: [7, 7],
             })}
@@ -384,7 +384,7 @@ export default function NearbyMapPage() {
                         Book
                       </Link>
                     ) : (
-                      <span style={{ fontSize: 12, color: '#94a3b8' }}>Unavailable</span>
+                      <span style={{ fontSize: 12, color: 'var(--ps-muted)' }}>Unavailable</span>
                     )}
                   </div>
                 </div>
@@ -404,8 +404,8 @@ export default function NearbyMapPage() {
                     <Navigation size={12} style={{ display: 'inline', marginRight: 4 }} />
                     {place.distanceKm} km away
                   </div>
-                  <div style={{ fontSize: 12, marginBottom: 2, color: '#93c5fd' }}>Public parking data (OpenStreetMap)</div>
-                  <div style={{ fontSize: 12, color: '#94a3b8' }}>
+                  <div style={{ fontSize: 12, marginBottom: 2, color: 'var(--ps-primary)' }}>Public parking data (OpenStreetMap)</div>
+                  <div style={{ fontSize: 12, color: 'var(--ps-muted)' }}>
                     Capacity: {place.capacity || 'Unknown'} • Fee: {place.fee || 'Unknown'} • Access: {place.access || 'Unknown'}
                   </div>
                 </div>

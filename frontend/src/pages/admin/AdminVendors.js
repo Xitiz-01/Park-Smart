@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { Eye, RefreshCw, Store } from 'lucide-react';
 import { adminAPI } from '../../services/api';
 
-const badgeFor = (status) => ({ active: 'badge-green', pending: 'badge-yellow', rejected: 'badge-red', suspended: 'badge-red' }[status] || 'badge-blue');
+const badgeFor = (status) => ({ active: 'badge-green', pending: 'badge-yellow', rejected: 'badge-red', suspended: 'badge-red' }[status] || 'badge-info');
 
 export default function AdminVendors() {
   const [vendors, setVendors] = useState([]);
@@ -56,7 +56,7 @@ export default function AdminVendors() {
         <button className="btn btn-outline" onClick={load}><RefreshCw size={15} /> Refresh</button>
       </div>
       {selected && (
-        <div className="card" style={{ marginBottom: 20, borderColor: 'rgba(59,130,246,.35)' }}>
+        <div className="card" style={{ marginBottom: 20, borderColor: 'rgba(20,125,111,.38)' }}>
           <div className="flex items-center justify-between" style={{ gap: 12 }}>
             <h2 style={{ fontSize: 18 }}>{selected.businessName}</h2>
             <button className="btn btn-sm btn-outline" onClick={() => setSelected(null)}>Close</button>

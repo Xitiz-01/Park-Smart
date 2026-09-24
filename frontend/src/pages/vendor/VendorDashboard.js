@@ -32,7 +32,7 @@ export default function VendorDashboard() {
         <MetricCard label="Parking locations" value={stats.parkingLocations} icon={<MapPin size={20} />} detail="Managed facilities" />
         <MetricCard label="Available slots" value={stats.availableSlots} icon={<CircleParking size={20} />} tone="green" detail={`${stats.totalSlots} total spaces`} />
         <MetricCard label="Active bookings" value={stats.activeBookings} icon={<CalendarDays size={20} />} tone="amber" detail="Currently in progress" />
-        <MetricCard label="Total earnings" value={`₹${stats.totalEarnings}`} icon={<IndianRupee size={20} />} tone="violet" detail="Recorded payments" />
+        <MetricCard label="Total earnings" value={`₹${stats.totalEarnings}`} icon={<IndianRupee size={20} />} tone="coral" detail="Recorded payments" />
       </section>
 
       <div className="dashboard-grid">
@@ -41,7 +41,7 @@ export default function VendorDashboard() {
           <div className="legend-row">
             <span className="legend-item"><i style={{ background: 'var(--green)' }} />Available <strong>{stats.availableSlots}</strong></span>
             <span className="legend-item"><i style={{ background: 'var(--yellow)' }} />Occupied / reserved <strong>{stats.occupiedSlots}</strong></span>
-            <span className="legend-item"><i style={{ background: '#334155' }} />Other <strong>{Math.max(0, total - stats.availableSlots - stats.occupiedSlots)}</strong></span>
+            <span className="legend-item"><i style={{ background: 'var(--ps-muted)' }} />Other <strong>{Math.max(0, total - stats.availableSlots - stats.occupiedSlots)}</strong></span>
           </div>
           <div className="occupancy-track" aria-label="Slot utilisation">
             <span className="occupancy-segment" style={{ width: `${availablePct}%`, background: 'var(--green)' }} />

@@ -31,5 +31,5 @@ export default function CustomerLayout() {
     vendorItem,
   ];
 
-  return <AppShell navItems={navItems} roleLabel="Driver workspace" accent="blue" />;
+  return <AppShell navItems={navItems} roleLabel="Driver workspace" accent="emerald" />;
 }

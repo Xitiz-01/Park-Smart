@@ -30,7 +30,7 @@ export default function AdminDashboard() {
         <MetricCard label="Total customers" value={stats.users.total} icon={<Users size={20} />} detail="Registered accounts" />
         <MetricCard label="Available slots" value={stats.slots.available} icon={<MapPin size={20} />} tone="green" detail={`${totalSlots} total spaces`} />
         <MetricCard label="Total bookings" value={stats.bookings.total} icon={<CalendarDays size={20} />} tone="amber" detail={`${stats.bookings.today} today`} />
-        <MetricCard label="Total revenue" value={`₹${stats.revenue.total}`} icon={<IndianRupee size={20} />} tone="violet" detail={`₹${stats.revenue.today} today`} />
+        <MetricCard label="Total revenue" value={`₹${stats.revenue.total}`} icon={<IndianRupee size={20} />} tone="coral" detail={`₹${stats.revenue.today} today`} />
       </section>
 
       <section className="card" style={{ marginBottom: 18 }}>

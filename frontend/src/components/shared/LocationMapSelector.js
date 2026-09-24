@@ -4,7 +4,7 @@ import L from 'leaflet';
 
 const markerIcon = L.divIcon({
   className: '',
-  html: '<div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:#3b82f6;border:3px solid white;transform:rotate(-45deg);box-shadow:0 4px 12px rgba(0,0,0,.45)"></div>',
+  html: '<div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:#147d6f;border:3px solid white;transform:rotate(-45deg);box-shadow:0 4px 12px rgba(37,37,37,.24)"></div>',
   iconSize: [28, 28], iconAnchor: [14, 28],
 });
 

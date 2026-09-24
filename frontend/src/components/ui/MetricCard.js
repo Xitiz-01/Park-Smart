@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function MetricCard({ label, value, detail, icon, tone = 'blue' }) {
+export default function MetricCard({ label, value, detail, icon, tone = 'primary' }) {
   return (
     <article className={`metric-card tone-${tone}`}>
       <div className="metric-icon">{icon}</div>

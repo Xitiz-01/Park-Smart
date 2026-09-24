@@ -230,18 +230,17 @@ export default function BookingPage() {
       </form>
 
       {paymentOpen && (
-        <div style={{
+        <div className="modal-backdrop" style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(5, 10, 20, 0.72)',
-          backdropFilter: 'blur(3px)',
+          background: 'rgba(37, 37, 37, 0.52)',
           zIndex: 1100,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           padding: 16,
         }}>
-          <div className="card" style={{ width: 'min(560px, 100%)', maxHeight: '90vh', overflowY: 'auto', borderColor: 'var(--border-light)' }}>
+          <div className="card modal-panel" style={{ width: 'min(560px, 100%)', maxHeight: '90vh', overflowY: 'auto', borderColor: 'var(--border-light)' }}>
             <div style={{ marginBottom: 18 }}>
               <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, marginBottom: 6 }}>Payment Window</h3>
               <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
@@ -261,6 +260,7 @@ export default function BookingPage() {
                         key={method.key}
                         type="button"
                         onClick={() => setPayment((prev) => ({ ...prev, method: method.key }))}
+                        className="filter-chip"
                         style={{
                           display: 'flex',
                           alignItems: 'center',
