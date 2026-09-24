@@ -5,16 +5,27 @@ const parkingSlotSchema = new mongoose.Schema(
     slotNumber: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
+      uppercase: true,
+    },
+    parkingLocation: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ParkingLocation',
+      default: null,
+      index: true,
+    },
+    vehicleType: {
+      type: String,
+      enum: ['car', 'bike', 'ev', 'motorcycle', 'suv'],
+      default: 'car',
     },
     floor: {
       type: String,
-      required: true,
+      required: false,
     },
     zone: {
       type: String,
-      required: true,
+      required: false,
       enum: ['A', 'B', 'C', 'D'],
     },
     type: {
@@ -22,6 +33,7 @@ const parkingSlotSchema = new mongoose.Schema(
       enum: ['standard', 'compact', 'disabled', 'ev'],
       default: 'standard',
     },
+    evCompatible: { type: Boolean, default: false },
     status: {
       type: String,
       enum: ['available', 'occupied', 'reserved', 'maintenance'],
@@ -49,6 +61,11 @@ const parkingSlotSchema = new mongoose.Schema(
     },
   },
   { timestamps: true }
+);
+
+parkingSlotSchema.index(
+  { parkingLocation: 1, slotNumber: 1 },
+  { unique: true }
 );
 
 module.exports = mongoose.model('ParkingSlot', parkingSlotSchema);

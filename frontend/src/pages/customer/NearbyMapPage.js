@@ -345,7 +345,7 @@ export default function NearbyMapPage() {
                 <div style={{ minWidth: 180 }}>
                   <div style={{ fontWeight: 700, marginBottom: 4 }}>{slot.slotNumber}</div>
                   <div style={{ fontSize: 12, marginBottom: 4 }}>
-                    Floor {slot.floor} • Zone {slot.zone}
+                    {slot.parkingLocation ? `${slot.parkingLocation.name} • ${slot.vehicleType}` : `Floor ${slot.floor} • Zone ${slot.zone}`}
                   </div>
                   <div style={{ fontSize: 12, marginBottom: 4 }}>
                     <MapPin size={12} style={{ display: 'inline', marginRight: 4 }} />

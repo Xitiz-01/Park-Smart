@@ -53,6 +53,8 @@ JWT_EXPIRE=7d
 NODE_ENV=development
 CLIENT_URL=http://localhost:3000
 EXTERNAL_PARKING_CACHE_TTL_MS=120000
+GEOCODING_PROVIDER=geoapify
+GEOCODING_API_KEY=your_geoapify_api_key
 ```
 
 **frontend/.env**
@@ -88,6 +90,30 @@ For older records that have no role field, an optional idempotent migration is a
 cd backend
 npm run migrate:user-roles
 ```
+
+## Vendor parking management (Phase 2)
+
+Approved vendors can create multiple independently configured parking locations. Each location owns its address, GeoJSON coordinates, supported vehicle types, hourly pricing, operating hours, amenities, and parking slots.
+
+Address search uses the Geoapify Autocomplete API through the ParkSmart backend. The API key is never sent to the browser. Results are restricted to India and the backend signs each selected result; parking and vendor application payloads must present that signed selection before coordinates are accepted. A dragged marker may fine-tune the selected point within five kilometres.
+
+Create a free Geoapify API key, then configure the backend:
+
+```bash
+GEOCODING_PROVIDER=geoapify
+GEOCODING_API_KEY=your_key_here
+```
+
+Coordinates use MongoDB GeoJSON order: `[longitude, latitude]`, with a `2dsphere` index for later distance search.
+
+Before deploying Phase 2 against a database created by an earlier version, replace the old globally unique slot-number index with the new location-scoped index:
+
+```bash
+cd backend
+npm run migrate:parking-slot-indexes
+```
+
+The migration does not delete or rewrite slots. Legacy slots remain unique under a `null` parking location, while different vendor locations may each use identifiers such as `C01`.
 
 ---
 
@@ -157,10 +183,21 @@ parking-system/
 | PATCH | /api/admin/vendors/:id/approve | Admin | Approve vendor |
 | PATCH | /api/admin/vendors/:id/reject | Admin | Reject vendor |
 | PATCH | /api/admin/vendors/:id/suspend | Admin | Suspend active vendor |
+| GET | /api/location/autocomplete?q= | Authenticated | Search structured Indian addresses |
+| GET | /api/vendors/parking-locations | Approved vendor | List owned parking locations |
+| POST | /api/vendors/parking-locations | Approved vendor | Create a parking location |
+| GET | /api/vendors/parking-locations/:id | Approved vendor/owner | View an owned location |
+| PATCH | /api/vendors/parking-locations/:id | Approved vendor/owner | Edit an owned location |
+| DELETE | /api/vendors/parking-locations/:id | Approved vendor/owner | Soft-deactivate an owned location |
+| GET | /api/vendors/parking-locations/:id/slots | Approved vendor/owner | List location slots |
+| POST | /api/vendors/parking-locations/:id/slots | Approved vendor/owner | Create one slot |
+| POST | /api/vendors/parking-locations/:id/slots/bulk | Approved vendor/owner | Bulk-create slots |
+| PATCH | /api/vendors/slots/:slotId | Approved vendor/owner | Update an owned slot |
+| GET | /api/vendors/bookings | Approved vendor | List bookings for owned locations |
 
 ## Tests
 
-The vendor integration suite requires a disposable MongoDB server. It always uses and deletes only the database named `parksmart-phase1-test`.
+The vendor integration suite requires a disposable MongoDB server. It always uses and deletes only the database named `parksmart-phase2-test`.
 
 ```bash
 cd backend

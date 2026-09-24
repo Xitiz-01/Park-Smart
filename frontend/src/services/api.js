@@ -86,6 +86,20 @@ export const vendorsAPI = {
   getMyProfile: () => API.get('/vendors/me'),
   updateMyProfile: (data) => API.put('/vendors/me', data),
   getDashboard: () => API.get('/vendors/dashboard'),
+  getLocations: () => API.get('/vendors/parking-locations'),
+  getLocation: (id) => API.get(`/vendors/parking-locations/${id}`),
+  createLocation: (data) => API.post('/vendors/parking-locations', data),
+  updateLocation: (id, data) => API.patch(`/vendors/parking-locations/${id}`, data),
+  deactivateLocation: (id) => API.delete(`/vendors/parking-locations/${id}`),
+  getLocationSlots: (id) => API.get(`/vendors/parking-locations/${id}/slots`),
+  createSlot: (id, data) => API.post(`/vendors/parking-locations/${id}/slots`, data),
+  bulkCreateSlots: (id, data) => API.post(`/vendors/parking-locations/${id}/slots/bulk`, data),
+  updateSlot: (slotId, data) => API.patch(`/vendors/slots/${slotId}`, data),
+  getBookings: () => API.get('/vendors/bookings'),
+};
+
+export const locationAPI = {
+  autocomplete: (query) => API.get('/location/autocomplete', { params: { q: query } }),
 };
 
 export default API;

@@ -1,6 +1,12 @@
 const VendorProfile = require('../models/VendorProfile');
+const ParkingLocation = require('../models/ParkingLocation');
+const ParkingSlot = require('../models/ParkingSlot');
+const Booking = require('../models/Booking');
+const GeocodingService = require('../services/geocodingService');
+const { isIndianState, normalizeIndianState } = require('../constants/indianStates');
 
 const PROFILE_FIELDS = ['businessName', 'businessType', 'phone', 'address', 'city', 'state', 'pincode'];
+const EDITABLE_PROFILE_FIELDS = ['businessName', 'businessType', 'phone'];
 
 const pickProfileFields = (body) => PROFILE_FIELDS.reduce((result, field) => {
   if (body[field] !== undefined) result[field] = String(body[field]).trim();
@@ -16,8 +22,11 @@ const validateProfile = (profile, requireAll = true) => {
   const tooLong = Object.entries(profile).find(([field, value]) => value.length > limits[field]);
   if (tooLong) return `${tooLong[0]} is too long`;
   if (profile.pincode !== undefined && !/^[A-Za-z0-9 -]{3,12}$/.test(profile.pincode)) {
-    return 'Pincode must be between 3 and 12 letters or digits';
+    return 'Pincode must contain exactly 6 digits';
   }
+  if (profile.pincode !== undefined && !/^\d{6}$/.test(profile.pincode)) return 'Pincode must contain exactly 6 digits';
+  if (profile.phone !== undefined && !/^(?:\+91[ -]?)?[6-9]\d{9}$/.test(profile.phone.replace(/\s/g, ''))) return 'Enter a valid Indian phone number';
+  if (profile.state !== undefined && !isIndianState(normalizeIndianState(profile.state))) return 'Select a valid Indian state';
   return null;
 };
 
@@ -36,8 +45,39 @@ const registerVendor = async (req, res) => {
     const validationError = validateProfile(data);
     if (validationError) return res.status(400).json({ success: false, message: validationError });
 
+    const selectedAddress = GeocodingService.validateSelectedLocation({
+      selectionToken: req.body.selectionToken,
+      latitude: req.body.latitude,
+      longitude: req.body.longitude,
+    });
+    if (!selectedAddress) {
+      return res.status(400).json({ success: false, message: 'Select and confirm a valid business address' });
+    }
+    const selectedState = normalizeIndianState(selectedAddress.state);
+    const suppliedState = normalizeIndianState(data.state);
+    if (selectedState !== suppliedState) {
+      return res.status(400).json({ success: false, message: 'State must match the selected address' });
+    }
+
     const vendorProfile = await VendorProfile.create({
       ...data,
+      state: suppliedState,
+      businessAddress: {
+        formattedAddress: selectedAddress.formattedAddress,
+        addressLine1: selectedAddress.addressLine1,
+        city: data.city,
+        district: selectedAddress.district,
+        state: suppliedState,
+        pincode: data.pincode,
+        country: selectedAddress.country || 'India',
+        provider: selectedAddress.provider,
+        providerPlaceId: selectedAddress.providerPlaceId,
+        verified: true,
+      },
+      businessLocation: {
+        type: 'Point',
+        coordinates: [selectedAddress.longitude, selectedAddress.latitude],
+      },
       userId: req.user._id,
       verificationStatus: 'pending',
       vendorStatus: 'pending',
@@ -63,7 +103,10 @@ const getMyVendorProfile = async (req, res) => {
 
 const updateMyVendorProfile = async (req, res) => {
   try {
-    const updates = pickProfileFields(req.body);
+    const updates = EDITABLE_PROFILE_FIELDS.reduce((result, field) => {
+      if (req.body[field] !== undefined) result[field] = String(req.body[field]).trim();
+      return result;
+    }, {});
     if (!Object.keys(updates).length) {
       return res.status(400).json({ success: false, message: 'No editable profile fields were provided' });
     }
@@ -83,11 +126,23 @@ const updateMyVendorProfile = async (req, res) => {
 };
 
 const getVendorDashboard = async (req, res) => {
-  res.json({
-    success: true,
-    stats: { parkingLocations: 0, activeBookings: 0, totalEarnings: 0 },
-    vendorStatus: req.vendorProfile.vendorStatus,
-  });
+  try {
+    const locationIds = await ParkingLocation.find({ vendorId: req.vendorProfile._id }).distinct('_id');
+    const [totalSlots, availableSlots, occupiedSlots, slotIds] = await Promise.all([
+      ParkingSlot.countDocuments({ parkingLocation: { $in: locationIds } }),
+      ParkingSlot.countDocuments({ parkingLocation: { $in: locationIds }, status: 'available' }),
+      ParkingSlot.countDocuments({ parkingLocation: { $in: locationIds }, status: { $in: ['occupied', 'reserved'] } }),
+      ParkingSlot.find({ parkingLocation: { $in: locationIds } }).distinct('_id'),
+    ]);
+    const activeBookings = await Booking.countDocuments({ slot: { $in: slotIds }, status: { $in: ['active', 'upcoming'] } });
+    res.json({
+      success: true,
+      stats: { parkingLocations: locationIds.length, totalSlots, availableSlots, occupiedSlots, activeBookings, totalEarnings: 0 },
+      vendorStatus: req.vendorProfile.vendorStatus,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Unable to load vendor dashboard' });
+  }
 };
 
 module.exports = { registerVendor, getMyVendorProfile, updateMyVendorProfile, getVendorDashboard };

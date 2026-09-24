@@ -33,6 +33,10 @@ import VendorProfile from './pages/vendor/VendorProfile';
 import VendorApplication from './pages/vendor/VendorApplication';
 import VendorStatus from './pages/vendor/VendorStatus';
 import VendorPlaceholder from './pages/vendor/VendorPlaceholder';
+import ParkingLocations from './pages/vendor/ParkingLocations';
+import ParkingLocationEditor from './pages/vendor/ParkingLocationEditor';
+import VendorSlots from './pages/vendor/VendorSlots';
+import VendorBookings from './pages/vendor/VendorBookings';
 import { getDefaultRoute } from './utils/authRouting';
 
 // Protected Route
@@ -80,6 +84,11 @@ const AppRoutes = () => {
       <Route path="/vendor/status" element={<ProtectedRoute roles={['customer', 'vendor']}><VendorStatus /></ProtectedRoute>} />
       <Route path="/vendor" element={<ProtectedRoute roles={['vendor']} approvedVendor><VendorLayout /></ProtectedRoute>}>
         <Route index element={<VendorDashboard />} />
+        <Route path="locations" element={<ParkingLocations />} />
+        <Route path="locations/new" element={<ParkingLocationEditor />} />
+        <Route path="locations/:id/edit" element={<ParkingLocationEditor />} />
+        <Route path="slots" element={<VendorSlots />} />
+        <Route path="bookings" element={<VendorBookings />} />
         <Route path="profile" element={<VendorProfile />} />
         <Route path=":section" element={<VendorPlaceholder />} />
       </Route>

@@ -1,5 +1,13 @@
 const mongoose = require('mongoose');
 
+const geoPointSchema = new mongoose.Schema({
+  type: { type: String, enum: ['Point'], default: 'Point' },
+  coordinates: {
+    type: [Number],
+    validate: { validator: (value) => value?.length === 2, message: 'Business coordinates are invalid' },
+  },
+}, { _id: false });
+
 const vendorProfileSchema = new mongoose.Schema(
   {
     userId: {
@@ -16,6 +24,19 @@ const vendorProfileSchema = new mongoose.Schema(
     city: { type: String, required: true, trim: true, maxlength: 80 },
     state: { type: String, required: true, trim: true, maxlength: 80 },
     pincode: { type: String, required: true, trim: true, maxlength: 12 },
+    businessAddress: {
+      formattedAddress: String,
+      addressLine1: String,
+      city: String,
+      district: String,
+      state: String,
+      pincode: String,
+      country: { type: String, default: 'India' },
+      provider: String,
+      providerPlaceId: String,
+      verified: { type: Boolean, default: false },
+    },
+    businessLocation: { type: geoPointSchema, default: undefined },
     verificationStatus: {
       type: String,
       enum: ['pending', 'approved', 'rejected'],
@@ -37,5 +58,6 @@ const vendorProfileSchema = new mongoose.Schema(
 );
 
 vendorProfileSchema.index({ vendorStatus: 1, createdAt: -1 });
+vendorProfileSchema.index({ businessLocation: '2dsphere' }, { sparse: true });
 
 module.exports = mongoose.model('VendorProfile', vendorProfileSchema);

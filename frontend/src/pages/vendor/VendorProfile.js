@@ -6,7 +6,6 @@ import { vendorsAPI } from '../../services/api';
 
 const editableFields = [
   ['businessName', 'Business Name'], ['businessType', 'Business Type'], ['phone', 'Business Phone'],
-  ['address', 'Address'], ['city', 'City'], ['state', 'State'], ['pincode', 'Pincode'],
 ];
 
 export default function VendorProfile() {
@@ -51,6 +50,7 @@ export default function VendorProfile() {
           <div><div className="form-label">Vendor Name</div><div style={{ marginTop: 7 }}>{user.name}</div></div>
           <div><div className="form-label">Email</div><div style={{ marginTop: 7 }}>{user.email}</div></div>
           <div><div className="form-label">Approval Status</div><span className="badge badge-green" style={{ marginTop: 7 }}>{profile.vendorStatus}</span></div>
+          <div style={{ gridColumn: '1 / -1' }}><div className="form-label">Verified Business Address</div><div style={{ marginTop: 7 }}>{profile.businessAddress?.formattedAddress || `${profile.address}, ${profile.city}, ${profile.state} ${profile.pincode}`}</div></div>
         </div>
       </div>
       <form className="card" onSubmit={save}>

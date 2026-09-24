@@ -149,7 +149,9 @@ export default function BookingPage() {
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700 }}>{slot.slotNumber}</div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Floor {slot.floor} · Zone {slot.zone} · {slot.type}</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+              {slot.parkingLocation ? `${slot.parkingLocation.name} · ${slot.vehicleType}` : `Floor ${slot.floor} · Zone ${slot.zone} · ${slot.type}`}
+            </div>
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: 'var(--accent)' }}>₹{slot.pricePerHour}/hr</div>

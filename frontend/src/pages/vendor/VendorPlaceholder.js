@@ -2,7 +2,6 @@ import React from 'react';
 import { useParams } from 'react-router-dom';
 
 const labels = {
-  locations: 'My Parking Locations', bookings: 'Bookings', slots: 'Slots',
   transactions: 'Transactions', earnings: 'Earnings', settings: 'Settings',
 };
 

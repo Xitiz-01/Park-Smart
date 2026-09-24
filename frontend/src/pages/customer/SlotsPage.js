@@ -21,7 +21,9 @@ const SlotCard = ({ slot }) => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
         <div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700 }}>{slot.slotNumber}</div>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Floor {slot.floor} · Zone {slot.zone}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+            {slot.parkingLocation ? slot.parkingLocation.name : `Floor ${slot.floor} · Zone ${slot.zone}`}
+          </div>
         </div>
         <div>
           {slot.status === 'available' && <span className="badge badge-green">Available</span>}
@@ -33,7 +35,7 @@ const SlotCard = ({ slot }) => {
 
       {/* Type */}
       <div style={{ fontSize: 13, color: TYPE_COLORS[slot.type], marginBottom: 12, fontWeight: 600 }}>
-        {TYPE_LABELS[slot.type]}
+        {slot.vehicleType ? `${slot.vehicleType.toUpperCase()} · ${TYPE_LABELS[slot.type] || slot.type}` : TYPE_LABELS[slot.type]}
       </div>
 
       {/* Features */}

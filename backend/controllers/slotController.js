@@ -227,7 +227,7 @@ const getAllSlots = async (req, res) => {
     if (type) filter.type = type;
     if (status) filter.status = status;
 
-    const slots = await ParkingSlot.find(filter).populate('currentBooking');
+    const slots = await ParkingSlot.find(filter).populate('currentBooking').populate('parkingLocation', 'name address status');
     const totalSlots = await ParkingSlot.countDocuments();
     const availableSlots = await ParkingSlot.countDocuments({ status: 'available' });
 
@@ -264,7 +264,7 @@ const getNearbySlots = async (req, res) => {
     if (type) filter.type = type;
     if (status) filter.status = status;
 
-    const slots = await ParkingSlot.find(filter).populate('currentBooking');
+    const slots = await ParkingSlot.find(filter).populate('currentBooking').populate('parkingLocation', 'name address status');
     const nearby = slots
       .filter((slot) => Number.isFinite(slot.location?.lat) && Number.isFinite(slot.location?.lng))
       .map((slot) => {
@@ -387,7 +387,7 @@ const getExternalNearbyParking = async (req, res) => {
 // @route   GET /api/slots/:id
 const getSlotById = async (req, res) => {
   try {
-    const slot = await ParkingSlot.findById(req.params.id).populate('currentBooking');
+    const slot = await ParkingSlot.findById(req.params.id).populate('currentBooking').populate('parkingLocation', 'name address status');
     if (!slot) return res.status(404).json({ success: false, message: 'Slot not found' });
     res.json({ success: true, slot });
   } catch (error) {
@@ -441,7 +441,7 @@ const deleteSlot = async (req, res) => {
 // @route   POST /api/slots/seed
 const seedSlots = async (req, res) => {
   try {
-    await ParkingSlot.deleteMany({});
+    await ParkingSlot.deleteMany({ parkingLocation: null });
     const zones = ['A', 'B', 'C', 'D'];
     const floors = ['G', '1', '2'];
     const zoneCenters = {

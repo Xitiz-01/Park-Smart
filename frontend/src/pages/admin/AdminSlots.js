@@ -67,7 +67,7 @@ export default function AdminSlots() {
   };
 
   const handleSeed = async () => {
-    if (!window.confirm('This will DELETE all existing slots and create 60 new ones. Continue?')) return;
+    if (!window.confirm('This will replace legacy admin-managed slots with 60 seeded slots. Vendor-owned slots are preserved. Continue?')) return;
     setSeeding(true);
     try {
       const res = await slotsAPI.seed();
@@ -177,8 +177,8 @@ export default function AdminSlots() {
               {slots.map(slot => (
                 <tr key={slot._id}>
                   <td style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)', fontWeight: 700 }}>{slot.slotNumber}</td>
-                  <td>{slot.floor}</td>
-                  <td>{slot.zone}</td>
+                  <td>{slot.parkingLocation ? slot.parkingLocation.name : slot.floor}</td>
+                  <td>{slot.parkingLocation ? 'Vendor' : slot.zone}</td>
                   <td style={{ textTransform: 'capitalize' }}>{slot.type}</td>
                   <td><StatusBadge status={slot.status} /></td>
                   <td style={{ color: 'var(--accent)', fontWeight: 600 }}>₹{slot.pricePerHour}</td>

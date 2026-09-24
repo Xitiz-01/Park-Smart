@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { MapPin, CalendarDays, IndianRupee, BadgeCheck } from 'lucide-react';
+import { MapPin, CalendarDays, IndianRupee, BadgeCheck, ParkingSquare, CircleParking } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { vendorsAPI } from '../../services/api';
 
@@ -16,10 +16,13 @@ export default function VendorDashboard() {
 
   if (loading) return <div className="loading-spinner"><div className="spinner" /></div>;
 
-  const stats = data?.stats || { parkingLocations: 0, activeBookings: 0, totalEarnings: 0 };
+  const stats = data?.stats || { parkingLocations: 0, totalSlots: 0, availableSlots: 0, occupiedSlots: 0, activeBookings: 0, totalEarnings: 0 };
   const cards = [
     ['Vendor Status', data?.vendorStatus || 'active', 'var(--green)', <BadgeCheck size={21} />],
     ['Parking Locations', stats.parkingLocations, 'var(--accent)', <MapPin size={21} />],
+    ['Total Slots', stats.totalSlots, 'var(--accent)', <ParkingSquare size={21} />],
+    ['Available Slots', stats.availableSlots, 'var(--green)', <CircleParking size={21} />],
+    ['Occupied / Reserved', stats.occupiedSlots, 'var(--yellow)', <ParkingSquare size={21} />],
     ['Active Bookings', stats.activeBookings, 'var(--yellow)', <CalendarDays size={21} />],
     ['Total Earnings', `₹${stats.totalEarnings}`, 'var(--green)', <IndianRupee size={21} />],
   ];
@@ -37,8 +40,8 @@ export default function VendorDashboard() {
         ))}
       </div>
       <div className="card" style={{ marginTop: 24 }}>
-        <h2 style={{ fontSize: 17, marginBottom: 8 }}>Vendor workspace ready</h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Parking locations, bookings, slots, transactions, and earnings will connect to live marketplace data in later phases.</p>
+        <h2 style={{ fontSize: 17, marginBottom: 8 }}>Live parking operations</h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Location, slot, and booking totals are calculated from your vendor-owned parking data. Earnings remain ₹0 until payment processing is introduced.</p>
       </div>
     </div>
   );
