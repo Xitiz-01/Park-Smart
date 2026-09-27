@@ -16,6 +16,7 @@ export default function RegisterPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (form.password !== form.confirmPassword) return toast.error('Passwords do not match');
+    if (form.password.length < 8) return toast.error('Password must be at least 8 characters');
     setLoading(true);
     try {
       const { confirmPassword, ...data } = form;
@@ -23,7 +24,7 @@ export default function RegisterPage() {
       toast.success('Account created! Welcome to ParkSmart.');
       navigate('/dashboard');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Registration failed');
+      toast.error(error.message || 'Registration failed');
     } finally { setLoading(false); }
   };
 
@@ -40,7 +41,7 @@ export default function RegisterPage() {
           <div className="form-group"><label className="form-label" htmlFor="email">Email address</label><div className="input-with-icon"><Mail size={17} /><input id="email" name="email" type="email" className="form-input" placeholder="you@example.com" value={form.email} onChange={handleChange} autoComplete="email" required /></div></div>
           <div className="form-group"><label className="form-label" htmlFor="phone">Phone number</label><div className="input-with-icon"><Phone size={17} /><input id="phone" name="phone" type="tel" className="form-input" placeholder="+91 98765 43210" value={form.phone} onChange={handleChange} autoComplete="tel" required /></div></div>
         </div>
-        <div className="form-group"><label className="form-label" htmlFor="password">Password</label><div className="input-with-icon input-with-action"><LockKeyhole size={17} /><input id="password" name="password" type={showPassword ? 'text' : 'password'} className="form-input" placeholder="At least 6 characters" value={form.password} onChange={handleChange} autoComplete="new-password" minLength="6" required /><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button></div></div>
+        <div className="form-group"><label className="form-label" htmlFor="password">Password</label><div className="input-with-icon input-with-action"><LockKeyhole size={17} /><input id="password" name="password" type={showPassword ? 'text' : 'password'} className="form-input" placeholder="At least 8 characters" value={form.password} onChange={handleChange} autoComplete="new-password" minLength="8" required /><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button></div></div>
         <div className="form-group"><label className="form-label" htmlFor="confirmPassword">Confirm password</label><div className="input-with-icon"><LockKeyhole size={17} /><input id="confirmPassword" name="confirmPassword" type="password" className="form-input" placeholder="Re-enter your password" value={form.confirmPassword} onChange={handleChange} autoComplete="new-password" required /></div></div>
         <button type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading}>{loading ? <><span className="button-spinner" /> Creating account…</> : <>Create account <span aria-hidden="true">→</span></>}</button>
       </form>

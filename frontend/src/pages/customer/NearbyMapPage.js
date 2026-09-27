@@ -230,6 +230,7 @@ export default function NearbyMapPage() {
     if (!isOnline) return undefined;
     const socket = io((process.env.REACT_APP_API_URL || 'http://localhost:5001/api').replace('/api', ''), {
       transports: ['websocket'],
+      withCredentials: true,
     });
 
     socket.on('slot:updated', (updatedSlot) => {

@@ -7,15 +7,17 @@ const validCoordinate = (latitude, longitude) =>
   Number.isFinite(latitude) && latitude >= -90 && latitude <= 90 &&
   Number.isFinite(longitude) && longitude >= -180 && longitude <= 180;
 
+const selectionSecret = () => process.env.ADDRESS_SELECTION_SECRET || process.env.JWT_SECRET;
+
 const createSelectionToken = (place) => jwt.sign(
   { kind: 'geocoding-selection', place },
-  process.env.JWT_SECRET,
+  selectionSecret(),
   { expiresIn: '30m' }
 );
 
 const verifySelectionToken = (token) => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, selectionSecret());
     if (decoded.kind !== 'geocoding-selection' || !decoded.place) return null;
     const { latitude, longitude } = decoded.place;
     return validCoordinate(latitude, longitude) ? decoded.place : null;

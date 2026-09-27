@@ -2,13 +2,7 @@ import axios from 'axios';
 
 const API = axios.create({
   baseURL: process.env.REACT_APP_API_URL || '/api',
-});
-
-// Attach token to every request
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
+  withCredentials: true,
 });
 
 // Handle 401 globally
@@ -16,13 +10,9 @@ API.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-     if (err.response?.status === 401 && window.location.pathname !== '/login') {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
-  window.location.href = '/login';
-}
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(err);
   }
@@ -30,11 +20,8 @@ API.interceptors.response.use(
 
 // Auth
 export const authAPI = {
-  register: (data) => API.post('/auth/register', data),
-  login: (data) => API.post('/auth/login', data),
-  getProfile: () => API.get('/auth/profile'),
-  updateProfile: (data) => API.put('/auth/profile', data),
-  changePassword: (data) => API.put('/auth/change-password', data),
+  getProfile: () => API.get('/account/profile'),
+  updateProfile: (data) => API.put('/account/profile', data),
 };
 
 // Slots
@@ -73,6 +60,7 @@ export const adminAPI = {
   getDashboard: () => API.get('/admin/dashboard'),
   getUsers: () => API.get('/admin/users'),
   toggleUser: (id) => API.put(`/admin/users/${id}/toggle`),
+  setUserRole: (id, role) => API.patch(`/admin/users/${id}/role`, { role }),
   getVendors: (params) => API.get('/admin/vendors', { params }),
   getVendor: (id) => API.get(`/admin/vendors/${id}`),
   approveVendor: (id) => API.patch(`/admin/vendors/${id}/approve`),

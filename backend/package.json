@@ -7,18 +7,22 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "migrate:user-roles": "node scripts/migrateUserRoles.js",
+    "migrate:better-auth": "node scripts/migrateBetterAuthUsers.js",
     "migrate:parking-slot-indexes": "node scripts/migrateParkingSlotIndexes.js",
     "test:integration": "node --test tests/vendorFlow.integration.test.js"
   },
   "dependencies": {
+    "@better-auth/mongo-adapter": "1.7.6",
     "bcryptjs": "^2.4.3",
+    "better-auth": "1.7.6",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.4.1",
     "express-async-handler": "^1.2.0",
     "express-validator": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.21.0",
+    "mongoose": "^8.4.1",
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
