@@ -72,7 +72,7 @@ const AppRoutes = () => {
       </Route>
 
       {/* Admin Routes */}
-      <Route path="/admin" element={<ProtectedRoute roles={['admin']}><AdminLayout /></ProtectedRoute>}>
+      <Route path="/admin" element={<ProtectedRoute roles={['admin', 'super_admin']}><AdminLayout /></ProtectedRoute>}>
         <Route index element={<AdminDashboard />} />
         <Route path="slots" element={<AdminSlots />} />
         <Route path="bookings" element={<AdminBookings />} />

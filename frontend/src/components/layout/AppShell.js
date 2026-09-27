@@ -12,10 +12,14 @@ export default function AppShell({ navItems, roleLabel, identity, accent = 'emer
   const [open, setOpen] = useState(false);
   useEffect(() => setOpen(false), [location.pathname]);
 
-  const handleLogout = () => {
-    logout();
-    toast.success('Signed out securely');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success('Signed out securely');
+      navigate('/login');
+    } catch (error) {
+      toast.error('Unable to sign out. Please try again.');
+    }
   };
 
   const Sidebar = ({ mobile = false }) => <aside className={`ps-sidebar ${mobile ? `ps-sidebar-mobile ${open ? 'open' : ''}` : 'ps-sidebar-desktop'} role-${accent}`}>

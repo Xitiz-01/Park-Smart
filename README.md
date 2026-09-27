@@ -24,7 +24,7 @@ Install these before anything else:
 ```bash
 cd backend
 cp .env.example .env        # create your .env file
-# Edit .env with your MongoDB URI and a JWT secret
+# Edit .env with your MongoDB URI and Better Auth secrets
 npm install
 npm run dev
 ```
@@ -50,10 +50,15 @@ Frontend runs on: http://localhost:3000
 ```
 PORT=5000
 MONGODB_URI=mongodb://localhost:27017/parking-system
-JWT_SECRET=changethis_to_a_long_random_string
-JWT_EXPIRE=7d
 NODE_ENV=development
 CLIENT_URL=http://localhost:3000
+BETTER_AUTH_SECRET=replace_with_at_least_32_random_characters
+BETTER_AUTH_URL=http://localhost:5000
+BETTER_AUTH_TRUSTED_ORIGINS=http://localhost:3000
+BETTER_AUTH_SUPER_ADMIN_USER_IDS=
+BETTER_AUTH_CROSS_SITE_COOKIES=false
+BETTER_AUTH_MONGO_TRANSACTIONS=false
+ADDRESS_SELECTION_SECRET=replace_with_a_separate_long_random_string
 EXTERNAL_PARKING_CACHE_TTL_MS=120000
 GEOCODING_PROVIDER=geoapify
 GEOCODING_API_KEY=your_geoapify_api_key
@@ -62,7 +67,72 @@ GEOCODING_API_KEY=your_geoapify_api_key
 **frontend/.env**
 ```
 REACT_APP_API_URL=http://localhost:5000/api
+REACT_APP_AUTH_URL=http://localhost:5000
 ```
+
+Generate independent backend secrets with `openssl rand -base64 32`. `BETTER_AUTH_SECRET` signs/encrypts authentication state. `ADDRESS_SELECTION_SECRET` signs Geoapify selections and is not an authentication token secret.
+
+## Authentication & Authorization
+
+ParkSmart uses `better-auth` 1.7.6 with the official MongoDB adapter. Better Auth owns email/password signup, sign-in, password changes, sessions, sign-out, credential accounts, account-level bans, and its restricted Admin plugin. ParkSmart remains authoritative for business roles, vendor approval, ownership, and all domain records.
+
+The two identities are intentionally linked rather than merged:
+
+- Better Auth collections: `user`, `session`, `account`, and `verification`.
+- ParkSmart domain collections: `users`, `vendorprofiles`, `vehicles`, `bookings`, `parkinglocations`, `parkingslots`, and the existing supporting collections.
+- `users.authUserId` maps a Better Auth user to the existing ParkSmart user. The domain `_id` never changes, so all existing references remain valid.
+
+The backend pipeline is: Better Auth cookie session → Better Auth user → linked ParkSmart `User` → `req.user` → permission middleware → existing ownership checks. Public signup accepts no role and always creates a `customer` domain user.
+
+### ParkSmart roles and permissions
+
+- `customer`: read parking; create/read/cancel own bookings; manage own vehicles; apply to become a vendor.
+- `vendor`: customer capabilities where applicable; create and update owned parking locations; manage owned slots; read bookings for owned locations.
+- `admin`: review vendor applications; list users; activate/deactivate non-admin users; read/manage platform bookings and parking.
+- `super_admin`: all admin permissions plus promote customers to `admin`, demote admins, and manage admin account status.
+
+The reusable permission registry is in `backend/auth/permissions.js`. Controllers still enforce ownership by querying with both resource ID and the authenticated domain owner. Frontend route guards improve UX, but backend permissions are authoritative.
+
+### Existing-user migration
+
+The migration is non-destructive and idempotent. It copies each existing bcrypt hash into a Better Auth credential account, creates/links the Better Auth user, sets `users.authUserId`, preserves the ParkSmart `_id`, role, active state, and every domain relationship, and creates safe auth/link indexes. The legacy domain password field is retained for rollback safety but is no longer read by runtime authentication.
+
+First run a read-only preview:
+
+```bash
+cd backend
+npm run migrate:better-auth
+```
+
+The command prints the resolved database name. After backing up and reviewing it, apply only to that exact database:
+
+```bash
+npm run migrate:better-auth -- --apply --confirm-db=parking-system
+```
+
+Users without a legacy password hash are reported and skipped. Never run the command with a production URI until the dry run and backup have been verified.
+
+### Initial SUPER_ADMIN bootstrap
+
+No MongoDB editing is required:
+
+1. Run the existing-user migration, or create the first account through ParkSmart signup.
+2. Sign in and copy the **Auth ID** shown on the Profile page (the same ID is returned by `/api/auth/get-session`).
+3. Set `BETTER_AUTH_SUPER_ADMIN_USER_IDS=<that-id>` on the backend. Multiple IDs may be comma-separated.
+4. Restart/redeploy the backend, then refresh the signed-in profile or sign in again. ParkSmart maps that explicit identity to `super_admin`.
+5. Open **Admin → Users** and promote eligible customers to `admin`.
+
+`admin` users cannot create admins or grant `super_admin`. Vendor access is never assigned from User Management; it continues to require the vendor application workflow. Bootstrap SUPER_ADMIN records cannot be demoted or deactivated in the dashboard.
+
+### Local, Render, and Vercel configuration
+
+For local development, use the example values above and keep `BETTER_AUTH_CROSS_SITE_COOKIES=false`.
+
+On Render, set `MONGODB_URI`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL=https://<render-service>`, `CLIENT_URL=https://<vercel-site>`, `BETTER_AUTH_TRUSTED_ORIGINS=https://<vercel-site>`, the optional bootstrap ID, `ADDRESS_SELECTION_SECRET`, and the Geoapify variables. Use `BETTER_AUTH_MONGO_TRANSACTIONS=true` only for a Mongo deployment that supports transactions. Never place backend secrets in Vercel or in `REACT_APP_*` variables.
+
+On Vercel, set `REACT_APP_API_URL=https://<render-service>/api` and `REACT_APP_AUTH_URL=https://<render-service>`, then redeploy because React embeds these values at build time. The frontend sends credentials for both Axios and Socket.IO.
+
+Raw `*.vercel.app` → `*.onrender.com` traffic is cross-site. If those hostnames are used directly, set `BETTER_AUTH_CROSS_SITE_COOKIES=true` on Render so cookies are `Secure; SameSite=None`; note that browser third-party-cookie policies, especially Safari, can still block this setup. The production-safe recommendation is to configure custom sibling domains such as `app.example.com` and `api.example.com` (and list the app origin as trusted), or proxy `/api` through the frontend domain. Keep the default same-site cookie mode when using sibling/proxied domains.
 
 ## CI/CD
 
@@ -85,17 +155,9 @@ The intended development flow is:
 7. Merge only after the required checks pass.
 8. Let Vercel and Render deploy the merged `main` branch automatically.
 
-Production credentials, including the production MongoDB URI, JWT secret, and Geoapify key, stay in the Vercel or Render environment configuration. They must not be added to GitHub Actions for this workflow.
+Production credentials, including the production MongoDB URI, Better Auth secret, address-selection secret, and Geoapify key, stay in Render environment configuration. They must not be added to GitHub Actions for this workflow.
 
 ---
-
-## Creating the Admin Account
-
-1. Register a normal account via the website
-2. Open **MongoDB Compass**, connect to your DB
-3. Go to `parking-system` → `users`
-4. Find your user, click Edit, change `role` from `"customer"` to `"admin"`
-5. Log out and log back in — you'll land on the Admin Panel
 
 ## Vendor onboarding (Phase 1)
 
@@ -107,7 +169,7 @@ Vendor access uses an approval workflow rather than a public role selector:
 4. Approval changes the user's role to `vendor` and activates the vendor profile.
 5. Rejection retains the application record. Suspension removes operational vendor access immediately.
 
-JWTs contain only the user ID. Protected requests reload the current user and vendor status from MongoDB, so approval and suspension apply to already-issued tokens without requiring a token refresh.
+Protected requests resolve the Better Auth session and reload the current ParkSmart user and vendor status from MongoDB, so approval and suspension apply without trusting stale frontend role state.
 
 For older records that have no role field, an optional idempotent migration is available:
 
@@ -189,8 +251,11 @@ parking-system/
 
 | Method | Route | Access | Description |
 |--------|-------|--------|-------------|
-| POST | /api/auth/register | Public | Register customer |
-| POST | /api/auth/login | Public | Login |
+| POST | /api/auth/sign-up/email | Public | Better Auth customer signup |
+| POST | /api/auth/sign-in/email | Public | Better Auth email/password sign-in |
+| POST | /api/auth/sign-out | Authenticated | Invalidate current session |
+| GET | /api/auth/get-session | Authenticated | Better Auth session |
+| GET/PUT | /api/account/profile | Authenticated | ParkSmart domain profile |
 | GET | /api/slots | Protected | Get all slots |
 | POST | /api/slots/seed | Admin | Seed 60 slots |
 | POST | /api/bookings | Customer | Create booking |
@@ -199,6 +264,7 @@ parking-system/
 | PUT | /api/bookings/:id/checkout | Admin | Check out |
 | GET | /api/admin/dashboard | Admin | Dashboard stats |
 | GET | /api/admin/users | Admin | All users |
+| PATCH | /api/admin/users/:id/role | Super Admin | Promote/demote an admin |
 | POST | /api/vendors/register | Customer | Submit vendor application |
 | GET | /api/vendors/me | Authenticated | View own vendor profile/status |
 | PUT | /api/vendors/me | Authenticated | Edit safe vendor profile fields |

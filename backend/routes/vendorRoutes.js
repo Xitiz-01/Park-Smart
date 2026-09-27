@@ -5,19 +5,19 @@ const {
   updateMyVendorProfile,
   getVendorDashboard,
 } = require('../controllers/vendorController');
-const { protect, authorizeRoles } = require('../middleware/authMiddleware');
+const { protect, requirePermission } = require('../middleware/authMiddleware');
 const { requireApprovedVendor } = require('../middleware/vendorMiddleware');
 const parking = require('../controllers/vendorParkingController');
 
 const router = express.Router();
 
 router.use(protect);
-router.post('/register', registerVendor);
+router.post('/register', requirePermission('vendor:apply'), registerVendor);
 router.get('/me', getMyVendorProfile);
 router.put('/me', updateMyVendorProfile);
-router.get('/dashboard', authorizeRoles('vendor'), requireApprovedVendor, getVendorDashboard);
+router.get('/dashboard', requirePermission('parking:create'), requireApprovedVendor, getVendorDashboard);
 
-router.use(authorizeRoles('vendor'), requireApprovedVendor);
+router.use(requirePermission('parking:create'), requireApprovedVendor);
 router.get('/parking-locations', parking.getParkingLocations);
 router.post('/parking-locations', parking.createParkingLocation);
 router.get('/parking-locations/:id', parking.getParkingLocation);

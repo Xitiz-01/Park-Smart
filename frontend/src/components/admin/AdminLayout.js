@@ -1,6 +1,7 @@
 import React from 'react';
 import { CalendarDays, LayoutDashboard, MapPin, Store, Users } from 'lucide-react';
 import AppShell from '../layout/AppShell';
+import { useAuth } from '../../context/AuthContext';
 
 const navItems = [
   { to: '/admin', icon: LayoutDashboard, label: 'Overview', end: true },
@@ -11,5 +12,6 @@ const navItems = [
 ];
 
 export default function AdminLayout() {
-  return <AppShell navItems={navItems} roleLabel="Admin control" accent="graphite" />;
+  const { isSuperAdmin } = useAuth();
+  return <AppShell navItems={navItems} roleLabel={isSuperAdmin ? 'Super Admin control' : 'Admin control'} accent="graphite" />;
 }

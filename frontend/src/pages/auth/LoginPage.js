@@ -22,7 +22,7 @@ export default function LoginPage() {
       toast.success(`Welcome back, ${user.name}!`);
       navigate(getDefaultRoute(user));
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Login failed');
+      toast.error(error.message || 'Login failed');
     } finally { setLoading(false); }
   };
 

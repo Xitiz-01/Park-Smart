@@ -1,87 +1,87 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { authClient } from '../lib/authClient';
 import { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('user')); } catch { return null; }
-  });
-  const [loading, setLoading] = useState(true);
+const authError = (error, fallback) => {
+  const normalized = new Error(error?.message || fallback);
+  normalized.code = error?.code;
+  normalized.status = error?.status;
+  return normalized;
+};
 
-  const saveSessionUser = (account, vendorProfile = null) => {
-    const nextUser = account ? { ...account, vendorProfile } : null;
-    if (nextUser) localStorage.setItem('user', JSON.stringify(nextUser));
-    else localStorage.removeItem('user');
+export const AuthProvider = ({ children }) => {
+  const { data: authSession, isPending: sessionPending, refetch: refetchSession } = authClient.useSession();
+  const [user, setUser] = useState(null);
+  const [profilePending, setProfilePending] = useState(true);
+
+  const refreshUser = async () => {
+    const res = await authAPI.getProfile();
+    const nextUser = { ...res.data.user, vendorProfile: res.data.vendorProfile };
     setUser(nextUser);
     return nextUser;
   };
 
-  const refreshUser = async () => {
-    const res = await authAPI.getProfile();
-    return saveSessionUser(res.data.user, res.data.vendorProfile);
-  };
-
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      refreshUser()
-        .catch(() => { localStorage.removeItem('token'); localStorage.removeItem('user'); setUser(null); })
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
+    if (sessionPending) return;
+    if (!authSession?.user) {
+      setUser(null);
+      setProfilePending(false);
+      return;
     }
-  }, []);
+    setProfilePending(true);
+    refreshUser()
+      .catch(() => setUser(null))
+      .finally(() => setProfilePending(false));
+  }, [sessionPending, authSession?.user?.id]);
 
-const login = async (credentials) => {
-  try {
-    const res = await authAPI.login(credentials);
-    const { token, user, vendorProfile } = res.data;
-
-    localStorage.setItem('token', token);
-    return saveSessionUser(user, vendorProfile);
-  } catch (error) {
-    throw error; 
-  }
-};
-  
-
- const register = async (data) => {
-  try {
-    const res = await authAPI.register(data);
-    const { token, user, vendorProfile } = res.data;
-
-    localStorage.setItem('token', token);
-    return saveSessionUser(user, vendorProfile);
-  } catch (error) {
-    throw error; 
-  }
-};
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
+  const login = async ({ email, password }) => {
+    const result = await authClient.signIn.email({ email: email.trim(), password });
+    if (result.error) throw authError(result.error, 'Login failed');
+    await refetchSession();
+    return refreshUser();
   };
 
-  return (
-    <AuthContext.Provider value={{
-      user,
-      login,
-      register,
-      logout,
-      refreshUser,
-      loading,
-      isAdmin: user?.role === 'admin',
-      isApprovedVendor: user?.role === 'vendor' && user?.vendorProfile?.vendorStatus === 'active',
-    }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const register = async ({ name, email, phone, password }) => {
+    const result = await authClient.signUp.email({
+      name: name.trim(),
+      email: email.trim(),
+      phone: phone.trim(),
+      password,
+    });
+    if (result.error) throw authError(result.error, 'Registration failed');
+    await refetchSession();
+    return refreshUser();
+  };
+
+  const logout = async () => {
+    try {
+      await authClient.signOut();
+    } finally {
+      setUser(null);
+      await refetchSession();
+    }
+  };
+
+  const value = useMemo(() => ({
+    user,
+    authSession,
+    login,
+    register,
+    logout,
+    refreshUser,
+    loading: sessionPending || profilePending,
+    isAdmin: ['admin', 'super_admin'].includes(user?.role),
+    isSuperAdmin: user?.role === 'super_admin',
+    isApprovedVendor: user?.role === 'vendor' && user?.vendorProfile?.vendorStatus === 'active',
+  }), [user, authSession, sessionPending, profilePending]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used inside AuthProvider');
-  return ctx;
+  const context = useContext(AuthContext);
+  if (!context) throw new Error('useAuth must be used inside AuthProvider');
+  return context;
 };

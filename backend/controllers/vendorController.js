@@ -32,10 +32,6 @@ const validateProfile = (profile, requireAll = true) => {
 
 const registerVendor = async (req, res) => {
   try {
-    if (req.user.role !== 'customer') {
-      return res.status(403).json({ success: false, message: 'Only customer accounts can submit a vendor application' });
-    }
-
     const existing = await VendorProfile.findOne({ userId: req.user._id });
     if (existing) {
       return res.status(409).json({ success: false, message: 'A vendor application already exists for this account' });

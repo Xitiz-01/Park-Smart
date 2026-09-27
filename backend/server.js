@@ -7,9 +7,21 @@ const connectDB = require('./config/db');
 
 dotenv.config();
 
+const { betterAuthHandler } = require('./auth/betterAuthBridge');
+const { authenticateSocket } = require('./middleware/authMiddleware');
+
 const app = express();
 const server = http.createServer(app);
-const allowedOrigins = [process.env.CLIENT_URL, 'http://localhost:3000', 'https://park-smart-eight.vercel.app'].filter(Boolean);
+const configuredOrigins = (process.env.BETTER_AUTH_TRUSTED_ORIGINS || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const allowedOrigins = [...new Set([
+  process.env.CLIENT_URL,
+  'http://localhost:3000',
+  'https://park-smart-eight.vercel.app',
+  ...configuredOrigins,
+].filter(Boolean))];
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
@@ -19,6 +31,7 @@ const io = new Server(server, {
 });
 app.set('io', io);
 
+io.use(authenticateSocket);
 io.on('connection', (socket) => {
   socket.emit('socket:connected', { connected: true });
 });
@@ -27,13 +40,16 @@ app.use(cors({
   origin: allowedOrigins,
   credentials: true,
 }));
+// Better Auth must receive the untouched request body. Keep this mount before
+// express.json() and express.urlencoded().
+app.all('/api/auth/*', betterAuthHandler);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.get("/api", (req, res) => {
   res.send("API is working");
 });
 // Routes
-app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/account', require('./routes/accountRoutes'));
 app.use('/api/slots', require('./routes/slotRoutes'));
 app.use('/api/bookings', require('./routes/bookingRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));

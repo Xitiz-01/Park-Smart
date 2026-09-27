@@ -3,6 +3,7 @@ const Booking = require('../models/Booking');
 const ParkingSlot = require('../models/ParkingSlot');
 const VendorProfile = require('../models/VendorProfile');
 const mongoose = require('mongoose');
+const { setAuthUserRole, setAuthAccountActive } = require('../auth/betterAuthBridge');
 
 // @desc    Get dashboard stats
 // @route   GET /api/admin/dashboard
@@ -58,7 +59,7 @@ const getDashboardStats = async (req, res) => {
 // @route   GET /api/admin/users
 const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find({ role: 'customer' }).sort({ createdAt: -1 });
+    const users = await User.find().sort({ createdAt: -1 });
     res.json({ success: true, users });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -71,13 +72,61 @@ const toggleUserStatus = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-    if (user.role === 'admin') return res.status(400).json({ success: false, message: 'Cannot modify admin accounts' });
+    if (user.role === 'super_admin') {
+      return res.status(400).json({ success: false, message: 'Bootstrap SUPER_ADMIN accounts cannot be deactivated here' });
+    }
+    if (user.role === 'admin' && req.user.role !== 'super_admin') {
+      return res.status(403).json({ success: false, message: 'Only a SUPER_ADMIN can modify ADMIN accounts' });
+    }
+    if (user._id.equals(req.user._id)) {
+      return res.status(400).json({ success: false, message: 'You cannot deactivate your own account' });
+    }
 
     user.isActive = !user.isActive;
     await user.save();
+    if (user.authUserId) {
+      await setAuthAccountActive(user.authUserId, user.isActive, `Changed by ${req.user.email}`);
+    }
     res.json({ success: true, message: `User ${user.isActive ? 'activated' : 'deactivated'}`, user });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const setUserAdminRole = async (req, res) => {
+  try {
+    const nextRole = req.body.role;
+    if (!['customer', 'admin'].includes(nextRole)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Only CUSTOMER and ADMIN are valid here. Vendor access requires approval and SUPER_ADMIN is bootstrap-only.',
+      });
+    }
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    if (!user.authUserId) {
+      return res.status(409).json({ success: false, message: 'Migrate this user to Better Auth before changing its role' });
+    }
+    if (user.role === 'super_admin') {
+      return res.status(400).json({ success: false, message: 'Bootstrap SUPER_ADMIN role cannot be changed in the dashboard' });
+    }
+    if (user.role === 'vendor') {
+      return res.status(400).json({ success: false, message: 'Vendor roles are managed through the vendor approval workflow' });
+    }
+    if (user._id.equals(req.user._id)) {
+      return res.status(400).json({ success: false, message: 'You cannot change your own administrative role' });
+    }
+
+    const authRole = nextRole === 'admin' ? 'admin' : 'user';
+    await setAuthUserRole({ headers: req.headers, userId: user.authUserId, role: authRole });
+    user.role = nextRole;
+    await user.save();
+    return res.json({ success: true, message: `User role changed to ${nextRole}`, user });
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.body?.message || error.message || 'Unable to change user role',
+    });
   }
 };
 
@@ -145,7 +194,7 @@ const updateVendorStatus = async (req, res, action) => {
         return res.status(409).json({ success: false, message: 'Only an active vendor can be suspended' });
       }
       const user = await User.findById(vendor.userId);
-      if (user && user.role !== 'admin') {
+      if (user && !['admin', 'super_admin'].includes(user.role)) {
         user.role = 'customer';
         await user.save();
       }
@@ -179,6 +228,7 @@ module.exports = {
   getDashboardStats,
   getAllUsers,
   toggleUserStatus,
+  setUserAdminRole,
   getVendors,
   getVendorById,
   approveVendor,

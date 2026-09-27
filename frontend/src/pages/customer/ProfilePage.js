@@ -3,9 +3,10 @@ import { useAuth } from '../../context/AuthContext';
 import { authAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 import { User, Lock } from 'lucide-react';
+import { authClient } from '../../lib/authClient';
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [profileForm, setProfileForm] = useState({ name: user?.name || '', phone: user?.phone || '' });
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [savingProfile, setSavingProfile] = useState(false);
@@ -16,6 +17,7 @@ export default function ProfilePage() {
     setSavingProfile(true);
     try {
       await authAPI.updateProfile(profileForm);
+      await refreshUser();
       toast.success('Profile updated');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Update failed');
@@ -29,11 +31,17 @@ export default function ProfilePage() {
     if (pwForm.newPassword !== pwForm.confirmPassword) return toast.error('Passwords do not match');
     setSavingPw(true);
     try {
-      await authAPI.changePassword({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
+      if (pwForm.newPassword.length < 8) return toast.error('New password must be at least 8 characters');
+      const result = await authClient.changePassword({
+        currentPassword: pwForm.currentPassword,
+        newPassword: pwForm.newPassword,
+        revokeOtherSessions: true,
+      });
+      if (result.error) throw new Error(result.error.message);
       toast.success('Password changed successfully');
       setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to change password');
+      toast.error(err.message || 'Failed to change password');
     } finally {
       setSavingPw(false);
     }
@@ -53,10 +61,15 @@ export default function ProfilePage() {
         </div>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
           <span className="badge badge-info" style={{ fontSize: 13, padding: '4px 12px' }}>
-            {user?.role === 'admin' ? '🛡 Admin' : '👤 Customer'}
+            {{ customer: '👤 Customer', vendor: '🏢 Vendor', admin: '🛡 Admin', super_admin: '🔐 Super Admin' }[user?.role] || '👤 Customer'}
           </span>
           <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{user?.email}</span>
         </div>
+        {user?.authUserId && (
+          <p style={{ margin: '-12px 0 20px', fontSize: 12, color: 'var(--text-muted)' }}>
+            Auth ID: <code>{user.authUserId}</code>
+          </p>
+        )}
         <form onSubmit={handleProfileSave} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="form-group">
             <label className="form-label">Full Name</label>
@@ -89,7 +102,7 @@ export default function ProfilePage() {
           </div>
           <div className="form-group">
             <label className="form-label">New Password</label>
-            <input type="password" className="form-input" value={pwForm.newPassword}
+            <input type="password" className="form-input" minLength="8" value={pwForm.newPassword}
               onChange={e => setPwForm({ ...pwForm, newPassword: e.target.value })} required />
           </div>
           <div className="form-group">
