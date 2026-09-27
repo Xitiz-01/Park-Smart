@@ -1,32 +1,59 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 const TEST_DB_NAME = 'parksmart-phase2-test';
 const mongoBase = process.env.TEST_MONGODB_URI || 'mongodb://127.0.0.1:27028';
 const mongoUri = `${mongoBase.replace(/\/$/, '')}/${TEST_DB_NAME}`;
 
 process.env.NODE_ENV = 'test';
-process.env.JWT_SECRET = 'parksmart-phase-two-integration-secret';
+process.env.ADDRESS_SELECTION_SECRET = 'parksmart-address-selection-integration-secret';
+process.env.MONGODB_URI = mongoUri;
+process.env.BETTER_AUTH_SECRET = 'parksmart-better-auth-test-secret-32-characters-minimum';
 process.env.GEOCODING_PROVIDER = 'geoapify';
 process.env.GEOCODING_API_KEY = 'test-key';
 
 const { app, server } = require('../server');
 const User = require('../models/User');
 const GeocodingService = require('../services/geocodingService');
+const { migrateExistingUsers } = require('../services/betterAuthMigration');
+const { closeBetterAuth } = require('../auth/betterAuthBridge');
 
 let baseUrl;
 const originalFetch = global.fetch;
 
-const request = async (path, { method = 'GET', token, body } = {}) => {
+class CookieJar {
+  constructor() { this.cookies = new Map(); }
+
+  update(response) {
+    const values = response.headers.getSetCookie
+      ? response.headers.getSetCookie()
+      : (response.headers.get('set-cookie') || '').split(/,(?=[^;,]+=)/);
+    values.filter(Boolean).forEach((value) => {
+      const [pair] = value.split(';');
+      const separator = pair.indexOf('=');
+      const name = pair.slice(0, separator);
+      const cookieValue = pair.slice(separator + 1);
+      if (cookieValue) this.cookies.set(name, cookieValue);
+      else this.cookies.delete(name);
+    });
+  }
+
+  header() { return [...this.cookies.entries()].map(([name, value]) => `${name}=${value}`).join('; '); }
+}
+
+const request = async (path, { method = 'GET', client, body } = {}) => {
   const response = await originalFetch(`${baseUrl}${path}`, {
     method,
     headers: {
       ...(body ? { 'Content-Type': 'application/json' } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      Origin: 'http://localhost:3000',
+      ...(client?.header() ? { Cookie: client.header() } : {}),
     },
     body: body ? JSON.stringify(body) : undefined,
   });
+  client?.update(response);
   return { status: response.status, payload: await response.json() };
 };
 
@@ -67,9 +94,19 @@ const locationPayload = (name, address, pricing = { car: 50, bike: 20, ev: 70 })
   amenities: ['covered', 'cctv', 'security_guard', 'accessible'], pricing,
 });
 
-const register = (name, email, phone) => request('/auth/register', {
-  method: 'POST', body: { name, email, phone, password: 'secret12', role: 'admin' },
-});
+const register = async (name, email, phone, extras = {}) => {
+  const client = new CookieJar();
+  const response = await request('/auth/sign-up/email', {
+    method: 'POST', client, body: { name, email, phone, password: 'secret12', ...extras },
+  });
+  return { ...response, client };
+};
+
+const login = async (email, password = 'secret12') => {
+  const client = new CookieJar();
+  const response = await request('/auth/sign-in/email', { method: 'POST', client, body: { email, password } });
+  return { ...response, client };
+};
 
 test.before(async () => {
   await mongoose.connect(mongoUri);
@@ -86,62 +123,70 @@ test.after(async () => {
     await mongoose.disconnect();
   }
   if (server.listening) await new Promise((resolve) => server.close(resolve));
+  await closeBetterAuth();
 });
 
-test('Phase 1 roles and Phase 2 vendor parking management work end-to-end', async () => {
+test('Better Auth, RBAC, migration, and ParkSmart domain flows work end-to-end', async () => {
   const vendorARegistration = await register('Vendor A', 'vendor-a@example.com', '9000000001');
-  assert.equal(vendorARegistration.status, 201);
-  assert.equal(vendorARegistration.payload.user.role, 'customer', 'registration cannot self-assign admin');
-  const vendorAToken = vendorARegistration.payload.token;
+  assert.equal(vendorARegistration.status, 200);
+  const vendorAProfile = await request('/account/profile', { client: vendorARegistration.client });
+  assert.equal(vendorAProfile.payload.user.role, 'customer');
+  const vendorAClient = vendorARegistration.client;
   const vendorBRegistration = await register('Vendor B', 'vendor-b@example.com', '9000000002');
-  const vendorBToken = vendorBRegistration.payload.token;
+  const vendorBClient = vendorBRegistration.client;
   const customerRegistration = await register('Customer', 'customer@example.com', '9000000003');
-  const customerToken = customerRegistration.payload.token;
-  await register('Admin', 'admin@example.com', '9000000004');
-  await User.updateOne({ email: 'admin@example.com' }, { $set: { role: 'admin' } });
-  const adminLogin = await request('/auth/login', { method: 'POST', body: { email: 'admin@example.com', password: 'secret12' } });
+  const customerClient = customerRegistration.client;
+  const adminRegistration = await register('Admin', 'admin@example.com', '9000000004');
+  process.env.BETTER_AUTH_SUPER_ADMIN_USER_IDS = adminRegistration.payload.user.id;
+  await request('/account/profile', { client: adminRegistration.client });
+  const adminLogin = await login('admin@example.com');
   assert.equal(adminLogin.status, 200, 'admin login still works');
-  const adminToken = adminLogin.payload.token;
-  assert.equal((await request('/auth/login', { method: 'POST', body: { email: 'customer@example.com', password: 'secret12' } })).status, 200, 'customer login still works');
+  const adminClient = adminLogin.client;
+  assert.equal((await login('customer@example.com')).status, 200, 'customer login still works');
+
+  const roleInjection = await register('Injected Role', 'injected@example.com', '9000000009', { role: 'admin' });
+  assert.equal(roleInjection.status, 400, 'public signup cannot self-assign ADMIN');
+  assert.equal((await request('/admin/dashboard')).status, 401, 'unauthenticated API access is rejected');
+  assert.equal((await request('/admin/dashboard', { client: customerClient })).status, 403, 'customer cannot access admin APIs');
 
   const noSelectedAddress = await request('/vendors/register', {
-    method: 'POST', token: vendorAToken,
+    method: 'POST', client: vendorAClient,
     body: { ...applicationPayload('Invalid Address Vendor', '9000000001'), selectionToken: '' },
   });
   assert.equal(noSelectedAddress.status, 400, 'unselected address is rejected');
   const invalidState = await request('/vendors/register', {
-    method: 'POST', token: vendorAToken,
+    method: 'POST', client: vendorAClient,
     body: { ...applicationPayload('Invalid State Vendor', '9000000001'), state: 'Atlantis' },
   });
   assert.equal(invalidState.status, 400, 'invalid state is rejected');
 
-  const applicationA = await request('/vendors/register', { method: 'POST', token: vendorAToken, body: applicationPayload('Vendor A Parking', '9000000001') });
+  const applicationA = await request('/vendors/register', { method: 'POST', client: vendorAClient, body: applicationPayload('Vendor A Parking', '9000000001') });
   assert.equal(applicationA.status, 201);
   assert.deepEqual(applicationA.payload.vendorProfile.businessLocation.coordinates, [73.8264, 18.6712]);
-  assert.equal((await request('/vendors/parking-locations', { token: vendorAToken })).status, 403, 'pending vendor cannot manage parking');
+  assert.equal((await request('/vendors/parking-locations', { client: vendorAClient })).status, 403, 'pending vendor cannot manage parking');
 
   const bAddress = selected({ formattedAddress: 'Baner, Pune, Maharashtra 411045, India', addressLine1: 'Baner Road', city: 'Pune', pincode: '411045', latitude: 18.559, longitude: 73.7868, providerPlaceId: 'test-place-baner' });
-  const applicationB = await request('/vendors/register', { method: 'POST', token: vendorBToken, body: applicationPayload('Vendor B Parking', '9000000002', bAddress) });
-  await request(`/admin/vendors/${applicationA.payload.vendorProfile._id}/approve`, { method: 'PATCH', token: adminToken });
-  await request(`/admin/vendors/${applicationB.payload.vendorProfile._id}/approve`, { method: 'PATCH', token: adminToken });
-  assert.equal((await request('/vendors/parking-locations', { token: vendorAToken })).status, 200, 'approved vendor can manage parking');
-  assert.equal((await request('/vendors/parking-locations', { token: customerToken })).status, 403, 'customer cannot access vendor parking APIs');
-  assert.equal((await request('/admin/dashboard', { token: adminToken })).status, 200, 'admin access remains intact');
+  const applicationB = await request('/vendors/register', { method: 'POST', client: vendorBClient, body: applicationPayload('Vendor B Parking', '9000000002', bAddress) });
+  await request(`/admin/vendors/${applicationA.payload.vendorProfile._id}/approve`, { method: 'PATCH', client: adminClient });
+  await request(`/admin/vendors/${applicationB.payload.vendorProfile._id}/approve`, { method: 'PATCH', client: adminClient });
+  assert.equal((await request('/vendors/parking-locations', { client: vendorAClient })).status, 200, 'approved vendor can manage parking');
+  assert.equal((await request('/vendors/parking-locations', { client: customerClient })).status, 403, 'customer cannot access vendor parking APIs');
+  assert.equal((await request('/admin/dashboard', { client: adminClient })).status, 200, 'admin access remains intact');
 
   const invalidCoordinates = await request('/vendors/parking-locations', {
-    method: 'POST', token: vendorAToken, body: { ...locationPayload('Bad Coordinates', selected()), latitude: 999 },
+    method: 'POST', client: vendorAClient, body: { ...locationPayload('Bad Coordinates', selected()), latitude: 999 },
   });
   assert.equal(invalidCoordinates.status, 400);
   const negativePricing = await request('/vendors/parking-locations', {
-    method: 'POST', token: vendorAToken, body: locationPayload('Bad Pricing', selected(), { car: -1, bike: 20, ev: 70 }),
+    method: 'POST', client: vendorAClient, body: locationPayload('Bad Pricing', selected(), { car: -1, bike: 20, ev: 70 }),
   });
   assert.equal(negativePricing.status, 400);
 
   const moshiAddress = selected();
   const wakadAddress = selected({ formattedAddress: 'Wakad, Pune, Maharashtra 411057, India', addressLine1: 'Wakad Road', city: 'Pune', pincode: '411057', latitude: 18.5975, longitude: 73.7898, providerPlaceId: 'test-place-wakad' });
-  const createMoshi = await request('/vendors/parking-locations', { method: 'POST', token: vendorAToken, body: locationPayload('Moshi Parking', moshiAddress, { car: 50, bike: 20, ev: 70 }) });
-  const createWakad = await request('/vendors/parking-locations', { method: 'POST', token: vendorAToken, body: locationPayload('Wakad Parking', wakadAddress, { car: 80, bike: 30, ev: 100 }) });
-  const createBaner = await request('/vendors/parking-locations', { method: 'POST', token: vendorBToken, body: locationPayload('Baner Parking', bAddress, { car: 65, bike: 25, ev: 85 }) });
+  const createMoshi = await request('/vendors/parking-locations', { method: 'POST', client: vendorAClient, body: locationPayload('Moshi Parking', moshiAddress, { car: 50, bike: 20, ev: 70 }) });
+  const createWakad = await request('/vendors/parking-locations', { method: 'POST', client: vendorAClient, body: locationPayload('Wakad Parking', wakadAddress, { car: 80, bike: 30, ev: 100 }) });
+  const createBaner = await request('/vendors/parking-locations', { method: 'POST', client: vendorBClient, body: locationPayload('Baner Parking', bAddress, { car: 65, bike: 25, ev: 85 }) });
   assert.equal(createMoshi.status, 201);
   assert.equal(createWakad.status, 201, 'vendor can create multiple locations');
   assert.equal(createMoshi.payload.location.pricing.car, 50);
@@ -150,57 +195,57 @@ test('Phase 1 roles and Phase 2 vendor parking management work end-to-end', asyn
   const wakadId = createWakad.payload.location._id;
   const banerId = createBaner.payload.location._id;
 
-  const vendorAList = await request('/vendors/parking-locations', { token: vendorAToken });
+  const vendorAList = await request('/vendors/parking-locations', { client: vendorAClient });
   assert.equal(vendorAList.payload.locations.length, 2);
   assert.ok(vendorAList.payload.locations.every((location) => location.vendorId === applicationA.payload.vendorProfile._id));
-  assert.equal((await request(`/vendors/parking-locations/${banerId}`, { token: vendorAToken })).status, 404, 'Vendor A cannot view Vendor B data');
-  assert.equal((await request(`/vendors/parking-locations/${banerId}`, { method: 'PATCH', token: vendorAToken, body: locationPayload('Stolen', bAddress) })).status, 404, 'Vendor A cannot edit Vendor B data');
+  assert.equal((await request(`/vendors/parking-locations/${banerId}`, { client: vendorAClient })).status, 404, 'Vendor A cannot view Vendor B data');
+  assert.equal((await request(`/vendors/parking-locations/${banerId}`, { method: 'PATCH', client: vendorAClient, body: locationPayload('Stolen', bAddress) })).status, 404, 'Vendor A cannot edit Vendor B data');
 
   const movedMoshi = locationPayload('Moshi Parking Updated', moshiAddress, { car: 55, bike: 22, ev: 75 });
   movedMoshi.latitude += 0.001;
   movedMoshi.longitude += 0.001;
-  const updateMoshi = await request(`/vendors/parking-locations/${moshiId}`, { method: 'PATCH', token: vendorAToken, body: movedMoshi });
+  const updateMoshi = await request(`/vendors/parking-locations/${moshiId}`, { method: 'PATCH', client: vendorAClient, body: movedMoshi });
   assert.equal(updateMoshi.status, 200, 'owner can edit and move marker');
   assert.deepEqual(updateMoshi.payload.location.location.coordinates, [movedMoshi.longitude, movedMoshi.latitude]);
 
-  const slotOne = await request(`/vendors/parking-locations/${moshiId}/slots`, { method: 'POST', token: vendorAToken, body: { slotNumber: 'C01', vehicleType: 'car' } });
+  const slotOne = await request(`/vendors/parking-locations/${moshiId}/slots`, { method: 'POST', client: vendorAClient, body: { slotNumber: 'C01', vehicleType: 'car' } });
   assert.equal(slotOne.status, 201);
-  assert.equal((await request(`/vendors/parking-locations/${moshiId}/slots`, { method: 'POST', token: vendorAToken, body: { slotNumber: 'C01', vehicleType: 'car' } })).status, 409, 'same-location duplicate rejected');
-  assert.equal((await request(`/vendors/parking-locations/${wakadId}/slots`, { method: 'POST', token: vendorAToken, body: { slotNumber: 'C01', vehicleType: 'car' } })).status, 201, 'same number allowed elsewhere');
-  const bulk = await request(`/vendors/parking-locations/${moshiId}/slots/bulk`, { method: 'POST', token: vendorAToken, body: { prefix: 'B', count: 3, vehicleType: 'bike' } });
+  assert.equal((await request(`/vendors/parking-locations/${moshiId}/slots`, { method: 'POST', client: vendorAClient, body: { slotNumber: 'C01', vehicleType: 'car' } })).status, 409, 'same-location duplicate rejected');
+  assert.equal((await request(`/vendors/parking-locations/${wakadId}/slots`, { method: 'POST', client: vendorAClient, body: { slotNumber: 'C01', vehicleType: 'car' } })).status, 201, 'same number allowed elsewhere');
+  const bulk = await request(`/vendors/parking-locations/${moshiId}/slots/bulk`, { method: 'POST', client: vendorAClient, body: { prefix: 'B', count: 3, vehicleType: 'bike' } });
   assert.equal(bulk.status, 201);
   assert.deepEqual(bulk.payload.slots.map((slot) => slot.slotNumber), ['B01', 'B02', 'B03']);
-  const evSlot = await request(`/vendors/parking-locations/${moshiId}/slots`, { method: 'POST', token: vendorAToken, body: { slotNumber: 'EV01', vehicleType: 'ev', evCompatible: true } });
+  const evSlot = await request(`/vendors/parking-locations/${moshiId}/slots`, { method: 'POST', client: vendorAClient, body: { slotNumber: 'EV01', vehicleType: 'ev', evCompatible: true } });
   assert.equal(evSlot.payload.slot.evCompatible, true);
-  assert.equal((await request(`/vendors/parking-locations/${banerId}/slots`, { method: 'POST', token: vendorAToken, body: { slotNumber: 'X01', vehicleType: 'car' } })).status, 404, 'Vendor A cannot add slots to Vendor B');
+  assert.equal((await request(`/vendors/parking-locations/${banerId}/slots`, { method: 'POST', client: vendorAClient, body: { slotNumber: 'X01', vehicleType: 'car' } })).status, 404, 'Vendor A cannot add slots to Vendor B');
 
   const repricedMoshi = { ...movedMoshi, pricing: { car: 60, bike: 24, ev: 80 } };
-  assert.equal((await request(`/vendors/parking-locations/${moshiId}`, { method: 'PATCH', token: vendorAToken, body: repricedMoshi })).status, 200);
-  const repricedSlots = await request(`/vendors/parking-locations/${moshiId}/slots`, { token: vendorAToken });
+  assert.equal((await request(`/vendors/parking-locations/${moshiId}`, { method: 'PATCH', client: vendorAClient, body: repricedMoshi })).status, 200);
+  const repricedSlots = await request(`/vendors/parking-locations/${moshiId}/slots`, { client: vendorAClient });
   assert.equal(repricedSlots.payload.slots.find((slot) => slot.slotNumber === 'C01').pricePerHour, 60, 'location pricing updates owned slots');
 
-  const vehicle = await request('/vehicles', { method: 'POST', token: customerToken, body: { licensePlate: 'MH14AB1234', vehicleType: 'car', brand: 'Test', model: 'Car', color: 'Blue' } });
+  const vehicle = await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14AB1234', vehicleType: 'car', brand: 'Test', model: 'Car', color: 'Blue' } });
   assert.equal(vehicle.status, 201, 'existing vehicle flow works');
   const start = new Date(Date.now() + 3600000);
   const end = new Date(start.getTime() + 3600000);
-  const booking = await request('/bookings', { method: 'POST', token: customerToken, body: { slotId: slotOne.payload.slot._id, vehicleId: vehicle.payload.vehicle._id, startTime: start, expectedEndTime: end, paymentMethod: 'upi' } });
+  const booking = await request('/bookings', { method: 'POST', client: customerClient, body: { slotId: slotOne.payload.slot._id, vehicleId: vehicle.payload.vehicle._id, startTime: start, expectedEndTime: end, paymentMethod: 'upi' } });
   assert.equal(booking.status, 201, 'existing booking works with vendor slot');
-  const vendorBookings = await request('/vendors/bookings', { token: vendorAToken });
+  const vendorBookings = await request('/vendors/bookings', { client: vendorAClient });
   assert.equal(vendorBookings.payload.bookings.length, 1);
   assert.equal(vendorBookings.payload.bookings[0].slot.parkingLocation.name, 'Moshi Parking Updated');
 
-  const dashboard = await request('/vendors/dashboard', { token: vendorAToken });
+  const dashboard = await request('/vendors/dashboard', { client: vendorAClient });
   assert.equal(dashboard.payload.stats.parkingLocations, 2);
   assert.equal(dashboard.payload.stats.totalSlots, 6);
   assert.equal(dashboard.payload.stats.activeBookings, 1);
 
-  const deactivate = await request(`/vendors/parking-locations/${wakadId}`, { method: 'DELETE', token: vendorAToken });
+  const deactivate = await request(`/vendors/parking-locations/${wakadId}`, { method: 'DELETE', client: vendorAClient });
   assert.equal(deactivate.payload.location.status, 'inactive');
-  const wakadSlotsAfterDeactivate = await request(`/vendors/parking-locations/${wakadId}/slots`, { token: vendorAToken });
+  const wakadSlotsAfterDeactivate = await request(`/vendors/parking-locations/${wakadId}/slots`, { client: vendorAClient });
   assert.equal(wakadSlotsAfterDeactivate.payload.slots[0].status, 'maintenance', 'available slots become unbookable when location is deactivated');
-  const legacySlot = await request('/slots', { method: 'POST', token: adminToken, body: { slotNumber: 'LEGACY01', floor: 'G', zone: 'A', type: 'standard', pricePerHour: 30, location: { lat: 28.61, lng: 77.2, label: 'Legacy' } } });
+  const legacySlot = await request('/slots', { method: 'POST', client: adminClient, body: { slotNumber: 'LEGACY01', floor: 'G', zone: 'A', type: 'standard', pricePerHour: 30, location: { lat: 28.61, lng: 77.2, label: 'Legacy' } } });
   assert.equal(legacySlot.status, 201, 'legacy admin slot flow remains available');
-  assert.equal((await request('/slots', { token: customerToken })).status, 200, 'customer slot API remains available');
+  assert.equal((await request('/slots', { client: customerClient })).status, 200, 'customer slot API remains available');
 
   global.fetch = async (url, options) => {
     if (String(url).startsWith('https://api.geoapify.com/')) {
@@ -208,13 +253,76 @@ test('Phase 1 roles and Phase 2 vendor parking management work end-to-end', asyn
     }
     return originalFetch(url, options);
   };
-  const suggestions = await request('/location/autocomplete?q=Moshi', { token: vendorAToken });
+  const suggestions = await request('/location/autocomplete?q=Moshi', { client: vendorAClient });
   global.fetch = originalFetch;
   assert.equal(suggestions.status, 200);
   assert.equal(suggestions.payload.suggestions.length, 1);
   assert.equal(suggestions.payload.suggestions[0].latitude, 18.6712);
   assert.ok(suggestions.payload.suggestions[0].selectionToken);
 
-  const vendorLogin = await request('/auth/login', { method: 'POST', body: { email: 'vendor-a@example.com', password: 'secret12' } });
-  assert.equal(vendorLogin.payload.user.role, 'vendor', 'vendor login reflects approval');
+  const vendorLogin = await login('vendor-a@example.com');
+  const approvedVendorProfile = await request('/account/profile', { client: vendorLogin.client });
+  assert.equal(approvedVendorProfile.payload.user.role, 'vendor', 'domain profile reflects vendor approval');
+
+  assert.equal(
+    (await request(`/vehicles/${vehicle.payload.vehicle._id}`, { method: 'DELETE', client: vendorBClient })).status,
+    404,
+    'another user cannot modify a customer vehicle'
+  );
+  assert.equal(
+    (await request(`/bookings/${booking.payload.booking._id}`, { client: vendorBClient })).status,
+    403,
+    'another user cannot read a customer booking'
+  );
+
+  const adminCandidate = await register('Admin Candidate', 'admin-candidate@example.com', '9000000010');
+  const candidateProfile = await request('/account/profile', { client: adminCandidate.client });
+  const promotion = await request(`/admin/users/${candidateProfile.payload.user._id}/role`, {
+    method: 'PATCH', client: adminClient, body: { role: 'admin' },
+  });
+  assert.equal(promotion.status, 200, 'SUPER_ADMIN can promote an eligible customer to ADMIN');
+  const candidateLogin = await login('admin-candidate@example.com');
+  const promotedProfile = await request('/account/profile', { client: candidateLogin.client });
+  assert.equal(promotedProfile.payload.user.role, 'admin');
+
+  const vendorC = await register('Vendor C', 'vendor-c@example.com', '9000000012');
+  const applicationC = await request('/vendors/register', {
+    method: 'POST', client: vendorC.client, body: applicationPayload('Vendor C Parking', '9000000012'),
+  });
+  const normalAdminApproval = await request(`/admin/vendors/${applicationC.payload.vendorProfile._id}/approve`, {
+    method: 'PATCH', client: candidateLogin.client,
+  });
+  assert.equal(normalAdminApproval.status, 200, 'normal ADMIN can approve a vendor application');
+  assert.equal((await request('/account/profile', { client: vendorC.client })).payload.user.role, 'vendor');
+
+  assert.equal(
+    (await request(`/admin/users/${customerRegistration.payload.user.id}/role`, {
+      method: 'PATCH', client: candidateLogin.client, body: { role: 'super_admin' },
+    })).status,
+    403,
+    'normal ADMIN cannot grant SUPER_ADMIN'
+  );
+
+  const legacyId = new mongoose.Types.ObjectId();
+  await User.collection.insertOne({
+    _id: legacyId,
+    name: 'Legacy Admin',
+    email: 'legacy-admin@example.com',
+    phone: '9000000011',
+    password: await bcrypt.hash('secret12', 10),
+    role: 'admin',
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+  const migration = await migrateExistingUsers({ db: mongoose.connection.db, dryRun: false, logger: { log() {}, warn() {} } });
+  assert.ok(migration.linked >= 1, 'existing ParkSmart user was linked');
+  const legacyLogin = await login('legacy-admin@example.com');
+  assert.equal(legacyLogin.status, 200, 'legacy bcrypt password works after migration');
+  const legacyProfile = await request('/account/profile', { client: legacyLogin.client });
+  assert.equal(legacyProfile.payload.user._id, legacyId.toString(), 'existing domain user ID is preserved');
+  assert.equal(legacyProfile.payload.user.role, 'admin', 'existing role is preserved');
+
+  assert.equal((await request('/auth/sign-out', { method: 'POST', client: vendorLogin.client })).status, 200);
+  assert.equal((await request('/account/profile', { client: vendorLogin.client })).status, 401, 'logout invalidates the session');
 });
