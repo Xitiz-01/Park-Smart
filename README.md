@@ -1,5 +1,7 @@
 # ParkSmart – Real-Time Parking Slot Availability System
 
+[![CI](https://github.com/Xitiz-01/Park-Smart/actions/workflows/ci.yml/badge.svg)](https://github.com/Xitiz-01/Park-Smart/actions/workflows/ci.yml)
+
 A full-stack MERN application for real-time parking slot management.
 
 ---
@@ -61,6 +63,29 @@ GEOCODING_API_KEY=your_geoapify_api_key
 ```
 REACT_APP_API_URL=http://localhost:5000/api
 ```
+
+## CI/CD
+
+GitHub Actions is the quality gate for ParkSmart. The `CI` workflow runs whenever a pull request targets `main`, whenever `main` is pushed, and when it is started manually from the Actions tab.
+
+- `frontend-ci` installs the locked frontend dependencies, runs the React test command, and creates a production build.
+- `backend-ci` installs the locked backend dependencies and runs the integration suite against an isolated MongoDB service. It never connects to the production database.
+- No GitHub Actions secrets are required by the current CI workflow. Tests use harmless local values, and Geoapify requests are mocked by the integration suite.
+- Vercel remains responsible for frontend preview and production deployments.
+- Render remains responsible for backend production deployment.
+
+The intended development flow is:
+
+1. Create a feature branch from an updated `main` branch.
+2. Make and verify the changes locally.
+3. Push the feature branch.
+4. Open a pull request targeting `main`.
+5. Wait for `frontend-ci` and `backend-ci` to pass.
+6. Review the Vercel preview deployment where applicable.
+7. Merge only after the required checks pass.
+8. Let Vercel and Render deploy the merged `main` branch automatically.
+
+Production credentials, including the production MongoDB URI, JWT secret, and Geoapify key, stay in the Vercel or Render environment configuration. They must not be added to GitHub Actions for this workflow.
 
 ---
 
