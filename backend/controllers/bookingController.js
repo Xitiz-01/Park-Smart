@@ -1,6 +1,7 @@
 const Booking = require('../models/Booking');
 const ParkingSlot = require('../models/ParkingSlot');
 const Vehicle = require('../models/Vehicle');
+const { hasPermission } = require('../auth/permissions');
 const ALLOWED_PAYMENT_METHODS = ['card', 'upi', 'netbanking', 'wallet'];
 const emitSlotUpdated = async (req, slotId) => {
   const io = req.app.get('io');
@@ -83,7 +84,7 @@ const getBookingById = async (req, res) => {
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
 
     // Only owner or admin can see
-    if (booking.user._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    if (booking.user._id.toString() !== req.user._id.toString() && !hasPermission(req.user, 'booking:read-all')) {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
@@ -100,7 +101,7 @@ const cancelBooking = async (req, res) => {
     const booking = await Booking.findById(req.params.id);
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
 
-    if (booking.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    if (booking.user.toString() !== req.user._id.toString() && !hasPermission(req.user, 'booking:manage-all')) {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
