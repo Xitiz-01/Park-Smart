@@ -211,13 +211,25 @@ This creates 60 slots across 4 zones (A/B/C/D) and 3 floors (G/1/2).
 
 ---
 
-## Live Nearby Parking on Map
+## Hybrid parking and dynamic discovery (Phase 3)
 
-- The **Nearby Map** (`/dashboard/nearby`) shows:
-  - your app slots (seeded + managed in your DB), and
-  - live public parking places near the user from OpenStreetMap sources.
-- When online, backend tries multiple Overpass endpoints first and automatically falls back to Nominatim if Overpass is busy.
-- If providers are temporarily unavailable, the app uses the last synced nearby map cache so users still see map data.
+The main customer flow at `/dashboard/nearby` discovers real, active vendor `ParkingLocation` records with MongoDB GeoJSON distance search. A selected arrival/departure range drives operating-hours checks and live availability:
+
+- cars, motorcycles/bikes, and SUVs reserve one unit from the location's configured capacity; they are not assigned a numbered slot;
+- EVs reserve an exact vendor-managed charging bay, including charger/connector/power metadata;
+- booking price is snapshotted when the reservation is made, while payment remains pending because settlement is intentionally out of scope;
+- check-in and checkout are available to owning vendors and admins, with ownership enforced by the backend;
+- an atomic reservation ledger prevents overlapping overbooking on standalone MongoDB, so CI does not require replica-set transactions.
+
+Existing standard `ParkingSlot` records and the legacy admin slot routes are retained for compatibility, but vendors create and manage only EV physical bays in the new portal. Run the safe migration in dry-run mode before deploying against existing data:
+
+```bash
+cd backend
+npm run migrate:hybrid-parking
+npm run migrate:hybrid-parking -- --apply --confirm-db=parking-system
+```
+
+The migration backfills location capacity from legacy non-EV slots, booking location/type/rate metadata, active reservation ledgers, and required indexes. The apply command refuses to write unless `--confirm-db` exactly matches the database in `MONGODB_URI`. Back up production before applying it.
 
 ---
 

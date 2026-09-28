@@ -9,7 +9,8 @@
     "migrate:user-roles": "node scripts/migrateUserRoles.js",
     "migrate:better-auth": "node scripts/migrateBetterAuthUsers.js",
     "migrate:parking-slot-indexes": "node scripts/migrateParkingSlotIndexes.js",
-    "test:integration": "node --test tests/vendorFlow.integration.test.js"
+    "migrate:hybrid-parking": "node scripts/migrateHybridParking.js",
+    "test:integration": "node --test --test-concurrency=1 tests/*.integration.test.js"
   },
   "dependencies": {
     "@better-auth/mongo-adapter": "1.7.6",

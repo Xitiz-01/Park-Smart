@@ -17,6 +17,7 @@ const ROLE_PERMISSIONS = Object.freeze({
     'parking:update-own',
     'slot:manage-own',
     'booking:read-vendor',
+    'booking:manage-vendor',
   ]),
   admin: Object.freeze([
     'parking:read',

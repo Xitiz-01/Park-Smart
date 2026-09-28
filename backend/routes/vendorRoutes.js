@@ -28,5 +28,7 @@ router.post('/parking-locations/:id/slots', parking.createSlot);
 router.post('/parking-locations/:id/slots/bulk', parking.bulkCreateSlots);
 router.patch('/slots/:slotId', parking.updateSlot);
 router.get('/bookings', parking.getVendorBookings);
+router.put('/bookings/:bookingId/checkin', requirePermission('booking:manage-vendor'), parking.checkInVendorBooking);
+router.put('/bookings/:bookingId/checkout', requirePermission('booking:manage-vendor'), parking.checkOutVendorBooking);
 
 module.exports = router;

@@ -34,6 +34,9 @@ const parkingSlotSchema = new mongoose.Schema(
       default: 'standard',
     },
     evCompatible: { type: Boolean, default: false },
+    chargerType: { type: String, trim: true, maxlength: 80, default: '' },
+    connectorType: { type: String, trim: true, maxlength: 80, default: '' },
+    chargerPowerKw: { type: Number, min: 0, max: 1000, default: 0 },
     status: {
       type: String,
       enum: ['available', 'occupied', 'reserved', 'maintenance'],

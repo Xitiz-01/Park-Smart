@@ -46,10 +46,18 @@ const validateParkingLocation = (body, existing = null) => {
   }
 
   const pricing = {};
+  const capacity = {};
   for (const type of vehicleTypes) {
     const price = Number(body.pricing?.[type]);
     if (!Number.isFinite(price) || price < 0 || price > 100000) return validationError(`Enter a valid non-negative price for ${type}`);
     pricing[type] = Math.round(price * 100) / 100;
+    if (type !== 'ev') {
+      const value = Number(body.capacity?.[type]);
+      if (!Number.isInteger(value) || value < 0 || value > 100000) {
+        return validationError(`Enter a whole-number capacity for ${type}`);
+      }
+      capacity[type] = value;
+    }
   }
 
   const operatingHours = {};
@@ -68,6 +76,9 @@ const validateParkingLocation = (body, existing = null) => {
   const amenities = [...new Set(Array.isArray(body.amenities) ? body.amenities : [])];
   if (amenities.some((value) => !AMENITIES.includes(value))) return validationError('One or more amenities are invalid');
   const evSupported = Boolean(body.evSupported);
+  if (vehicleTypes.includes('ev') !== evSupported) {
+    return validationError('EV support and the EV vehicle type must be enabled or disabled together');
+  }
 
   return {
     value: {
@@ -95,6 +106,7 @@ const validateParkingLocation = (body, existing = null) => {
       operatingHours,
       amenities: evSupported ? [...new Set([...amenities, 'ev_charging'])] : amenities.filter((item) => item !== 'ev_charging'),
       pricing,
+      capacity,
     },
   };
 };

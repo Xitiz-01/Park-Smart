@@ -2,6 +2,7 @@ const VendorProfile = require('../models/VendorProfile');
 const ParkingLocation = require('../models/ParkingLocation');
 const ParkingSlot = require('../models/ParkingSlot');
 const Booking = require('../models/Booking');
+const { getAvailability, regularCapacityFor } = require('../services/parkingAvailabilityService');
 const GeocodingService = require('../services/geocodingService');
 const { isIndianState, normalizeIndianState } = require('../constants/indianStates');
 
@@ -123,17 +124,36 @@ const updateMyVendorProfile = async (req, res) => {
 
 const getVendorDashboard = async (req, res) => {
   try {
-    const locationIds = await ParkingLocation.find({ vendorId: req.vendorProfile._id }).distinct('_id');
-    const [totalSlots, availableSlots, occupiedSlots, slotIds] = await Promise.all([
-      ParkingSlot.countDocuments({ parkingLocation: { $in: locationIds } }),
-      ParkingSlot.countDocuments({ parkingLocation: { $in: locationIds }, status: 'available' }),
-      ParkingSlot.countDocuments({ parkingLocation: { $in: locationIds }, status: { $in: ['occupied', 'reserved'] } }),
-      ParkingSlot.find({ parkingLocation: { $in: locationIds } }).distinct('_id'),
+    const locations = await ParkingLocation.find({ vendorId: req.vendorProfile._id });
+    const locationIds = locations.map((location) => location._id);
+    const now = new Date();
+    const oneHourLater = new Date(now.getTime() + 3600000);
+    let totalSlots = 0;
+    let availableSlots = 0;
+    for (const location of locations.filter((item) => item.status === 'active')) {
+      for (const vehicleType of location.vehicleTypes) {
+        const availability = await getAvailability(location, vehicleType, now, oneHourLater);
+        totalSlots += vehicleType === 'ev'
+          ? await ParkingSlot.countDocuments({ parkingLocation: location._id, vehicleType: 'ev', evCompatible: true, status: { $ne: 'maintenance' } })
+          : regularCapacityFor(location, vehicleType);
+        availableSlots += availability.available;
+      }
+    }
+    const activeBookings = await Booking.countDocuments({ parkingLocation: { $in: locationIds }, status: { $in: ['active', 'upcoming'] } });
+    const earnings = await Booking.aggregate([
+      { $match: { parkingLocation: { $in: locationIds }, status: 'completed' } },
+      { $group: { _id: null, total: { $sum: '$totalAmount' } } },
     ]);
-    const activeBookings = await Booking.countDocuments({ slot: { $in: slotIds }, status: { $in: ['active', 'upcoming'] } });
     res.json({
       success: true,
-      stats: { parkingLocations: locationIds.length, totalSlots, availableSlots, occupiedSlots, activeBookings, totalEarnings: 0 },
+      stats: {
+        parkingLocations: locationIds.length,
+        totalSlots,
+        availableSlots,
+        occupiedSlots: Math.max(0, totalSlots - availableSlots),
+        activeBookings,
+        totalEarnings: earnings[0]?.total || 0,
+      },
       vendorStatus: req.vendorProfile.vendorStatus,
     });
   } catch (error) {
