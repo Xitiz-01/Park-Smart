@@ -258,10 +258,14 @@ test('Better Auth, RBAC, migration, and ParkSmart domain flows work end-to-end',
   assert.equal(releasedCapacityBooking.status, 201, 'cancellation immediately releases regular capacity');
 
   const evVehicle = await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14EV1234', vehicleType: 'ev', brand: 'Test', model: 'EV', color: 'Green' } });
-  const evBooking = await request('/bookings', { method: 'POST', client: customerClient, body: { parkingLocationId: moshiId, bookingType: 'ev', slotId: evSlot.payload.slot._id, vehicleId: evVehicle.payload.vehicle._id, startTime: raceStart, expectedEndTime: raceEnd } });
-  assert.equal(evBooking.status, 201, 'EV booking reserves an exact physical slot');
+  const evRacePayload = { parkingLocationId: moshiId, bookingType: 'ev', slotId: evSlot.payload.slot._id, vehicleId: evVehicle.payload.vehicle._id, startTime: raceStart, expectedEndTime: raceEnd };
+  const evRace = await Promise.all([
+    request('/bookings', { method: 'POST', client: customerClient, body: evRacePayload }),
+    request('/bookings', { method: 'POST', client: customerClient, body: evRacePayload }),
+  ]);
+  assert.deepEqual(evRace.map((result) => result.status).sort(), [201, 409], 'atomic EV ledger prevents simultaneous overlapping reservations');
+  const evBooking = evRace.find((result) => result.status === 201);
   assert.equal(evBooking.payload.booking.slot._id, evSlot.payload.slot._id);
-  assert.equal((await request('/bookings', { method: 'POST', client: customerClient, body: { parkingLocationId: moshiId, bookingType: 'ev', slotId: evSlot.payload.slot._id, vehicleId: evVehicle.payload.vehicle._id, startTime: raceStart, expectedEndTime: raceEnd } })).status, 409, 'the same EV bay cannot be double-booked for an overlapping time');
   const laterEvStart = new Date(raceEnd.getTime() + 60000);
   const laterEvEnd = new Date(laterEvStart.getTime() + 3600000);
   assert.equal((await request('/bookings', { method: 'POST', client: customerClient, body: { parkingLocationId: moshiId, bookingType: 'ev', slotId: evSlot.payload.slot._id, vehicleId: evVehicle.payload.vehicle._id, startTime: laterEvStart, expectedEndTime: laterEvEnd } })).status, 201, 'the same EV bay can be reserved for a non-overlapping time');
