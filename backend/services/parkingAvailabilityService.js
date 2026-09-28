@@ -66,17 +66,13 @@ const regularCapacityFor = (location, vehicleType) => {
 };
 
 const getAvailability = async (location, vehicleType, startTime, endTime) => {
-  if (!isOpenForWindow(location, startTime, endTime)) {
-    return { isOpen: false, total: 0, reserved: 0, available: 0, evSlots: [] };
-  }
-
   if (vehicleType === 'ev') {
     const slots = await ParkingSlot.find({
       parkingLocation: location._id,
       vehicleType: 'ev',
       evCompatible: true,
-      status: { $ne: 'maintenance' },
     }).lean();
+    const isOpen = isOpenForWindow(location, startTime, endTime);
     const ledgers = await ReservationLedger.find({ resourceKey: { $in: slots.map((slot) => `ev:${slot._id}`) } }).lean();
     const ledgerMap = new Map(ledgers.map((ledger) => [ledger.resourceKey, ledger]));
     const legacyConflicts = await Booking.find({
@@ -88,10 +84,19 @@ const getAvailability = async (location, vehicleType, startTime, endTime) => {
     const unavailable = new Set(legacyConflicts.map(String));
     const evSlots = slots.map((slot) => {
       const held = overlappingReservations(ledgerMap.get(`ev:${slot._id}`), startTime, endTime).length > 0;
-      return { ...slot, available: !held && !unavailable.has(String(slot._id)) };
+      let availabilityStatus = 'available';
+      if (slot.status === 'maintenance') availabilityStatus = 'maintenance';
+      else if (slot.status === 'occupied') availabilityStatus = 'occupied';
+      else if (slot.status === 'reserved' || held || unavailable.has(String(slot._id))) availabilityStatus = 'reserved';
+      else if (!isOpen) availabilityStatus = 'unavailable';
+      return { ...slot, availabilityStatus, available: availabilityStatus === 'available' };
     });
     const available = evSlots.filter((slot) => slot.available).length;
-    return { isOpen: true, total: slots.length, reserved: slots.length - available, available, evSlots };
+    return { isOpen, total: slots.length, reserved: slots.length - available, available, evSlots };
+  }
+
+  if (!isOpenForWindow(location, startTime, endTime)) {
+    return { isOpen: false, total: 0, reserved: 0, available: 0, evSlots: [] };
   }
 
   const total = regularCapacityFor(location, vehicleType);

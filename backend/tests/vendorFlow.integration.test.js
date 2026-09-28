@@ -230,11 +230,24 @@ test('Better Auth, RBAC, migration, and ParkSmart domain flows work end-to-end',
   const repricedSlots = await request(`/vendors/parking-locations/${moshiId}/slots`, { client: vendorAClient });
   assert.equal(repricedSlots.payload.slots.find((slot) => slot.slotNumber === 'C01').pricePerHour, 80, 'location EV pricing updates owned physical slots');
 
-  const vehicle = await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14AB1234', vehicleType: 'CAR', fuelType: 'PETROL', brand: 'Test', model: 'Car', color: 'Blue' } });
+  const catalogBrands = await request('/vehicle-catalog/brands?vehicleType=suv', { client: customerClient });
+  assert.equal(catalogBrands.status, 200, 'vehicle catalog brands endpoint is available');
+  assert.ok(catalogBrands.payload.brands.includes('Mahindra'));
+  const catalogModels = await request('/vehicle-catalog/models?brand=Mahindra&vehicleType=suv', { client: customerClient });
+  assert.equal(catalogModels.status, 200, 'vehicle catalog models endpoint is available');
+  assert.ok(catalogModels.payload.models.some((item) => item.model === 'XEV 9e'));
+  assert.equal((await request('/vehicle-catalog/models?brand=Imaginary%20Motors', { client: customerClient })).status, 404, 'unknown catalog brands are rejected');
+  const catalogDetails = await request('/vehicle-catalog/details?brand=Mahindra&model=XEV%209e', { client: customerClient });
+  assert.deepEqual(catalogDetails.payload.vehicle, { brand: 'Mahindra', model: 'XEV 9e', vehicleType: 'suv', fuelTypes: ['electric'] });
+  assert.equal((await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14FAKE0', vehicleType: 'suv', fuelType: 'electric', brand: 'Imaginary Motors', model: 'X1' } })).status, 400, 'invalid brands are rejected');
+  assert.equal((await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14FAKE1', vehicleType: 'suv', fuelType: 'electric', brand: 'Mahindra', model: 'RandomFakeModel' } })).status, 400, 'invalid brand/model combinations are rejected');
+  assert.equal((await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14WRONG', vehicleType: 'suv', fuelType: 'petrol', brand: 'Hyundai', model: 'i20' } })).status, 400, 'catalog body metadata is validated server-side');
+
+  const vehicle = await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14AB1234', vehicleType: 'CAR', fuelType: 'PETROL', brand: 'Hyundai', model: 'i20', color: 'Blue' } });
   assert.equal(vehicle.status, 201, 'existing vehicle flow works');
   assert.equal(vehicle.payload.vehicle.vehicleType, 'car', 'physical vehicle type is normalized');
   assert.equal(vehicle.payload.vehicle.fuelType, 'petrol', 'fuel type is normalized and returned by the API');
-  const dieselVehicle = await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14DS1234', vehicleType: 'car', fuelType: 'diesel' } });
+  const dieselVehicle = await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14DS1234', vehicleType: 'suv', fuelType: 'diesel', brand: 'Hyundai', model: 'Creta' } });
   assert.equal(dieselVehicle.status, 201, 'diesel cars can be created');
   assert.equal((await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14NOFUEL', vehicleType: 'car' } })).status, 400, 'new vehicles require a fuel type');
   const customerUser = await User.findOne({ authUserId: customerRegistration.payload.user.id });
@@ -249,6 +262,16 @@ test('Better Auth, RBAC, migration, and ParkSmart domain flows work end-to-end',
   assert.equal((await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14EV0000', vehicleType: 'ev', fuelType: 'electric' } })).status, 400, 'new vehicles cannot use EV as a physical class');
   const start = new Date(Date.now() + 3600000);
   const end = new Date(start.getTime() + 3600000);
+  const [reservedBay, occupiedBay, maintenanceBay] = bulk.payload.slots;
+  assert.equal((await request(`/vendors/slots/${reservedBay._id}`, { method: 'PATCH', client: vendorAClient, body: { status: 'reserved' } })).status, 200);
+  assert.equal((await request(`/vendors/slots/${occupiedBay._id}`, { method: 'PATCH', client: vendorAClient, body: { status: 'occupied' } })).status, 200);
+  assert.equal((await request(`/vendors/slots/${maintenanceBay._id}`, { method: 'PATCH', client: vendorAClient, body: { status: 'maintenance' } })).status, 200);
+  const evBoard = await request(`/parking-locations/${moshiId}?vehicleType=suv&fuelType=electric&startTime=${encodeURIComponent(start.toISOString())}&endTime=${encodeURIComponent(end.toISOString())}`, { client: customerClient });
+  const boardStates = Object.fromEntries(evBoard.payload.location.availability.evSlots.map((slot) => [slot.slotNumber, slot.availabilityStatus]));
+  assert.equal(boardStates[reservedBay.slotNumber], 'reserved');
+  assert.equal(boardStates[occupiedBay.slotNumber], 'occupied');
+  assert.equal(boardStates[maintenanceBay.slotNumber], 'maintenance');
+  assert.equal(boardStates[evSlot.payload.slot.slotNumber], 'available');
   const booking = await request('/bookings', { method: 'POST', client: customerClient, body: { parkingLocationId: moshiId, bookingType: 'regular', vehicleId: vehicle.payload.vehicle._id, startTime: start, expectedEndTime: end } });
   assert.equal(booking.status, 201, 'regular booking reserves location capacity');
   assert.equal(booking.payload.booking.slot, null, 'regular booking has no numbered slot');
@@ -278,8 +301,9 @@ test('Better Auth, RBAC, migration, and ParkSmart domain flows work end-to-end',
   const releasedCapacityBooking = await request('/bookings', { method: 'POST', client: customerClient, body: racePayload });
   assert.equal(releasedCapacityBooking.status, 201, 'cancellation immediately releases regular capacity');
 
-  const evVehicle = await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14EV1234', vehicleType: 'suv', fuelType: 'electric', brand: 'Test', model: 'EV', color: 'Green' } });
+  const evVehicle = await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14EV1234', vehicleType: 'suv', fuelType: 'electric', brand: 'Mahindra', model: 'XEV 9e', color: 'Green' } });
   assert.equal(evVehicle.status, 201, 'electric SUVs preserve their physical class');
+  assert.equal((await request('/bookings', { method: 'POST', client: customerClient, body: { parkingLocationId: moshiId, bookingType: 'ev', slotId: reservedBay._id, vehicleId: evVehicle.payload.vehicle._id, startTime: raceStart, expectedEndTime: raceEnd } })).status, 400, 'backend rejects an EV bay that became operationally unavailable');
   const evDiscovery = await request(`/parking-locations/nearby?lat=${movedMoshi.latitude}&lng=${movedMoshi.longitude}&radiusKm=5&vehicleType=suv&fuelType=electric&startTime=${encodeURIComponent(raceStart.toISOString())}&endTime=${encodeURIComponent(raceEnd.toISOString())}`, { client: customerClient });
   assert.equal(evDiscovery.status, 200, 'electric vehicle discovery returns EV-compatible locations');
   assert.ok(evDiscovery.payload.locations.some((item) => item._id === moshiId));

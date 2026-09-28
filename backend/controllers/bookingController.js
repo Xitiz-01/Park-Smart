@@ -88,7 +88,7 @@ const createBooking = async (req, res) => {
     if (bookingType === 'ev') {
       slot = await ParkingSlot.findOne({
         _id: slotId, parkingLocation: location._id, vehicleType: 'ev', evCompatible: true,
-        status: { $ne: 'maintenance' },
+        status: 'available',
       });
       if (!slot) return res.status(400).json({ success: false, message: 'Select an available EV charging slot at this location' });
       const existingConflict = await Booking.exists({

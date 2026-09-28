@@ -134,7 +134,7 @@ const getVendorDashboard = async (req, res) => {
       for (const vehicleType of location.vehicleTypes) {
         const availability = await getAvailability(location, vehicleType, now, oneHourLater);
         totalSlots += vehicleType === 'ev'
-          ? await ParkingSlot.countDocuments({ parkingLocation: location._id, vehicleType: 'ev', evCompatible: true, status: { $ne: 'maintenance' } })
+          ? await ParkingSlot.countDocuments({ parkingLocation: location._id, vehicleType: 'ev', evCompatible: true })
           : regularCapacityFor(location, vehicleType);
         availableSlots += availability.available;
       }

@@ -245,6 +245,27 @@ The migration converts legacy `vehicleType: "ev"` records to `vehicleType: "car"
 
 ---
 
+## Vehicle intelligence and EV bay experience
+
+ParkSmart now validates new vehicle registrations against a backend-owned catalog instead of accepting arbitrary brand/model pairs. The `vehicleCatalogService` isolates catalog consumers from the underlying provider and exposes normalized brand, model, physical type, and supported fuel types. API responses do not expose provider-specific records.
+
+There is no stable, unrestricted public API for a current Indian-market vehicle catalog: VAHAN/National Transport Repository data-sharing interfaces concern registration records and restricted bulk access rather than a consumer model catalog. ParkSmart therefore ships a deliberately small, versioned fallback dataset reviewed on 28 September 2026 against official manufacturer model pages from [Mahindra](https://www.mahindra.com/our-business/automotive), [Hyundai India](https://www.hyundai.com/in/en/find-a-car), [Maruti Suzuki](https://www.marutisuzuki.com/), [Tata Motors Cars](https://cars.tatamotors.com/), [Honda Cars India](https://www.hondacarindia.com/), and [Ather](https://www.atherenergy.com/).
+
+- brands and model lists are cached in backend memory for six hours;
+- a failing future primary provider falls back to the curated provider automatically;
+- new vehicles require a catalog-valid brand/model pair, and submitted body/fuel classifications must match catalog metadata;
+- existing legacy vehicles remain readable and can still be edited without forcing an invented catalog match;
+- reliable single-fuel/body metadata prefills the form, while multi-fuel models preserve a supported choice or ask the user to choose;
+- no additional environment variable or third-party key is currently required.
+
+The customer EV booking page uses real `ParkingSlot` records in an accessible visual board. Effective states are `available`, `selected`, `reserved`, `occupied`, `maintenance`, and `unavailable`; every state has a textual label and is not communicated by color alone. The selected bay panel shows charger, connector, requested time, rate, and estimate. The backend rechecks location ownership, EV compatibility, operational state, interval conflicts, and the atomic reservation ledger when booking. A stale selection is rejected and the board refreshes.
+
+Customer and vendor EV boards listen only to the existing location-scoped `availability:changed` event. Slot creation, bulk creation, maintenance updates, reservation, cancellation, check-in, and checkout cause an authoritative refresh. The vendor board shows the current-hour operational state while retaining the detailed management table. Regular vehicles continue to reserve capacity and never receive a numbered-slot board. The landing-page visual remains illustrative and is not connected to production inventory.
+
+Catalog maintenance is intentionally manual in this phase. The fallback is not an exhaustive registry of every Indian vehicle, variant, discontinued model, or commercial vehicle; additions should be verified against a manufacturer source and reviewed like code.
+
+---
+
 ## Project Structure
 
 ```
@@ -299,6 +320,9 @@ parking-system/
 | PATCH | /api/admin/vendors/:id/reject | Admin | Reject vendor |
 | PATCH | /api/admin/vendors/:id/suspend | Admin | Suspend active vendor |
 | GET | /api/location/autocomplete?q= | Authenticated | Search structured Indian addresses |
+| GET | /api/vehicle-catalog/brands | Authenticated | List normalized catalog brands, optionally by vehicle type |
+| GET | /api/vehicle-catalog/models?brand= | Authenticated | List models for a catalog brand |
+| GET | /api/vehicle-catalog/details?brand=&model= | Authenticated | Get normalized body and fuel metadata |
 | GET | /api/vendors/parking-locations | Approved vendor | List owned parking locations |
 | POST | /api/vendors/parking-locations | Approved vendor | Create a parking location |
 | GET | /api/vendors/parking-locations/:id | Approved vendor/owner | View an owned location |

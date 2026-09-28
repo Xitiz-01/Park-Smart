@@ -4,12 +4,20 @@ const ParkingSlot = require('../models/ParkingSlot');
 const Booking = require('../models/Booking');
 const { checkInRecord, checkOutRecord } = require('./bookingController');
 const { validateParkingLocation, VEHICLE_TYPES } = require('../validators/parkingLocationValidator');
+const { getAvailability, parseWindow } = require('../services/parkingAvailabilityService');
 
 const isId = (value) => mongoose.isValidObjectId(value);
 
 const findOwnedLocation = (id, vendorId) => {
   if (!isId(id)) return null;
   return ParkingLocation.findOne({ _id: id, vendorId });
+};
+
+const emitSlotChanged = (req, locationId, slot = null) => {
+  const io = req.app.get('io');
+  if (!io) return;
+  io.emit('availability:changed', { locationId, vehicleType: 'ev' });
+  if (slot) io.emit('slot:updated', slot);
 };
 
 const addSlotStats = async (locations) => {
@@ -99,8 +107,20 @@ const getLocationSlots = async (req, res) => {
   try {
     const location = await findOwnedLocation(req.params.id, req.vendorProfile._id);
     if (!location) return res.status(404).json({ success: false, message: 'Parking location not found' });
-    const slots = await ParkingSlot.find({ parkingLocation: location._id, vehicleType: 'ev', evCompatible: true }).sort({ slotNumber: 1 });
-    res.json({ success: true, location, slots });
+    const defaultStart = new Date();
+    const window = parseWindow(
+      req.query.startTime || defaultStart,
+      req.query.endTime || new Date(defaultStart.getTime() + 60 * 60 * 1000),
+      { allowPast: true }
+    );
+    if (window.error) return res.status(400).json({ success: false, message: window.error });
+    const availability = await getAvailability(location, 'ev', window.startTime, window.endTime);
+    res.json({
+      success: true,
+      location,
+      slots: availability.evSlots,
+      requestedWindow: { startTime: window.startTime, endTime: window.endTime },
+    });
   } catch {
     res.status(500).json({ success: false, message: 'Unable to load parking slots' });
   }
@@ -149,6 +169,7 @@ const createSlot = async (req, res) => {
     const exists = await ParkingSlot.exists({ parkingLocation: location._id, slotNumber: input.slotNumber });
     if (exists) return res.status(409).json({ success: false, message: 'Slot number already exists at this location' });
     const slot = await ParkingSlot.create(slotDocument({ ...req.body, ...input }, location));
+    emitSlotChanged(req, location._id, slot);
     res.status(201).json({ success: true, message: 'Parking slot created', slot });
   } catch (error) {
     if (error.code === 11000) return res.status(409).json({ success: false, message: 'Slot number already exists at this location' });
@@ -172,6 +193,7 @@ const bulkCreateSlots = async (req, res) => {
     const duplicate = await ParkingSlot.findOne({ parkingLocation: location._id, slotNumber: { $in: numbers } });
     if (duplicate) return res.status(409).json({ success: false, message: `Slot ${duplicate.slotNumber} already exists at this location` });
     const slots = await ParkingSlot.insertMany(numbers.map((slotNumber) => slotDocument({ ...req.body, ...base, slotNumber }, location)), { ordered: true });
+    emitSlotChanged(req, location._id);
     res.status(201).json({ success: true, message: `${slots.length} parking slots created`, slots });
   } catch (error) {
     if (error.code === 11000) return res.status(409).json({ success: false, message: 'One or more slot numbers already exist at this location' });
@@ -204,6 +226,7 @@ const updateSlot = async (req, res) => {
       chargerPowerKw: req.body.chargerPowerKw ?? slot.chargerPowerKw,
     }, location));
     await slot.save();
+    emitSlotChanged(req, location._id, slot);
     res.json({ success: true, message: 'Parking slot updated', slot });
   } catch (error) {
     if (error.code === 11000) return res.status(409).json({ success: false, message: 'Slot number already exists at this location' });
