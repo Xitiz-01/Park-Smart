@@ -90,5 +90,7 @@ bookingSchema.pre('save', function (next) {
 bookingSchema.index({ parkingLocation: 1, startTime: 1, expectedEndTime: 1, status: 1 });
 bookingSchema.index({ slot: 1, startTime: 1, expectedEndTime: 1, status: 1 });
 bookingSchema.index({ user: 1, createdAt: -1 });
+bookingSchema.index({ vehicle: 1, createdAt: -1 });
+bookingSchema.index({ status: 1, startTime: 1 });
 
 module.exports = mongoose.model('Booking', bookingSchema);
