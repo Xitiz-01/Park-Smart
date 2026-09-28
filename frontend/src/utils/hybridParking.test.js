@@ -12,8 +12,10 @@ test('parking details path preserves the selected discovery window', () => {
     startTime: '2026-09-28T10:00:00.000Z',
     endTime: '2026-09-28T12:00:00.000Z',
     vehicleType: 'ev',
+    distanceKm: 1.4,
   });
   expect(path).toContain('/dashboard/parking/location-1?');
   expect(decodeURIComponent(path)).toContain('vehicleType=ev');
   expect(decodeURIComponent(path)).toContain('2026-09-28T10:00:00.000Z');
+  expect(decodeURIComponent(path)).toContain('distanceKm=1.4');
 });

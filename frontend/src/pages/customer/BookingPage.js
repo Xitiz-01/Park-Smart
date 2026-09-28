@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { addHours, format } from 'date-fns';
+import { CircleMarker, MapContainer, TileLayer } from 'react-leaflet';
 import { Car, Clock, MapPin, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { bookingsAPI, parkingLocationsAPI, slotsAPI, vehiclesAPI } from '../../services/api';
@@ -81,6 +82,7 @@ export default function BookingPage({ legacy = false }) {
   if (loading) return <div className="loading-spinner"><div className="spinner" /></div>;
   const title = legacy ? `Legacy slot ${legacySlot?.slotNumber || ''}` : location?.name || 'Parking location';
   const address = legacy ? legacySlot?.location?.label : location?.address?.formattedAddress;
+  const distanceKm = query.get('distanceKm');
 
   return <div className="fade-in" style={{ maxWidth: 850, margin: '0 auto' }}>
     <div className="page-header"><h1>{title}</h1><p><MapPin size={14} style={{ verticalAlign: 'middle' }} /> {address || 'Loading location details…'}</p></div>
@@ -97,6 +99,14 @@ export default function BookingPage({ legacy = false }) {
         {isEv && <div style={{ marginTop: 16 }}><label className="form-label"><Zap size={14} style={{ verticalAlign: 'middle' }} /> Exact EV charging slot</label><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>{(location.availability.evSlots || []).map((slot) => <button key={slot._id} type="button" disabled={!slot.available} className={`btn ${evSlotId === slot._id ? 'btn-primary' : 'btn-outline'}`} onClick={() => setEvSlotId(slot._id)}>{slot.slotNumber}<br /><small>{slot.chargerPowerKw ? `${slot.chargerPowerKw} kW` : slot.chargerType || 'EV charger'}</small></button>)}</div></div>}
         {!isEv && <p style={{ marginTop: 14, color: 'var(--text-secondary)' }}><Car size={14} style={{ verticalAlign: 'middle' }} /> Regular vehicles reserve capacity at this location; no numbered slot is assigned.</p>}
         <div style={{ marginTop: 14, fontSize: 13, color: 'var(--text-muted)' }}>{(location.amenities || []).map((item) => item.replaceAll('_', ' ')).join(' • ')}</div>
+      </section>}
+
+      {!legacy && location && <section className="card">
+        <h2 style={{ fontSize: 17, marginBottom: 14 }}>Location details</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 18 }}>
+          <div><p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{distanceKm ? `${distanceKm} km from your search origin` : 'Verified vendor location'}</p><p style={{ marginTop: 10, fontSize: 13 }}><strong>Supported:</strong> {location.vehicleTypes.map((type) => type.toUpperCase()).join(', ')}</p><div style={{ marginTop: 12, display: 'grid', gap: 5, fontSize: 12, color: 'var(--text-muted)' }}>{Object.entries(location.operatingHours || {}).map(([day, hoursValue]) => <div className="flex justify-between" key={day}><span style={{ textTransform: 'capitalize' }}>{day}</span><span>{!hoursValue.open ? 'Closed' : hoursValue.allDay ? '24 hours' : `${hoursValue.openTime}–${hoursValue.closeTime}`}</span></div>)}</div></div>
+          <MapContainer center={[location.location.coordinates[1], location.location.coordinates[0]]} zoom={15} dragging={false} scrollWheelZoom={false} style={{ height: 230, minHeight: 230, borderRadius: 10 }}><TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><CircleMarker center={[location.location.coordinates[1], location.location.coordinates[0]]} radius={8} pathOptions={{ color: '#147d6f', fillColor: '#147d6f', fillOpacity: 1 }} /></MapContainer>
+        </div>
       </section>}
 
       <section className="card"><h2 style={{ fontSize: 17, marginBottom: 14 }}>Reservation estimate</h2><div style={{ display: 'grid', gap: 10 }}><div className="flex items-center justify-between"><span><Clock size={14} /> Duration</span><strong>{hours} hour{hours === 1 ? '' : 's'}</strong></div><div className="flex items-center justify-between"><span>Rate snapshot</span><strong>₹{rate}/hr</strong></div><div className="flex items-center justify-between" style={{ borderTop: '1px solid var(--border)', paddingTop: 10 }}><span>Estimated amount</span><strong style={{ color: 'var(--accent)', fontSize: 20 }}>₹{hours * rate}</strong></div></div><p style={{ marginTop: 12, color: 'var(--text-muted)', fontSize: 12 }}>Payment is not collected in this phase. The final amount is calculated from the saved rate at checkout.</p></section>

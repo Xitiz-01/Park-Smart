@@ -84,7 +84,7 @@ export default function NearbyMapPage() {
     return () => { clearTimeout(timer); socket.disconnect(); };
   }, [fetchLocations]);
 
-  const queryFor = useCallback((location) => parkingDetailsPath(location._id, filters), [filters]);
+  const queryFor = useCallback((location) => parkingDetailsPath(location._id, { ...filters, distanceKm: location.distanceKm }), [filters]);
 
   const resultText = useMemo(() => loading ? 'Checking live capacity…' : `${locations.length} reservable location${locations.length === 1 ? '' : 's'}`, [loading, locations.length]);
 
@@ -110,7 +110,7 @@ export default function NearbyMapPage() {
         <div className="map-results-head"><div><strong>Parking locations</strong><span>For your selected time</span></div><span className="badge badge-info">{locations.length}</span></div>
         <div className="map-result-list">
           {locations.map((location) => <article className="map-result-item" key={location._id}>
-            <div className="map-result-title"><strong>{location.name}</strong><span className={`badge ${location.availability.available ? 'badge-green' : 'badge-red'}`}>{location.availability.available} available</span></div>
+            <div className="map-result-title"><strong>{location.name}</strong><span className={`badge ${location.availability.available ? 'badge-green' : 'badge-red'}`}>{location.availability.isOpen ? `${location.availability.available} available` : 'Closed'}</span></div>
             <p><MapPin size={12} /> {location.address?.formattedAddress}</p>
             <div className="map-result-meta"><span>{location.distanceKm} km</span><strong>₹{location.pricePerHour}/hr</strong></div>
             {filters.vehicleType === 'ev' && <p><Zap size={12} /> Exact charging slot selected at booking</p>}
