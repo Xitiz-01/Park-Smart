@@ -5,8 +5,10 @@ const {
   normalizeVehicleType,
   normalizeFuelType,
 } = require('../utils/vehicleClassification');
+const { vehicleCatalogService } = require('../services/vehicleCatalogService');
 
 const writableFields = ['licensePlate', 'vehicleType', 'fuelType', 'brand', 'model', 'color', 'isDefault'];
+const normalizeCatalogText = (value) => String(value || '').trim().toLocaleLowerCase('en-IN');
 
 const normalizedVehicleInput = (body, { partial = false } = {}) => {
   const input = Object.fromEntries(writableFields
@@ -32,6 +34,35 @@ const validateVehicleInput = (input) => {
   return null;
 };
 
+const validateCatalogSelection = async (input, existing = null) => {
+  const current = existing?.toObject?.() || existing || {};
+  const brand = String(input.brand ?? current.brand ?? '').trim();
+  const model = String(input.model ?? current.model ?? '').trim();
+  if (!existing && (!brand || !model)) return 'Select a brand and model from the vehicle catalog';
+
+  const pairChanged = !existing
+    || (input.brand !== undefined && normalizeCatalogText(input.brand) !== normalizeCatalogText(current.brand))
+    || (input.model !== undefined && normalizeCatalogText(input.model) !== normalizeCatalogText(current.model));
+  const classificationChanged = input.vehicleType !== undefined || input.fuelType !== undefined;
+  if (!pairChanged && !classificationChanged) return null;
+
+  const details = brand && model ? await vehicleCatalogService.getModelDetails(brand, model) : null;
+  if (!details) {
+    return pairChanged ? 'Select a valid brand and model combination from the vehicle catalog' : null;
+  }
+  const vehicleType = input.vehicleType ?? current.vehicleType;
+  const fuelType = input.fuelType ?? current.fuelType;
+  if (vehicleType && vehicleType !== details.vehicleType) {
+    return `${details.brand} ${details.model} must use vehicle type ${details.vehicleType}`;
+  }
+  if (fuelType && !details.fuelTypes.includes(fuelType)) {
+    return `${details.brand} ${details.model} does not support fuel type ${fuelType}`;
+  }
+  input.brand = details.brand;
+  input.model = details.model;
+  return null;
+};
+
 const getMyVehicles = async (req, res) => {
   try {
     const vehicles = await Vehicle.find({ user: req.user._id });
@@ -47,6 +78,8 @@ const addVehicle = async (req, res) => {
     const validationError = validateVehicleInput(input);
     if (validationError) return res.status(400).json({ success: false, message: validationError });
     if (!input.fuelType) return res.status(400).json({ success: false, message: 'Fuel type is required' });
+    const catalogError = await validateCatalogSelection(input);
+    if (catalogError) return res.status(400).json({ success: false, message: catalogError });
 
     if (input.isDefault) {
       await Vehicle.updateMany({ user: req.user._id }, { isDefault: false });
@@ -71,6 +104,8 @@ const updateVehicle = async (req, res) => {
     if (validationError) return res.status(400).json({ success: false, message: validationError });
     const vehicle = await Vehicle.findOne({ _id: req.params.id, user: req.user._id });
     if (!vehicle) return res.status(404).json({ success: false, message: 'Vehicle not found' });
+    const catalogError = await validateCatalogSelection(input, vehicle);
+    if (catalogError) return res.status(400).json({ success: false, message: catalogError });
     if (input.isDefault) {
       await Vehicle.updateMany({ user: req.user._id, _id: { $ne: req.params.id } }, { isDefault: false });
     }

@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { vehiclesAPI } from '../../services/api';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { vehicleCatalogAPI, vehiclesAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 import { Truck, Plus, Trash2, Star, Pencil } from 'lucide-react';
+import SearchableSelect from '../../components/shared/SearchableSelect';
 import {
+  applyCatalogDetails,
   isElectricVehicle,
   physicalVehicleType,
   vehicleClassificationLabel,
@@ -29,6 +31,12 @@ export default function VehiclesPage() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [brands, setBrands] = useState([]);
+  const [models, setModels] = useState([]);
+  const [brandsLoading, setBrandsLoading] = useState(false);
+  const [modelsLoading, setModelsLoading] = useState(false);
+  const [brandError, setBrandError] = useState('');
+  const [modelError, setModelError] = useState('');
 
   const fetchVehicles = () =>
     vehiclesAPI.getAll()
@@ -36,6 +44,51 @@ export default function VehiclesPage() {
       .finally(() => setLoading(false));
 
   useEffect(() => { fetchVehicles(); }, []);
+
+  const loadBrands = useCallback(async (vehicleType) => {
+    setBrandsLoading(true); setBrandError('');
+    try {
+      const { data } = await vehicleCatalogAPI.getBrands({ vehicleType });
+      setBrands(data.brands || []);
+    } catch (error) {
+      setBrandError(error.response?.data?.message || 'Unable to load brands');
+    } finally { setBrandsLoading(false); }
+  }, []);
+
+  const loadModels = useCallback(async (brand, vehicleType, legacyModel, legacyFuel) => {
+    if (!brand) { setModels([]); return; }
+    setModelsLoading(true); setModelError('');
+    try {
+      const { data } = await vehicleCatalogAPI.getModels({ brand, vehicleType });
+      setModels(data.models || []);
+    } catch (error) {
+      if (editingId && legacyModel) setModels([{ model: legacyModel, vehicleType, fuelTypes: legacyFuel ? [legacyFuel] : [] }]);
+      else setModelError(error.response?.data?.message || 'Unable to load models');
+    } finally { setModelsLoading(false); }
+  }, [editingId]);
+
+  useEffect(() => { if (showForm) loadBrands(form.vehicleType); }, [showForm, form.vehicleType, loadBrands]);
+  useEffect(() => {
+    if (showForm && form.brand) loadModels(form.brand, form.vehicleType, form.model, form.fuelType);
+    else setModels([]);
+  }, [showForm, form.brand, form.vehicleType, form.model, form.fuelType, loadModels]);
+
+  const brandOptions = useMemo(() => (
+    editingId && form.brand && !brands.includes(form.brand) ? [form.brand, ...brands] : brands
+  ), [brands, editingId, form.brand]);
+  const modelOptions = useMemo(() => models.map((item) => item.model), [models]);
+
+  const selectModel = async (model) => {
+    setForm((current) => ({ ...current, model }));
+    if (!model) return;
+    try {
+      const { data } = await vehicleCatalogAPI.getDetails({ brand: form.brand, model });
+      const details = data.vehicle;
+      setForm((current) => applyCatalogDetails(current, details));
+    } catch (error) {
+      setModelError(error.response?.data?.message || 'Unable to load model details');
+    }
+  };
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -139,7 +192,7 @@ export default function VehiclesPage() {
                 <select
                   className="form-input"
                   value={form.vehicleType}
-                  onChange={e => setForm({ ...form, vehicleType: e.target.value })}
+                  onChange={e => setForm({ ...form, vehicleType: e.target.value, brand: '', model: '' })}
                 >
                   {VEHICLE_TYPES.map(t => (
                     <option key={t} value={t}>{t.toUpperCase()}</option>
@@ -147,15 +200,30 @@ export default function VehiclesPage() {
                 </select>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Brand</label>
-                <input
-                  className="form-input"
-                  placeholder="Maruti, Honda..."
-                  value={form.brand}
-                  onChange={e => setForm({ ...form, brand: e.target.value })}
-                />
-              </div>
+              <SearchableSelect
+                label="Brand"
+                value={form.brand}
+                options={brandOptions}
+                onChange={(brand) => setForm({ ...form, brand, model: '' })}
+                placeholder="Search brands"
+                loading={brandsLoading}
+                error={brandError}
+                onRetry={() => loadBrands(form.vehicleType)}
+                required
+              />
+
+              <SearchableSelect
+                label="Model"
+                value={form.model}
+                options={modelOptions}
+                onChange={selectModel}
+                placeholder={form.brand ? 'Search models' : 'Choose a brand first'}
+                loading={modelsLoading}
+                error={modelError}
+                onRetry={() => loadModels(form.brand, form.vehicleType, form.model, form.fuelType)}
+                disabled={!form.brand}
+                required
+              />
 
               <div className="form-group">
                 <label className="form-label">Fuel Type *</label>
@@ -170,16 +238,6 @@ export default function VehiclesPage() {
                     <option key={t} value={t}>{t.toUpperCase()}</option>
                   ))}
                 </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Model</label>
-                <input
-                  className="form-input"
-                  placeholder="Swift, City..."
-                  value={form.model}
-                  onChange={e => setForm({ ...form, model: e.target.value })}
-                />
               </div>
 
               <div className="form-group">
@@ -235,7 +293,7 @@ export default function VehiclesPage() {
               <button
                 type="submit"
                 className="btn btn-primary"
-                disabled={saving}
+                disabled={saving || !form.brand || !form.model || !form.fuelType}
               >
                 {saving ? 'Saving...' : editingId ? 'Update Vehicle' : 'Save Vehicle'}
               </button>
