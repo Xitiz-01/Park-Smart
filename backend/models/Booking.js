@@ -10,7 +10,23 @@ const bookingSchema = new mongoose.Schema(
     slot: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'ParkingSlot',
-      required: true,
+      default: null,
+    },
+    parkingLocation: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ParkingLocation',
+      default: null,
+      index: true,
+    },
+    bookingType: {
+      type: String,
+      enum: ['regular', 'ev', 'legacy'],
+      default: 'legacy',
+    },
+    vehicleType: {
+      type: String,
+      enum: ['car', 'bike', 'ev', 'motorcycle', 'suv'],
+      default: 'car',
     },
     vehicle: {
       type: mongoose.Schema.Types.ObjectId,
@@ -37,6 +53,10 @@ const bookingSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    hourlyRate: { type: Number, min: 0, default: 0 },
+    checkInTime: { type: Date, default: null },
+    checkOutTime: { type: Date, default: null },
+    reservationToken: { type: String, default: null, index: true },
     paymentStatus: {
       type: String,
       enum: ['pending', 'paid', 'refunded'],
@@ -62,9 +82,15 @@ const bookingSchema = new mongoose.Schema(
 // Generate unique booking code before save
 bookingSchema.pre('save', function (next) {
   if (!this.bookingCode) {
-    this.bookingCode = 'PKG' + Date.now().toString().slice(-8).toUpperCase();
+    this.bookingCode = `PKG${new mongoose.Types.ObjectId().toString().slice(-10).toUpperCase()}`;
   }
   next();
 });
+
+bookingSchema.index({ parkingLocation: 1, startTime: 1, expectedEndTime: 1, status: 1 });
+bookingSchema.index({ slot: 1, startTime: 1, expectedEndTime: 1, status: 1 });
+bookingSchema.index({ user: 1, createdAt: -1 });
+bookingSchema.index({ vehicle: 1, createdAt: -1 });
+bookingSchema.index({ status: 1, startTime: 1 });
 
 module.exports = mongoose.model('Booking', bookingSchema);

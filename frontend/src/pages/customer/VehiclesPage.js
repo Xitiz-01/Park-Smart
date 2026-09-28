@@ -1,13 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { vehiclesAPI } from '../../services/api';
 import toast from 'react-hot-toast';
-import { Truck, Plus, Trash2, Star } from 'lucide-react';
+import { Truck, Plus, Trash2, Star, Pencil } from 'lucide-react';
+import {
+  isElectricVehicle,
+  physicalVehicleType,
+  vehicleClassificationLabel,
+  vehicleFormPayload,
+} from '../../utils/hybridParking';
 
-const VEHICLE_TYPES = ['car', 'motorcycle', 'suv', 'ev'];
+const VEHICLE_TYPES = ['car', 'motorcycle', 'suv'];
+const FUEL_TYPES = ['petrol', 'diesel', 'cng', 'hybrid', 'electric'];
 
 const emptyForm = {
   licensePlate: '',
   vehicleType: 'car',
+  fuelType: 'petrol',
   brand: '',
   model: '',
   color: '',
@@ -20,6 +28,7 @@ export default function VehiclesPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
   const fetchVehicles = () =>
     vehiclesAPI.getAll()
@@ -28,20 +37,41 @@ export default function VehiclesPage() {
 
   useEffect(() => { fetchVehicles(); }, []);
 
-  const handleAdd = async (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
-      await vehiclesAPI.add(form);
-      toast.success('Vehicle added');
+      const payload = vehicleFormPayload(form);
+      if (editingId) await vehiclesAPI.update(editingId, payload);
+      else await vehiclesAPI.add(payload);
+      toast.success(editingId ? 'Vehicle updated' : 'Vehicle added');
       setShowForm(false);
       setForm(emptyForm);
+      setEditingId(null);
       fetchVehicles();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to add vehicle');
     } finally {
       setSaving(false);
     }
+  };
+
+  const startAdd = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    setShowForm(true);
+  };
+
+  const startEdit = (vehicle) => {
+    setEditingId(vehicle._id);
+    setForm({
+      licensePlate: vehicle.licensePlate || '',
+      vehicleType: physicalVehicleType(vehicle),
+      fuelType: vehicle.fuelType || (isElectricVehicle(vehicle) ? 'electric' : ''),
+      brand: vehicle.brand || '', model: vehicle.model || '', color: vehicle.color || '',
+      isDefault: Boolean(vehicle.isDefault),
+    });
+    setShowForm(true);
   };
 
   const handleDelete = async (id) => {
@@ -70,7 +100,7 @@ export default function VehiclesPage() {
           <h1>My Vehicles</h1>
           <p>{vehicles.length} registered vehicle{vehicles.length !== 1 ? 's' : ''}</p>
         </div>
-        <button onClick={() => setShowForm(!showForm)} className="btn btn-primary">
+        <button onClick={startAdd} className="btn btn-primary">
           <Plus size={16} /> Add Vehicle
         </button>
       </div>
@@ -79,10 +109,10 @@ export default function VehiclesPage() {
       {showForm && (
         <div className="card fade-in" style={{ marginBottom: 24, borderColor: 'var(--accent)' }}>
           <h3 style={{ fontWeight: 700, marginBottom: 20, fontSize: 15 }}>
-            Add New Vehicle
+            {editingId ? 'Edit Vehicle' : 'Add New Vehicle'}
           </h3>
 
-          <form onSubmit={handleAdd}>
+          <form onSubmit={handleSave}>
 
             {/* GRID START */}
             <div
@@ -125,6 +155,21 @@ export default function VehiclesPage() {
                   value={form.brand}
                   onChange={e => setForm({ ...form, brand: e.target.value })}
                 />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Fuel Type *</label>
+                <select
+                  className="form-input"
+                  value={form.fuelType}
+                  onChange={e => setForm({ ...form, fuelType: e.target.value })}
+                  required
+                >
+                  <option value="" disabled>Select fuel type</option>
+                  {FUEL_TYPES.map(t => (
+                    <option key={t} value={t}>{t.toUpperCase()}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="form-group">
@@ -181,7 +226,7 @@ export default function VehiclesPage() {
             <div style={{ display: 'flex', gap: 12 }}>
               <button
                 type="button"
-                onClick={() => setShowForm(false)}
+                onClick={() => { setShowForm(false); setEditingId(null); setForm(emptyForm); }}
                 className="btn btn-outline"
               >
                 Cancel
@@ -192,7 +237,7 @@ export default function VehiclesPage() {
                 className="btn btn-primary"
                 disabled={saving}
               >
-                {saving ? 'Saving...' : 'Save Vehicle'}
+                {saving ? 'Saving...' : editingId ? 'Update Vehicle' : 'Save Vehicle'}
               </button>
             </div>
 
@@ -245,7 +290,7 @@ export default function VehiclesPage() {
                     {v.licensePlate}
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'capitalize' }}>
-                    {v.vehicleType}
+                    {vehicleClassificationLabel(v)}
                   </div>
                 </div>
               </div>
@@ -262,13 +307,18 @@ export default function VehiclesPage() {
                 </div>
               )}
 
-              <button
-                onClick={() => handleDelete(v._id)}
-                className="btn btn-danger btn-sm"
-                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-              >
-                <Trash2 size={14} /> Remove
-              </button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => startEdit(v)} className="btn btn-outline btn-sm">
+                  <Pencil size={14} /> Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(v._id)}
+                  className="btn btn-danger btn-sm"
+                  style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  <Trash2 size={14} /> Remove
+                </button>
+              </div>
             </div>
           ))}
         </div>

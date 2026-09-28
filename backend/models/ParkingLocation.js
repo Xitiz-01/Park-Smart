@@ -58,6 +58,12 @@ const parkingLocationSchema = new mongoose.Schema({
     motorcycle: { type: Number, min: 0 },
     suv: { type: Number, min: 0 },
   },
+  capacity: {
+    car: { type: Number, min: 0, default: 0 },
+    bike: { type: Number, min: 0, default: 0 },
+    motorcycle: { type: Number, min: 0, default: 0 },
+    suv: { type: Number, min: 0, default: 0 },
+  },
   status: { type: String, enum: ['active', 'inactive'], default: 'active', index: true },
 }, { timestamps: true });
 

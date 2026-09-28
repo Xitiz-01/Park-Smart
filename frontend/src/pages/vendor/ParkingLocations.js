@@ -15,8 +15,8 @@ export default function ParkingLocations() {
         <div className="flex items-center justify-between"><h2 style={{ fontSize: 17 }}>{location.name}</h2><span className={`badge ${location.status === 'active' ? 'badge-green' : 'badge-red'}`}>{location.status}</span></div>
         <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 6 }}>{location.address.city}, {location.address.state}</p>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', margin: '16px 0', fontSize: 13 }}>{location.vehicleTypes.map((type) => <span key={type} style={{ textTransform: 'capitalize' }}>{type}: <strong>₹{location.pricing?.[type] ?? 0}/hr</strong></span>)}</div>
-        <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>{location.slotStats.available} / {location.slotStats.total} slots available</p>
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}><Link className="btn btn-sm btn-outline" to={`/vendor/locations/${location._id}/edit`}><Settings size={14} /> Manage</Link><Link className="btn btn-sm btn-outline" to={`/vendor/slots?location=${location._id}`}>Slots</Link></div>
+        <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>{location.regularCapacity || 0} regular spaces • {location.slotStats.total} EV bays</p>
+        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}><Link className="btn btn-sm btn-outline" to={`/vendor/locations/${location._id}/edit`}><Settings size={14} /> Capacity & details</Link>{location.evSupported && <Link className="btn btn-sm btn-outline" to={`/vendor/slots?location=${location._id}`}>EV slots</Link>}</div>
       </div>)}</div>}
   </div>;
 }

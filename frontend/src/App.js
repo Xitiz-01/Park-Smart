@@ -11,7 +11,6 @@ import RegisterPage from './pages/auth/RegisterPage';
 // Customer Pages
 import CustomerLayout from './components/customer/CustomerLayout';
 import CustomerDashboard from './pages/customer/Dashboard';
-import SlotsPage from './pages/customer/SlotsPage';
 import NearbyMapPage from './pages/customer/NearbyMapPage';
 import BookingPage from './pages/customer/BookingPage';
 import MyBookings from './pages/customer/MyBookings';
@@ -63,9 +62,10 @@ const AppRoutes = () => {
       {/* Customer Routes */}
       <Route path="/dashboard" element={<ProtectedRoute><CustomerLayout /></ProtectedRoute>}>
         <Route index element={<CustomerDashboard />} />
-        <Route path="slots" element={<SlotsPage />} />
+        <Route path="slots" element={<Navigate to="/dashboard/nearby" replace />} />
         <Route path="nearby" element={<NearbyMapPage />} />
-        <Route path="book/:slotId" element={<BookingPage />} />
+        <Route path="parking/:locationId" element={<BookingPage />} />
+        <Route path="book/:slotId" element={<BookingPage legacy />} />
         <Route path="bookings" element={<MyBookings />} />
         <Route path="vehicles" element={<VehiclesPage />} />
         <Route path="profile" element={<ProfilePage />} />

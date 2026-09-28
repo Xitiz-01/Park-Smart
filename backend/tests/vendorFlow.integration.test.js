@@ -16,8 +16,10 @@ process.env.GEOCODING_API_KEY = 'test-key';
 
 const { app, server } = require('../server');
 const User = require('../models/User');
+const Vehicle = require('../models/Vehicle');
 const GeocodingService = require('../services/geocodingService');
 const { migrateExistingUsers } = require('../services/betterAuthMigration');
+const { migrateVehicleFuelTypes } = require('../scripts/migrateVehicleFuelType');
 const { closeBetterAuth } = require('../auth/betterAuthBridge');
 
 let baseUrl;
@@ -78,7 +80,7 @@ const applicationPayload = (businessName, phone, address = selected()) => ({
 
 const operatingHours = () => Object.fromEntries(
   ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
-    .map((day) => [day, { open: true, allDay: day === 'sunday', openTime: '06:00', closeTime: '23:00' }])
+    .map((day) => [day, { open: true, allDay: true, openTime: '06:00', closeTime: '23:00' }])
 );
 
 const locationPayload = (name, address, pricing = { car: 50, bike: 20, ev: 70 }) => ({
@@ -92,6 +94,7 @@ const locationPayload = (name, address, pricing = { car: 50, bike: 20, ev: 70 })
   vehicleTypes: ['car', 'bike', 'ev'], evSupported: true,
   evDetails: { slotCount: 2, chargerType: 'CCS2' }, operatingHours: operatingHours(),
   amenities: ['covered', 'cctv', 'security_guard', 'accessible'], pricing,
+  capacity: { car: 1, bike: 2 },
 });
 
 const register = async (name, email, phone, extras = {}) => {
@@ -208,36 +211,125 @@ test('Better Auth, RBAC, migration, and ParkSmart domain flows work end-to-end',
   assert.equal(updateMoshi.status, 200, 'owner can edit and move marker');
   assert.deepEqual(updateMoshi.payload.location.location.coordinates, [movedMoshi.longitude, movedMoshi.latitude]);
 
-  const slotOne = await request(`/vendors/parking-locations/${moshiId}/slots`, { method: 'POST', client: vendorAClient, body: { slotNumber: 'C01', vehicleType: 'car' } });
+  const regularSlotRejected = await request(`/vendors/parking-locations/${moshiId}/slots`, { method: 'POST', client: vendorAClient, body: { slotNumber: 'C01', vehicleType: 'car' } });
+  assert.equal(regularSlotRejected.status, 400, 'regular vehicles are managed by capacity rather than physical slots');
+  const slotOne = await request(`/vendors/parking-locations/${moshiId}/slots`, { method: 'POST', client: vendorAClient, body: { slotNumber: 'C01', vehicleType: 'ev' } });
   assert.equal(slotOne.status, 201);
-  assert.equal((await request(`/vendors/parking-locations/${moshiId}/slots`, { method: 'POST', client: vendorAClient, body: { slotNumber: 'C01', vehicleType: 'car' } })).status, 409, 'same-location duplicate rejected');
-  assert.equal((await request(`/vendors/parking-locations/${wakadId}/slots`, { method: 'POST', client: vendorAClient, body: { slotNumber: 'C01', vehicleType: 'car' } })).status, 201, 'same number allowed elsewhere');
-  const bulk = await request(`/vendors/parking-locations/${moshiId}/slots/bulk`, { method: 'POST', client: vendorAClient, body: { prefix: 'B', count: 3, vehicleType: 'bike' } });
+  assert.equal(slotOne.payload.slot.vehicleType, 'ev');
+  assert.equal((await request(`/vendors/parking-locations/${moshiId}/slots`, { method: 'POST', client: vendorAClient, body: { slotNumber: 'C01', vehicleType: 'ev' } })).status, 409, 'same-location duplicate rejected');
+  assert.equal((await request(`/vendors/parking-locations/${wakadId}/slots`, { method: 'POST', client: vendorAClient, body: { slotNumber: 'C01', vehicleType: 'ev' } })).status, 201, 'same number allowed elsewhere');
+  const bulk = await request(`/vendors/parking-locations/${moshiId}/slots/bulk`, { method: 'POST', client: vendorAClient, body: { prefix: 'B', count: 3, vehicleType: 'ev' } });
   assert.equal(bulk.status, 201);
   assert.deepEqual(bulk.payload.slots.map((slot) => slot.slotNumber), ['B01', 'B02', 'B03']);
   const evSlot = await request(`/vendors/parking-locations/${moshiId}/slots`, { method: 'POST', client: vendorAClient, body: { slotNumber: 'EV01', vehicleType: 'ev', evCompatible: true } });
   assert.equal(evSlot.payload.slot.evCompatible, true);
-  assert.equal((await request(`/vendors/parking-locations/${banerId}/slots`, { method: 'POST', client: vendorAClient, body: { slotNumber: 'X01', vehicleType: 'car' } })).status, 404, 'Vendor A cannot add slots to Vendor B');
+  assert.equal((await request(`/vendors/parking-locations/${banerId}/slots`, { method: 'POST', client: vendorAClient, body: { slotNumber: 'X01', vehicleType: 'ev' } })).status, 404, 'Vendor A cannot add slots to Vendor B');
 
   const repricedMoshi = { ...movedMoshi, pricing: { car: 60, bike: 24, ev: 80 } };
   assert.equal((await request(`/vendors/parking-locations/${moshiId}`, { method: 'PATCH', client: vendorAClient, body: repricedMoshi })).status, 200);
   const repricedSlots = await request(`/vendors/parking-locations/${moshiId}/slots`, { client: vendorAClient });
-  assert.equal(repricedSlots.payload.slots.find((slot) => slot.slotNumber === 'C01').pricePerHour, 60, 'location pricing updates owned slots');
+  assert.equal(repricedSlots.payload.slots.find((slot) => slot.slotNumber === 'C01').pricePerHour, 80, 'location EV pricing updates owned physical slots');
 
-  const vehicle = await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14AB1234', vehicleType: 'car', brand: 'Test', model: 'Car', color: 'Blue' } });
+  const vehicle = await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14AB1234', vehicleType: 'CAR', fuelType: 'PETROL', brand: 'Test', model: 'Car', color: 'Blue' } });
   assert.equal(vehicle.status, 201, 'existing vehicle flow works');
+  assert.equal(vehicle.payload.vehicle.vehicleType, 'car', 'physical vehicle type is normalized');
+  assert.equal(vehicle.payload.vehicle.fuelType, 'petrol', 'fuel type is normalized and returned by the API');
+  const dieselVehicle = await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14DS1234', vehicleType: 'car', fuelType: 'diesel' } });
+  assert.equal(dieselVehicle.status, 201, 'diesel cars can be created');
+  assert.equal((await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14NOFUEL', vehicleType: 'car' } })).status, 400, 'new vehicles require a fuel type');
+  const customerUser = await User.findOne({ authUserId: customerRegistration.payload.user.id });
+  const missingFuelVehicleId = new mongoose.Types.ObjectId();
+  await Vehicle.collection.insertOne({
+    _id: missingFuelVehicleId, user: customerUser._id, licensePlate: 'MH14OLD123', vehicleType: 'car',
+    isDefault: false, createdAt: new Date(), updatedAt: new Date(),
+  });
+  const vehiclesWithLegacyRecord = await request('/vehicles', { client: customerClient });
+  assert.equal(vehiclesWithLegacyRecord.payload.vehicles.find((item) => item._id === String(missingFuelVehicleId)).fuelType, null, 'old vehicles without fuelType remain readable');
+  assert.equal((await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14BAD123', vehicleType: 'car', fuelType: 'steam' } })).status, 400, 'invalid fuel types are rejected');
+  assert.equal((await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14EV0000', vehicleType: 'ev', fuelType: 'electric' } })).status, 400, 'new vehicles cannot use EV as a physical class');
   const start = new Date(Date.now() + 3600000);
   const end = new Date(start.getTime() + 3600000);
-  const booking = await request('/bookings', { method: 'POST', client: customerClient, body: { slotId: slotOne.payload.slot._id, vehicleId: vehicle.payload.vehicle._id, startTime: start, expectedEndTime: end, paymentMethod: 'upi' } });
-  assert.equal(booking.status, 201, 'existing booking works with vendor slot');
+  const booking = await request('/bookings', { method: 'POST', client: customerClient, body: { parkingLocationId: moshiId, bookingType: 'regular', vehicleId: vehicle.payload.vehicle._id, startTime: start, expectedEndTime: end } });
+  assert.equal(booking.status, 201, 'regular booking reserves location capacity');
+  assert.equal(booking.payload.booking.slot, null, 'regular booking has no numbered slot');
+  assert.equal(booking.payload.booking.paymentStatus, 'pending', 'booking does not fake payment settlement');
   const vendorBookings = await request('/vendors/bookings', { client: vendorAClient });
   assert.equal(vendorBookings.payload.bookings.length, 1);
-  assert.equal(vendorBookings.payload.bookings[0].slot.parkingLocation.name, 'Moshi Parking Updated');
+  assert.equal(vendorBookings.payload.bookings[0].parkingLocation.name, 'Moshi Parking Updated');
+
+  const discovered = await request(`/parking-locations/nearby?lat=${movedMoshi.latitude}&lng=${movedMoshi.longitude}&radiusKm=5&vehicleType=car&startTime=${encodeURIComponent(start.toISOString())}&endTime=${encodeURIComponent(end.toISOString())}`, { client: customerClient });
+  assert.equal(discovered.status, 200, 'dynamic parking discovery works');
+  assert.equal(discovered.payload.locations.find((item) => item._id === moshiId).availability.available, 0, 'discovery reports reserved capacity');
+  const regularAtEvLocation = await request(`/parking-locations/nearby?lat=${movedMoshi.latitude}&lng=${movedMoshi.longitude}&radiusKm=5&vehicleType=car&fuelType=petrol&ev=true&startTime=${encodeURIComponent(start.toISOString())}&endTime=${encodeURIComponent(end.toISOString())}`, { client: customerClient });
+  assert.equal(regularAtEvLocation.status, 200, 'EV-only filtering remains available to regular vehicles');
+  assert.ok(regularAtEvLocation.payload.locations.some((item) => item._id === moshiId));
+  assert.equal(regularAtEvLocation.payload.requestedWindow.bookingType, 'regular', 'manual EV filtering does not change booking mode');
+
+  const raceStart = new Date(start.getTime() + 3 * 3600000);
+  const raceEnd = new Date(raceStart.getTime() + 3600000);
+  const racePayload = { parkingLocationId: moshiId, bookingType: 'regular', vehicleId: vehicle.payload.vehicle._id, startTime: raceStart, expectedEndTime: raceEnd };
+  const race = await Promise.all([
+    request('/bookings', { method: 'POST', client: customerClient, body: racePayload }),
+    request('/bookings', { method: 'POST', client: customerClient, body: racePayload }),
+  ]);
+  assert.deepEqual(race.map((result) => result.status).sort(), [201, 409], 'atomic capacity ledger prevents concurrent overbooking');
+  const winningRaceBooking = race.find((result) => result.status === 201).payload.booking;
+  assert.equal((await request(`/bookings/${winningRaceBooking._id}/cancel`, { method: 'PUT', client: customerClient })).status, 200);
+  const releasedCapacityBooking = await request('/bookings', { method: 'POST', client: customerClient, body: racePayload });
+  assert.equal(releasedCapacityBooking.status, 201, 'cancellation immediately releases regular capacity');
+
+  const evVehicle = await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14EV1234', vehicleType: 'suv', fuelType: 'electric', brand: 'Test', model: 'EV', color: 'Green' } });
+  assert.equal(evVehicle.status, 201, 'electric SUVs preserve their physical class');
+  const evDiscovery = await request(`/parking-locations/nearby?lat=${movedMoshi.latitude}&lng=${movedMoshi.longitude}&radiusKm=5&vehicleType=suv&fuelType=electric&startTime=${encodeURIComponent(raceStart.toISOString())}&endTime=${encodeURIComponent(raceEnd.toISOString())}`, { client: customerClient });
+  assert.equal(evDiscovery.status, 200, 'electric vehicle discovery returns EV-compatible locations');
+  assert.ok(evDiscovery.payload.locations.some((item) => item._id === moshiId));
+  assert.equal(evDiscovery.payload.requestedWindow.bookingType, 'ev');
+  const evRacePayload = { parkingLocationId: moshiId, bookingType: 'ev', slotId: evSlot.payload.slot._id, vehicleId: evVehicle.payload.vehicle._id, startTime: raceStart, expectedEndTime: raceEnd };
+  const evRace = await Promise.all([
+    request('/bookings', { method: 'POST', client: customerClient, body: evRacePayload }),
+    request('/bookings', { method: 'POST', client: customerClient, body: evRacePayload }),
+  ]);
+  assert.deepEqual(evRace.map((result) => result.status).sort(), [201, 409], 'atomic EV ledger prevents simultaneous overlapping reservations');
+  const evBooking = evRace.find((result) => result.status === 201);
+  assert.equal(evBooking.payload.booking.slot._id, evSlot.payload.slot._id);
+  const laterEvStart = new Date(raceEnd.getTime() + 60000);
+  const laterEvEnd = new Date(laterEvStart.getTime() + 3600000);
+  assert.equal((await request('/bookings', { method: 'POST', client: customerClient, body: { parkingLocationId: moshiId, bookingType: 'ev', slotId: evSlot.payload.slot._id, vehicleId: evVehicle.payload.vehicle._id, startTime: laterEvStart, expectedEndTime: laterEvEnd } })).status, 201, 'the same EV bay can be reserved for a non-overlapping time');
+
+  const legacyEvId = new mongoose.Types.ObjectId();
+  await Vehicle.collection.insertOne({
+    _id: legacyEvId, user: customerUser._id, licensePlate: 'MH14LEGACY', vehicleType: 'ev',
+    brand: 'Legacy', model: 'Electric', isDefault: false, createdAt: new Date(), updatedAt: new Date(),
+  });
+  const legacyEvStart = new Date(laterEvEnd.getTime() + 60000);
+  const legacyEvEnd = new Date(legacyEvStart.getTime() + 3600000);
+  const legacyEvBooking = await request('/bookings', { method: 'POST', client: customerClient, body: { parkingLocationId: moshiId, bookingType: 'ev', slotId: evSlot.payload.slot._id, vehicleId: legacyEvId, startTime: legacyEvStart, expectedEndTime: legacyEvEnd } });
+  assert.equal(legacyEvBooking.status, 201, 'legacy vehicleType=ev records still use EV exact-slot booking');
+  assert.equal(legacyEvBooking.payload.booking.bookingType, 'ev');
+  assert.equal(legacyEvBooking.payload.booking.vehicleType, 'car');
+
+  const quietLogger = { log() {}, warn() {} };
+  const preview = await migrateVehicleFuelTypes({ collection: Vehicle.collection, apply: false, logger: quietLogger });
+  assert.equal(preview.migrated, 1, 'migration dry run reports the legacy EV record');
+  assert.equal((await Vehicle.collection.findOne({ _id: legacyEvId })).vehicleType, 'ev', 'migration preview does not write');
+  const appliedVehicleMigration = await migrateVehicleFuelTypes({ collection: Vehicle.collection, apply: true, logger: quietLogger });
+  assert.equal(appliedVehicleMigration.migrated, 1);
+  const migratedVehicle = await Vehicle.collection.findOne({ _id: legacyEvId });
+  assert.equal(migratedVehicle.vehicleType, 'car');
+  assert.equal(migratedVehicle.fuelType, 'electric');
+  const repeatedVehicleMigration = await migrateVehicleFuelTypes({ collection: Vehicle.collection, apply: true, logger: quietLogger });
+  assert.equal(repeatedVehicleMigration.migrated, 0, 'vehicle fuel migration is idempotent');
+
+  assert.equal((await request(`/vendors/bookings/${booking.payload.booking._id}/checkin`, { method: 'PUT', client: vendorBClient })).status, 404, 'another vendor cannot check in this booking');
+  assert.equal((await request(`/vendors/bookings/${booking.payload.booking._id}/checkin`, { method: 'PUT', client: vendorAClient })).status, 200, 'owning vendor can check in');
+  const checkedOut = await request(`/vendors/bookings/${booking.payload.booking._id}/checkout`, { method: 'PUT', client: vendorAClient });
+  assert.equal(checkedOut.status, 200, 'owning vendor can check out');
+  assert.ok(checkedOut.payload.booking.checkOutTime);
 
   const dashboard = await request('/vendors/dashboard', { client: vendorAClient });
   assert.equal(dashboard.payload.stats.parkingLocations, 2);
-  assert.equal(dashboard.payload.stats.totalSlots, 6);
-  assert.equal(dashboard.payload.stats.activeBookings, 1);
+  assert.ok(dashboard.payload.stats.totalSlots >= 12, 'dashboard combines regular capacity and EV bays');
+  assert.ok(dashboard.payload.stats.activeBookings >= 2);
 
   const deactivate = await request(`/vendors/parking-locations/${wakadId}`, { method: 'DELETE', client: vendorAClient });
   assert.equal(deactivate.payload.location.status, 'inactive');

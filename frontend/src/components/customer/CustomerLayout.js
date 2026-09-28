@@ -23,8 +23,7 @@ export default function CustomerLayout() {
 
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Overview', end: true },
-    { to: '/dashboard/slots', icon: MapPin, label: 'Find Parking' },
-    { to: '/dashboard/nearby', icon: Navigation, label: 'Nearby Map' },
+    { to: '/dashboard/nearby', icon: Navigation, label: 'Find Parking' },
     { to: '/dashboard/bookings', icon: CalendarDays, label: 'My Bookings' },
     { to: '/dashboard/vehicles', icon: CarFront, label: 'My Vehicles' },
     { to: '/dashboard/profile', icon: UserRound, label: 'Profile' },

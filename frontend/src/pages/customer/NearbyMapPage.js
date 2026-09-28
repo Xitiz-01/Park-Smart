@@ -1,421 +1,169 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MapContainer, Marker, Popup, TileLayer, Circle, useMap } from 'react-leaflet';
+import { Circle, MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { addHours, format } from 'date-fns';
 import { io } from 'socket.io-client';
-import { MapPin, LocateFixed, Navigation } from 'lucide-react';
+import { LocateFixed, MapPin, Search, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { slotsAPI } from '../../services/api';
+import { parkingLocationsAPI, vehiclesAPI } from '../../services/api';
+import {
+  isElectricVehicle,
+  parkingDetailsPath,
+  physicalVehicleType,
+  vehicleClassificationLabel,
+} from '../../utils/hybridParking';
 import 'leaflet/dist/leaflet.css';
 
-const DEFAULT_CENTER = { lat: 28.6139, lng: 77.2090 };
-const NEARBY_CACHE_KEY = 'nearby_slots_cache_v2';
-const STATUS_COLORS = {
-  available: '#2f855a',
-  occupied: '#c94a4a',
-  reserved: '#e9a23b',
-  maintenance: '#92968f',
-};
-const EXTERNAL_MARKER_COLOR = '#333333';
-const toRadians = (deg) => (deg * Math.PI) / 180;
-const calculateDistanceMeters = (lat1, lng1, lat2, lng2) => {
-  const earthRadius = 6371000;
-  const dLat = toRadians(lat2 - lat1);
-  const dLng = toRadians(lng2 - lng1);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return earthRadius * c;
-};
+const DEFAULT_CENTER = { lat: 18.5204, lng: 73.8567 };
+const CACHE_KEY = 'parksmart-location-discovery-v1';
+const dateInput = (date) => format(date, "yyyy-MM-dd'T'HH:mm");
+const markerIcon = (available) => L.divIcon({
+  className: '',
+  html: `<div style="width:18px;height:18px;border-radius:999px;background:${available ? '#147d6f' : '#c94a4a'};border:3px solid white;box-shadow:0 0 0 2px rgba(37,37,37,.2)"></div>`,
+  iconSize: [18, 18], iconAnchor: [9, 9],
+});
 
-const createSlotIcon = (status) =>
-  L.divIcon({
-    className: '',
-    html: `<div style="width:16px;height:16px;border-radius:999px;background:${STATUS_COLORS[status] || '#147d6f'};border:2px solid #ffffff;box-shadow:0 0 0 2px rgba(37,37,37,0.18);"></div>`,
-    iconSize: [16, 16],
-    iconAnchor: [8, 8],
-  });
-const createExternalIcon = () =>
-  L.divIcon({
-    className: '',
-    html: `<div style="width:16px;height:16px;border-radius:999px;background:${EXTERNAL_MARKER_COLOR};border:2px solid #ffffff;box-shadow:0 0 0 2px rgba(37,37,37,0.18);"></div>`,
-    iconSize: [16, 16],
-    iconAnchor: [8, 8],
-  });
-const getProviderLabel = (provider) => {
-  if (!provider) return '';
-  if (provider.includes('nominatim')) return 'Nominatim (OpenStreetMap)';
-  if (provider.includes('overpass')) return 'Overpass (OpenStreetMap)';
-  return 'OpenStreetMap';
-};
-
-function RecenterMap({ center }) {
+function Recenter({ center }) {
   const map = useMap();
-  useEffect(() => {
-    if (center?.lat && center?.lng) {
-      map.setView([center.lat, center.lng], 15);
-    }
-  }, [center, map]);
+  useEffect(() => { map.setView([center.lat, center.lng], 14); }, [center, map]);
   return null;
 }
 
 export default function NearbyMapPage() {
   const [center, setCenter] = useState(DEFAULT_CENTER);
-  const [slots, setSlots] = useState([]);
-  const [externalPlaces, setExternalPlaces] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [radius, setRadius] = useState(2000);
-  const [status, setStatus] = useState('');
-  const [type, setType] = useState('');
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [showingCached, setShowingCached] = useState(false);
-  const [externalProvider, setExternalProvider] = useState('');
+  const [cached, setCached] = useState(false);
+  const [vehicles, setVehicles] = useState([]);
+  const [vehicleId, setVehicleId] = useState('');
+  const [filters, setFilters] = useState({
+    radiusKm: 10, startTime: dateInput(addHours(new Date(), 1)),
+    endTime: dateInput(addHours(new Date(), 3)), sort: 'nearest', amenities: '',
+    maxPrice: '', available: true, evOnly: false,
+  });
+  const selectedVehicle = vehicles.find((vehicle) => vehicle._id === vehicleId);
 
-  const readCachedNearby = () => {
-    try {
-      const raw = localStorage.getItem(NEARBY_CACHE_KEY);
-      if (!raw) return null;
-      return JSON.parse(raw);
-    } catch (e) {
-      return null;
-    }
-  };
-
-  const writeCachedNearby = (cachePayload) => {
-    try {
-      localStorage.setItem(NEARBY_CACHE_KEY, JSON.stringify(cachePayload));
-    } catch (e) {
-      // ignore storage write errors
-    }
-  };
-
-  const fetchNearby = async (coords, opts = {}) => {
-    const nextRadius = opts.radius ?? radius;
-    const nextStatus = opts.status ?? status;
-    const nextType = opts.type ?? type;
-
-    if (!navigator.onLine) {
-      const cached = readCachedNearby();
-      if (cached?.slots?.length || cached?.externalPlaces?.length) {
-        setSlots(cached.slots || []);
-        setExternalPlaces(cached.externalPlaces || []);
-        setExternalProvider(cached.externalProvider || '');
-        setCenter(cached.center || coords || center);
-        setShowingCached(true);
-        toast('Offline: showing last synced nearby parking data');
-      } else {
-        setSlots([]);
-        setExternalPlaces([]);
-        setExternalProvider('');
-      }
+  const fetchLocations = useCallback(async (coords = center, next = filters, vehicle = selectedVehicle) => {
+    if (!vehicle) {
+      setLocations([]);
       setLoading(false);
       return;
     }
     try {
       setLoading(true);
-      const [internalResult, externalResult] = await Promise.allSettled([
-        slotsAPI.getNearby({
-          lat: coords.lat,
-          lng: coords.lng,
-          radius: nextRadius,
-          status: nextStatus,
-          type: nextType,
-        }),
-        slotsAPI.getExternalNearby({
-          lat: coords.lat,
-          lng: coords.lng,
-          radius: nextRadius,
-        }),
-      ]);
-
-      const hasInternal = internalResult.status === 'fulfilled';
-      const hasExternal = externalResult.status === 'fulfilled';
-
-      if (!hasInternal && !hasExternal) {
-        const internalMessage = internalResult.reason?.response?.data?.message;
-        const externalMessage = externalResult.reason?.response?.data?.message;
-        throw new Error(externalMessage || internalMessage || 'Unable to fetch nearby parking data');
-      }
-
-      const apiSlots = hasInternal ? internalResult.value.data.slots || [] : [];
-      const externalPayload = hasExternal ? externalResult.value.data : {};
-      const apiExternalPlaces = hasExternal ? externalPayload.places || [] : [];
-      const provider = hasExternal ? externalPayload.provider || '' : '';
-      setSlots(apiSlots);
-      setExternalPlaces(apiExternalPlaces);
-      setExternalProvider(provider);
-      setShowingCached(false);
-      writeCachedNearby({
-        slots: apiSlots,
-        externalPlaces: apiExternalPlaces,
-        externalProvider: provider,
-        center: { lat: coords.lat, lng: coords.lng },
-        radius: nextRadius,
-        status: nextStatus,
-        type: nextType,
-        syncedAt: new Date().toISOString(),
-      });
-
-      if (!hasExternal) {
-        toast('Live public parking provider is temporarily unavailable. Showing app slot data.');
-      }
-      if (!hasInternal) {
-        toast('App slot feed is temporarily unavailable. Showing live public parking data.');
-      }
-    } catch (err) {
-      const cached = readCachedNearby();
-      if (cached?.slots?.length || cached?.externalPlaces?.length) {
-        setSlots(cached.slots || []);
-        setExternalPlaces(cached.externalPlaces || []);
-        setExternalProvider(cached.externalProvider || '');
-        setCenter(cached.center || coords || center);
-        setShowingCached(true);
-        toast('Using last synced data due to connectivity issue');
-      } else {
-        toast.error(err.message || err.response?.data?.message || 'Unable to fetch nearby parking data');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const detectLocation = () => {
-    if (!navigator.geolocation) {
-      toast.error('Geolocation is not supported on this browser');
-      fetchNearby(center);
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        const nextCenter = { lat: coords.latitude, lng: coords.longitude };
-        setCenter(nextCenter);
-        fetchNearby(nextCenter);
-      },
-      () => {
-        toast.error('Location access denied. Showing default area.');
-        fetchNearby(center);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  };
-
-  useEffect(() => {
-    detectLocation();
-  }, []);
-
-  useEffect(() => {
-    fetchNearby(center);
-  }, [radius, status, type]);
-
-  useEffect(() => {
-    const handleOnline = () => {
-      setIsOnline(true);
-      toast.success('Back online. Refreshing nearby slots...');
-      fetchNearby(center);
-    };
-    const handleOffline = () => {
-      setIsOnline(false);
-      toast('You are offline. Live updates are paused.');
-    };
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, [center, radius, status, type]);
-
-  useEffect(() => {
-    if (!isOnline) return undefined;
-    const socket = io((process.env.REACT_APP_API_URL || 'http://localhost:5001/api').replace('/api', ''), {
-      transports: ['websocket'],
-      withCredentials: true,
-    });
-
-    socket.on('slot:updated', (updatedSlot) => {
-      setSlots((prev) => {
-        const exists = prev.some((slot) => slot._id === updatedSlot._id);
-        if (exists) {
-          return prev.map((slot) => {
-            if (slot._id !== updatedSlot._id) return slot;
-            const lat = updatedSlot.location?.lat;
-            const lng = updatedSlot.location?.lng;
-            if (typeof lat === 'number' && typeof lng === 'number') {
-              const distanceMeters = calculateDistanceMeters(center.lat, center.lng, lat, lng);
-              return {
-                ...slot,
-                ...updatedSlot,
-                distanceMeters: Math.round(distanceMeters),
-                distanceKm: Number((distanceMeters / 1000).toFixed(2)),
-              };
-            }
-            return { ...slot, ...updatedSlot };
-          });
+      const params = {
+        ...next, lat: coords.lat, lng: coords.lng,
+        vehicleType: physicalVehicleType(vehicle),
+        fuelType: isElectricVehicle(vehicle) ? 'electric' : vehicle.fuelType,
+        ev: next.evOnly,
+        startTime: new Date(next.startTime).toISOString(), endTime: new Date(next.endTime).toISOString(),
+        amenities: next.amenities, available: next.available,
+      };
+      delete params.evOnly;
+      if (!params.fuelType) delete params.fuelType;
+      if (!params.maxPrice) delete params.maxPrice;
+      const { data } = await parkingLocationsAPI.getNearby(params);
+      setLocations(data.locations || []);
+      setCached(false);
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ center: coords, filters: next, vehicleId: vehicle._id, locations: data.locations, savedAt: new Date().toISOString() }));
+    } catch (error) {
+      const saved = localStorage.getItem(CACHE_KEY);
+      if (saved) {
+        const value = JSON.parse(saved);
+        if (value.vehicleId === vehicle._id) {
+          setLocations(value.locations || []);
+          setCenter(value.center || coords);
+          setCached(true);
+          toast('Showing last synced discovery results');
+          return;
         }
-        return prev;
-      });
+      }
+      toast.error(error.response?.data?.message || 'Unable to discover parking');
+    } finally { setLoading(false); }
+  }, [center, filters, selectedVehicle]);
+
+  const locate = useCallback((vehicle = selectedVehicle) => {
+    if (!navigator.geolocation) return fetchLocations(DEFAULT_CENTER, filters, vehicle);
+    navigator.geolocation.getCurrentPosition(({ coords }) => {
+      const next = { lat: coords.latitude, lng: coords.longitude };
+      setCenter(next);
+      fetchLocations(next, filters, vehicle);
+    }, () => {
+      toast('Location access was unavailable. Showing Pune.');
+      fetchLocations(DEFAULT_CENTER, filters, vehicle);
+    }, { enableHighAccuracy: true, timeout: 10000 });
+  }, [fetchLocations, filters, selectedVehicle]);
+
+  useEffect(() => {
+    vehiclesAPI.getAll().then(({ data }) => {
+      const list = data.vehicles || [];
+      const preferred = list.find((vehicle) => vehicle.isDefault) || list[0];
+      setVehicles(list);
+      setVehicleId(preferred?._id || '');
+      if (preferred) locate(preferred);
+      else setLoading(false);
+    }).catch(() => { setLoading(false); toast.error('Unable to load your vehicles'); });
+  }, []);
+  useEffect(() => {
+    const socket = io((process.env.REACT_APP_API_URL || 'http://localhost:5001/api').replace(/\/api\/?$/, ''), { transports: ['websocket'], withCredentials: true });
+    let timer;
+    socket.on('availability:changed', () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => fetchLocations(), 300);
     });
+    return () => { clearTimeout(timer); socket.disconnect(); };
+  }, [fetchLocations]);
 
-    return () => socket.disconnect();
-  }, [isOnline, center]);
+  const queryFor = useCallback((location) => parkingDetailsPath(location._id, {
+    ...filters,
+    vehicleId: selectedVehicle?._id,
+    vehicleType: physicalVehicleType(selectedVehicle),
+    fuelType: isElectricVehicle(selectedVehicle) ? 'electric' : selectedVehicle?.fuelType,
+    distanceKm: location.distanceKm,
+  }), [filters, selectedVehicle]);
 
-  const slotCountText = useMemo(() => {
-    if (loading) return 'Loading nearby parking data...';
-    if (!slots.length && !externalPlaces.length) return 'No nearby parking places found in selected radius';
-    return `${slots.length} app slots • ${externalPlaces.length} live public parking places`;
-  }, [loading, slots.length, externalPlaces.length]);
+  const resultText = useMemo(() => loading ? 'Checking live capacity…' : `${locations.length} reservable location${locations.length === 1 ? '' : 's'}`, [loading, locations.length]);
 
-  return (
-    <div className="fade-in">
-      <div className="page-header">
-        <h1>Nearby Parking Map</h1>
-        <p>
-          {slotCountText}
-          {!isOnline ? ' • Offline mode' : ''}
-          {showingCached ? ' • Showing cached data' : ''}
-          {externalProvider ? ` • Source: ${getProviderLabel(externalProvider)}` : ''}
-        </p>
+  return <div className="fade-in">
+    <div className="page-header"><h1>Find Parking</h1><p>{resultText}{cached ? ' • cached result' : ' • live vendor inventory'}</p></div>
+    <form className="card" style={{ marginBottom: 16 }} onSubmit={(event) => { event.preventDefault(); fetchLocations(); }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(155px, 1fr))', gap: 12, alignItems: 'end' }}>
+        <div className="form-group"><label className="form-label">Registered vehicle</label><select className="form-input" value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} required><option value="">Choose a vehicle</option>{vehicles.map((vehicle) => <option key={vehicle._id} value={vehicle._id}>{vehicle.licensePlate} — {vehicleClassificationLabel(vehicle)}</option>)}</select></div>
+        <div className="form-group"><label className="form-label">Arrive</label><input className="form-input" type="datetime-local" value={filters.startTime} onChange={(e) => setFilters({ ...filters, startTime: e.target.value })} required /></div>
+        <div className="form-group"><label className="form-label">Leave</label><input className="form-input" type="datetime-local" value={filters.endTime} onChange={(e) => setFilters({ ...filters, endTime: e.target.value })} required /></div>
+        <div className="form-group"><label className="form-label">Radius</label><select className="form-input" value={filters.radiusKm} onChange={(e) => setFilters({ ...filters, radiusKm: e.target.value })}><option value="2">2 km</option><option value="5">5 km</option><option value="10">10 km</option><option value="25">25 km</option><option value="50">50 km</option></select></div>
+        <div className="form-group"><label className="form-label">Sort</label><select className="form-input" value={filters.sort} onChange={(e) => setFilters({ ...filters, sort: e.target.value })}><option value="nearest">Nearest</option><option value="lowest_price">Lowest price</option><option value="highest_availability">Most availability</option></select></div>
+        <div className="form-group"><label className="form-label">Max ₹ / hr</label><input className="form-input" type="number" min="0" value={filters.maxPrice} onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })} placeholder="Any" /></div>
+        <div className="form-group"><label className="form-label">Amenities</label><select className="form-input" value={filters.amenities} onChange={(e) => setFilters({ ...filters, amenities: e.target.value })}><option value="">Any</option><option value="covered">Covered</option><option value="cctv">CCTV</option><option value="security_guard">Security guard</option><option value="accessible">Accessible</option><option value="ev_charging">EV charging</option></select></div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 7, height: 42 }}><input type="checkbox" checked={filters.available} onChange={(e) => setFilters({ ...filters, available: e.target.checked })} /> Available only</label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 7, height: 42 }}><input type="checkbox" checked={filters.evOnly} onChange={(e) => setFilters({ ...filters, evOnly: e.target.checked })} /> EV-capable locations only</label>
+        <button className="btn btn-primary" style={{ height: 42 }}><Search size={16} /> Search</button>
+        <button className="btn btn-outline" type="button" onClick={() => locate()} style={{ height: 42 }}><LocateFixed size={16} /> My location</button>
       </div>
+    </form>
 
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12, alignItems: 'end' }}>
-          <div className="form-group">
-            <label className="form-label">Radius (meters)</label>
-            <select className="form-input" value={radius} onChange={(e) => setRadius(Number(e.target.value))}>
-              <option value={1000}>1000 m</option>
-              <option value={2000}>2000 m</option>
-              <option value={3000}>3000 m</option>
-              <option value={5000}>5000 m</option>
-            </select>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Status</label>
-            <select className="form-input" value={status} onChange={(e) => setStatus(e.target.value)}>
-              <option value="">All</option>
-              <option value="available">Available</option>
-              <option value="occupied">Occupied</option>
-              <option value="reserved">Reserved</option>
-            </select>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Type</label>
-            <select className="form-input" value={type} onChange={(e) => setType(e.target.value)}>
-              <option value="">All Types</option>
-              <option value="standard">Standard</option>
-              <option value="compact">Compact</option>
-              <option value="disabled">Accessible</option>
-              <option value="ev">EV Charging</option>
-            </select>
-          </div>
-          <button className="btn btn-outline" type="button" onClick={detectLocation} style={{ height: 42 }}>
-            <LocateFixed size={16} /> Use My Location
-          </button>
+    <div className="map-workspace">
+      <aside className="map-results" aria-label="Parking search results">
+        <div className="map-results-head"><div><strong>Parking locations</strong><span>For your selected time</span></div><span className="badge badge-info">{locations.length}</span></div>
+        <div className="map-result-list">
+          {locations.map((location) => <article className="map-result-item" key={location._id}>
+            <div className="map-result-title"><strong>{location.name}</strong><span className={`badge ${location.availability.available ? 'badge-green' : 'badge-red'}`}>{location.availability.isOpen ? `${location.availability.available} available` : 'Closed'}</span></div>
+            <p><MapPin size={12} /> {location.address?.formattedAddress}</p>
+            <div className="map-result-meta"><span>{location.distanceKm} km</span><strong>₹{location.pricePerHour}/hr</strong></div>
+            {isElectricVehicle(selectedVehicle) && <p><Zap size={12} /> Exact charging slot selected at booking</p>}
+            <Link className="btn btn-primary btn-sm" to={queryFor(location)}>View & reserve</Link>
+          </article>)}
+          {!loading && locations.length === 0 && <div className="empty-state"><MapPin size={34} /><h3>No parking matches this time</h3><p>Try a wider radius, another time, or clear a filter.</p></div>}
         </div>
-        <div style={{ marginTop: 10, fontSize: 12, color: 'var(--text-muted)' }}>
-          Status and type filters apply to app slots only.
-        </div>
-      </div>
-
-      <div className="map-workspace">
-        <aside className="map-results" aria-label="Nearby parking results">
-          <div className="map-results-head"><div><strong>Nearby results</strong><span>Sorted by distance</span></div><span className="badge badge-info">{slots.length + externalPlaces.length}</span></div>
-          <div className="map-result-list">
-            {slots.slice(0, 7).map((slot) => (
-              <article className="map-result-item" key={slot._id}>
-                <div className="map-result-title"><strong>{slot.parkingLocation?.name || `Slot ${slot.slotNumber}`}</strong><span className={`badge ${slot.status === 'available' ? 'badge-green' : slot.status === 'occupied' ? 'badge-red' : 'badge-yellow'}`}>{slot.status}</span></div>
-                <p><MapPin size={12} /> {slot.location.label}</p>
-                <div className="map-result-meta"><span>{slot.distanceKm} km away</span><strong>₹{slot.pricePerHour}/hr</strong></div>
-                {slot.status === 'available' && <Link to={`/dashboard/book/${slot._id}`} className="btn btn-primary btn-sm">Reserve {slot.slotNumber}</Link>}
-              </article>
-            ))}
-            {externalPlaces.slice(0, Math.max(0, 7 - slots.length)).map((place) => (
-              <article className="map-result-item" key={place.id}>
-                <div className="map-result-title"><strong>{place.name}</strong><span className="badge badge-info">Public</span></div>
-                <p><MapPin size={12} /> {place.location.label}</p>
-                <div className="map-result-meta"><span>{place.distanceKm} km away</span><span>Capacity {place.capacity || 'unknown'}</span></div>
-              </article>
-            ))}
-            {!loading && !slots.length && !externalPlaces.length && <div className="empty-state"><MapPin size={32} /><h3>No results in this area</h3><p>Try a larger radius or a different location.</p></div>}
-          </div>
-        </aside>
-        <div className="map-canvas">
-        <MapContainer center={[center.lat, center.lng]} zoom={15} style={{ height: '560px', width: '100%' }}>
-          <RecenterMap center={center} />
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          <Circle center={[center.lat, center.lng]} radius={radius} pathOptions={{ color: '#147d6f', fillOpacity: 0.08 }} />
-          <Marker
-            position={[center.lat, center.lng]}
-            icon={L.divIcon({
-              className: '',
-              html: '<div style="width:14px;height:14px;border-radius:999px;background:#147d6f;border:2px solid #fff;"></div>',
-              iconSize: [14, 14],
-              iconAnchor: [7, 7],
-            })}
-          >
-            <Popup>
-              <div style={{ fontSize: 13 }}>
-                <strong>Your location</strong>
-              </div>
-            </Popup>
-          </Marker>
-          {slots.map((slot) => (
-            <Marker key={slot._id} position={[slot.location.lat, slot.location.lng]} icon={createSlotIcon(slot.status)}>
-              <Popup>
-                <div style={{ minWidth: 180 }}>
-                  <div style={{ fontWeight: 700, marginBottom: 4 }}>{slot.slotNumber}</div>
-                  <div style={{ fontSize: 12, marginBottom: 4 }}>
-                    {slot.parkingLocation ? `${slot.parkingLocation.name} • ${slot.vehicleType}` : `Floor ${slot.floor} • Zone ${slot.zone}`}
-                  </div>
-                  <div style={{ fontSize: 12, marginBottom: 4 }}>
-                    <MapPin size={12} style={{ display: 'inline', marginRight: 4 }} />
-                    {slot.location.label}
-                  </div>
-                  <div style={{ fontSize: 12, marginBottom: 10 }}>
-                    <Navigation size={12} style={{ display: 'inline', marginRight: 4 }} />
-                    {slot.distanceKm} km away
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 700 }}>₹{slot.pricePerHour}/hr</span>
-                    {slot.status === 'available' ? (
-                      <Link to={`/dashboard/book/${slot._id}`} className="btn btn-primary btn-sm">
-                        Book
-                      </Link>
-                    ) : (
-                      <span style={{ fontSize: 12, color: 'var(--ps-muted)' }}>Unavailable</span>
-                    )}
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-          {externalPlaces.map((place) => (
-            <Marker key={place.id} position={[place.location.lat, place.location.lng]} icon={createExternalIcon()}>
-              <Popup>
-                <div style={{ minWidth: 200 }}>
-                  <div style={{ fontWeight: 700, marginBottom: 4 }}>{place.name}</div>
-                  <div style={{ fontSize: 12, marginBottom: 4 }}>
-                    <MapPin size={12} style={{ display: 'inline', marginRight: 4 }} />
-                    {place.location.label}
-                  </div>
-                  <div style={{ fontSize: 12, marginBottom: 6 }}>
-                    <Navigation size={12} style={{ display: 'inline', marginRight: 4 }} />
-                    {place.distanceKm} km away
-                  </div>
-                  <div style={{ fontSize: 12, marginBottom: 2, color: 'var(--ps-primary)' }}>Public parking data (OpenStreetMap)</div>
-                  <div style={{ fontSize: 12, color: 'var(--ps-muted)' }}>
-                    Capacity: {place.capacity || 'Unknown'} • Fee: {place.fee || 'Unknown'} • Access: {place.access || 'Unknown'}
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
-        </div>
-      </div>
+      </aside>
+      <div className="map-canvas"><MapContainer center={[center.lat, center.lng]} zoom={14} style={{ height: 600, width: '100%' }}>
+        <Recenter center={center} />
+        <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <Circle center={[center.lat, center.lng]} radius={Number(filters.radiusKm) * 1000} pathOptions={{ color: '#147d6f', fillOpacity: 0.05 }} />
+        <Marker position={[center.lat, center.lng]} icon={markerIcon(true)}><Popup>Your search origin</Popup></Marker>
+        {locations.map((location) => <Marker key={location._id} position={[location.location.coordinates[1], location.location.coordinates[0]]} icon={markerIcon(location.availability.available > 0)}><Popup><strong>{location.name}</strong><br />{location.availability.available} available<br />₹{location.pricePerHour}/hr<br /><Link to={queryFor(location)}>Reserve</Link></Popup></Marker>)}
+      </MapContainer></div>
     </div>
-  );
+  </div>;
 }
