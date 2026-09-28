@@ -10,6 +10,7 @@
     "migrate:better-auth": "node scripts/migrateBetterAuthUsers.js",
     "migrate:parking-slot-indexes": "node scripts/migrateParkingSlotIndexes.js",
     "migrate:hybrid-parking": "node scripts/migrateHybridParking.js",
+    "migrate:vehicle-fuel-type": "node scripts/migrateVehicleFuelType.js",
     "test:integration": "node --test --test-concurrency=1 tests/*.integration.test.js"
   },
   "dependencies": {

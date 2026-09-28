@@ -6,8 +6,13 @@ import { addHours, format } from 'date-fns';
 import { io } from 'socket.io-client';
 import { LocateFixed, MapPin, Search, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { parkingLocationsAPI } from '../../services/api';
-import { parkingDetailsPath } from '../../utils/hybridParking';
+import { parkingLocationsAPI, vehiclesAPI } from '../../services/api';
+import {
+  isElectricVehicle,
+  parkingDetailsPath,
+  physicalVehicleType,
+  vehicleClassificationLabel,
+} from '../../utils/hybridParking';
 import 'leaflet/dist/leaflet.css';
 
 const DEFAULT_CENTER = { lat: 18.5204, lng: 73.8567 };
@@ -30,50 +35,76 @@ export default function NearbyMapPage() {
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cached, setCached] = useState(false);
+  const [vehicles, setVehicles] = useState([]);
+  const [vehicleId, setVehicleId] = useState('');
   const [filters, setFilters] = useState({
-    radiusKm: 10, vehicleType: 'car', startTime: dateInput(addHours(new Date(), 1)),
+    radiusKm: 10, startTime: dateInput(addHours(new Date(), 1)),
     endTime: dateInput(addHours(new Date(), 3)), sort: 'nearest', amenities: '',
-    maxPrice: '', available: true,
+    maxPrice: '', available: true, evOnly: false,
   });
+  const selectedVehicle = vehicles.find((vehicle) => vehicle._id === vehicleId);
 
-  const fetchLocations = useCallback(async (coords = center, next = filters) => {
+  const fetchLocations = useCallback(async (coords = center, next = filters, vehicle = selectedVehicle) => {
+    if (!vehicle) {
+      setLocations([]);
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const params = {
         ...next, lat: coords.lat, lng: coords.lng,
+        vehicleType: physicalVehicleType(vehicle),
+        fuelType: isElectricVehicle(vehicle) ? 'electric' : vehicle.fuelType,
+        ev: next.evOnly,
         startTime: new Date(next.startTime).toISOString(), endTime: new Date(next.endTime).toISOString(),
         amenities: next.amenities, available: next.available,
       };
+      delete params.evOnly;
+      if (!params.fuelType) delete params.fuelType;
       if (!params.maxPrice) delete params.maxPrice;
       const { data } = await parkingLocationsAPI.getNearby(params);
       setLocations(data.locations || []);
       setCached(false);
-      localStorage.setItem(CACHE_KEY, JSON.stringify({ center: coords, filters: next, locations: data.locations, savedAt: new Date().toISOString() }));
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ center: coords, filters: next, vehicleId: vehicle._id, locations: data.locations, savedAt: new Date().toISOString() }));
     } catch (error) {
       const saved = localStorage.getItem(CACHE_KEY);
       if (saved) {
         const value = JSON.parse(saved);
-        setLocations(value.locations || []);
-        setCenter(value.center || coords);
-        setCached(true);
-        toast('Showing last synced discovery results');
-      } else toast.error(error.response?.data?.message || 'Unable to discover parking');
+        if (value.vehicleId === vehicle._id) {
+          setLocations(value.locations || []);
+          setCenter(value.center || coords);
+          setCached(true);
+          toast('Showing last synced discovery results');
+          return;
+        }
+      }
+      toast.error(error.response?.data?.message || 'Unable to discover parking');
     } finally { setLoading(false); }
-  }, [center, filters]);
+  }, [center, filters, selectedVehicle]);
 
-  const locate = useCallback(() => {
-    if (!navigator.geolocation) return fetchLocations(DEFAULT_CENTER);
+  const locate = useCallback((vehicle = selectedVehicle) => {
+    if (!navigator.geolocation) return fetchLocations(DEFAULT_CENTER, filters, vehicle);
     navigator.geolocation.getCurrentPosition(({ coords }) => {
       const next = { lat: coords.latitude, lng: coords.longitude };
       setCenter(next);
-      fetchLocations(next);
+      fetchLocations(next, filters, vehicle);
     }, () => {
       toast('Location access was unavailable. Showing Pune.');
-      fetchLocations(DEFAULT_CENTER);
+      fetchLocations(DEFAULT_CENTER, filters, vehicle);
     }, { enableHighAccuracy: true, timeout: 10000 });
-  }, [fetchLocations]);
+  }, [fetchLocations, filters, selectedVehicle]);
 
-  useEffect(() => { locate(); }, []);
+  useEffect(() => {
+    vehiclesAPI.getAll().then(({ data }) => {
+      const list = data.vehicles || [];
+      const preferred = list.find((vehicle) => vehicle.isDefault) || list[0];
+      setVehicles(list);
+      setVehicleId(preferred?._id || '');
+      if (preferred) locate(preferred);
+      else setLoading(false);
+    }).catch(() => { setLoading(false); toast.error('Unable to load your vehicles'); });
+  }, []);
   useEffect(() => {
     const socket = io((process.env.REACT_APP_API_URL || 'http://localhost:5001/api').replace(/\/api\/?$/, ''), { transports: ['websocket'], withCredentials: true });
     let timer;
@@ -84,7 +115,13 @@ export default function NearbyMapPage() {
     return () => { clearTimeout(timer); socket.disconnect(); };
   }, [fetchLocations]);
 
-  const queryFor = useCallback((location) => parkingDetailsPath(location._id, { ...filters, distanceKm: location.distanceKm }), [filters]);
+  const queryFor = useCallback((location) => parkingDetailsPath(location._id, {
+    ...filters,
+    vehicleId: selectedVehicle?._id,
+    vehicleType: physicalVehicleType(selectedVehicle),
+    fuelType: isElectricVehicle(selectedVehicle) ? 'electric' : selectedVehicle?.fuelType,
+    distanceKm: location.distanceKm,
+  }), [filters, selectedVehicle]);
 
   const resultText = useMemo(() => loading ? 'Checking live capacity…' : `${locations.length} reservable location${locations.length === 1 ? '' : 's'}`, [loading, locations.length]);
 
@@ -92,7 +129,7 @@ export default function NearbyMapPage() {
     <div className="page-header"><h1>Find Parking</h1><p>{resultText}{cached ? ' • cached result' : ' • live vendor inventory'}</p></div>
     <form className="card" style={{ marginBottom: 16 }} onSubmit={(event) => { event.preventDefault(); fetchLocations(); }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(155px, 1fr))', gap: 12, alignItems: 'end' }}>
-        <div className="form-group"><label className="form-label">Vehicle</label><select className="form-input" value={filters.vehicleType} onChange={(e) => setFilters({ ...filters, vehicleType: e.target.value })}><option value="car">Car</option><option value="motorcycle">Motorcycle</option><option value="bike">Bike</option><option value="suv">SUV</option><option value="ev">EV</option></select></div>
+        <div className="form-group"><label className="form-label">Registered vehicle</label><select className="form-input" value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} required><option value="">Choose a vehicle</option>{vehicles.map((vehicle) => <option key={vehicle._id} value={vehicle._id}>{vehicle.licensePlate} — {vehicleClassificationLabel(vehicle)}</option>)}</select></div>
         <div className="form-group"><label className="form-label">Arrive</label><input className="form-input" type="datetime-local" value={filters.startTime} onChange={(e) => setFilters({ ...filters, startTime: e.target.value })} required /></div>
         <div className="form-group"><label className="form-label">Leave</label><input className="form-input" type="datetime-local" value={filters.endTime} onChange={(e) => setFilters({ ...filters, endTime: e.target.value })} required /></div>
         <div className="form-group"><label className="form-label">Radius</label><select className="form-input" value={filters.radiusKm} onChange={(e) => setFilters({ ...filters, radiusKm: e.target.value })}><option value="2">2 km</option><option value="5">5 km</option><option value="10">10 km</option><option value="25">25 km</option><option value="50">50 km</option></select></div>
@@ -100,8 +137,9 @@ export default function NearbyMapPage() {
         <div className="form-group"><label className="form-label">Max ₹ / hr</label><input className="form-input" type="number" min="0" value={filters.maxPrice} onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })} placeholder="Any" /></div>
         <div className="form-group"><label className="form-label">Amenities</label><select className="form-input" value={filters.amenities} onChange={(e) => setFilters({ ...filters, amenities: e.target.value })}><option value="">Any</option><option value="covered">Covered</option><option value="cctv">CCTV</option><option value="security_guard">Security guard</option><option value="accessible">Accessible</option><option value="ev_charging">EV charging</option></select></div>
         <label style={{ display: 'flex', alignItems: 'center', gap: 7, height: 42 }}><input type="checkbox" checked={filters.available} onChange={(e) => setFilters({ ...filters, available: e.target.checked })} /> Available only</label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 7, height: 42 }}><input type="checkbox" checked={filters.evOnly} onChange={(e) => setFilters({ ...filters, evOnly: e.target.checked })} /> EV-capable locations only</label>
         <button className="btn btn-primary" style={{ height: 42 }}><Search size={16} /> Search</button>
-        <button className="btn btn-outline" type="button" onClick={locate} style={{ height: 42 }}><LocateFixed size={16} /> My location</button>
+        <button className="btn btn-outline" type="button" onClick={() => locate()} style={{ height: 42 }}><LocateFixed size={16} /> My location</button>
       </div>
     </form>
 
@@ -113,7 +151,7 @@ export default function NearbyMapPage() {
             <div className="map-result-title"><strong>{location.name}</strong><span className={`badge ${location.availability.available ? 'badge-green' : 'badge-red'}`}>{location.availability.isOpen ? `${location.availability.available} available` : 'Closed'}</span></div>
             <p><MapPin size={12} /> {location.address?.formattedAddress}</p>
             <div className="map-result-meta"><span>{location.distanceKm} km</span><strong>₹{location.pricePerHour}/hr</strong></div>
-            {filters.vehicleType === 'ev' && <p><Zap size={12} /> Exact charging slot selected at booking</p>}
+            {isElectricVehicle(selectedVehicle) && <p><Zap size={12} /> Exact charging slot selected at booking</p>}
             <Link className="btn btn-primary btn-sm" to={queryFor(location)}>View & reserve</Link>
           </article>)}
           {!loading && locations.length === 0 && <div className="empty-state"><MapPin size={34} /><h3>No parking matches this time</h3><p>Try a wider radius, another time, or clear a filter.</p></div>}

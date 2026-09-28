@@ -5,6 +5,11 @@ const Vehicle = require('../models/Vehicle');
 const { hasPermission } = require('../auth/permissions');
 const { parseWindow, isOpenForWindow, regularCapacityFor } = require('../services/parkingAvailabilityService');
 const { acquireReservation, attachBooking, releaseReservation } = require('../services/parkingReservationService');
+const {
+  isElectricVehicle,
+  physicalVehicleType,
+  inventoryVehicleType,
+} = require('../utils/vehicleClassification');
 
 const populateBooking = (query) => query
   .populate('parkingLocation', 'name address location pricing capacity operatingHours amenities evSupported')
@@ -35,7 +40,7 @@ const createLegacyBooking = async ({ req, slot, vehicle, startTime, endTime }) =
   const hours = Math.ceil((endTime - startTime) / 3600000);
   const booking = await Booking.create({
     user: req.user._id, slot: slot._id, parkingLocation: slot.parkingLocation || null,
-    bookingType: 'legacy', vehicleType: vehicle.vehicleType, vehicle: vehicle._id,
+    bookingType: 'legacy', vehicleType: physicalVehicleType(vehicle), vehicle: vehicle._id,
     startTime, expectedEndTime: endTime, hourlyRate: slot.pricePerHour,
     totalAmount: hours * slot.pricePerHour, status: 'upcoming', paymentStatus: 'pending',
   });
@@ -65,15 +70,16 @@ const createBooking = async (req, res) => {
 
     const location = await ParkingLocation.findOne({ _id: parkingLocationId, status: 'active' });
     if (!location) return res.status(404).json({ success: false, message: 'Active parking location not found' });
-    const vehicleType = vehicle.vehicleType;
-    if (!location.vehicleTypes.includes(vehicleType)) {
+    const vehicleType = physicalVehicleType(vehicle);
+    const inventoryType = inventoryVehicleType(vehicle);
+    if (!location.vehicleTypes.includes(inventoryType)) {
       return res.status(400).json({ success: false, message: 'This location does not support the selected vehicle' });
     }
     if (!isOpenForWindow(location, window.startTime, window.endTime)) {
       return res.status(409).json({ success: false, message: 'This location is closed during the selected time' });
     }
 
-    const bookingType = vehicleType === 'ev' ? 'ev' : 'regular';
+    const bookingType = isElectricVehicle(vehicle) ? 'ev' : 'regular';
     if (req.body.bookingType && req.body.bookingType !== bookingType) {
       return res.status(400).json({ success: false, message: 'Booking type must match the selected vehicle' });
     }
@@ -109,7 +115,7 @@ const createBooking = async (req, res) => {
     });
     if (!reservation) return res.status(409).json({ success: false, message: 'Parking is sold out for the selected time' });
 
-    const hourlyRate = Number(location.pricing?.[vehicleType] || slot?.pricePerHour || 0);
+    const hourlyRate = Number(location.pricing?.[inventoryType] || slot?.pricePerHour || 0);
     const hours = Math.ceil((window.endTime - window.startTime) / 3600000);
     const booking = await Booking.create({
       user: req.user._id, parkingLocation: location._id, slot: slot?._id || null,

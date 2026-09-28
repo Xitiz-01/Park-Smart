@@ -5,7 +5,12 @@ import { CircleMarker, MapContainer, TileLayer } from 'react-leaflet';
 import { Car, Clock, MapPin, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { bookingsAPI, parkingLocationsAPI, slotsAPI, vehiclesAPI } from '../../services/api';
-import { bookingTypeForVehicle } from '../../utils/hybridParking';
+import {
+  bookingTypeForVehicle,
+  isElectricVehicle,
+  physicalVehicleType,
+  vehicleClassificationLabel,
+} from '../../utils/hybridParking';
 
 const inputDate = (value) => format(new Date(value), "yyyy-MM-dd'T'HH:mm");
 const defaultStart = addHours(new Date(), 1);
@@ -29,9 +34,12 @@ export default function BookingPage({ legacy = false }) {
       .then(([vehicleResponse, slotResponse]) => {
         const list = vehicleResponse.data.vehicles || [];
         setVehicles(list);
+        const requestedVehicleId = query.get('vehicleId');
         const requestedType = query.get('vehicleType');
-        const preferred = list.find((vehicle) => vehicle.vehicleType === requestedType && vehicle.isDefault)
-          || list.find((vehicle) => vehicle.vehicleType === requestedType)
+        const requestedFuel = query.get('fuelType');
+        const preferred = list.find((vehicle) => vehicle._id === requestedVehicleId)
+          || list.find((vehicle) => physicalVehicleType(vehicle) === requestedType && vehicle.fuelType === requestedFuel && vehicle.isDefault)
+          || list.find((vehicle) => physicalVehicleType(vehicle) === requestedType && vehicle.fuelType === requestedFuel)
           || list.find((vehicle) => vehicle.isDefault) || list[0];
         setVehicleId(preferred?._id || '');
         if (slotResponse) setLegacySlot(slotResponse.data.slot);
@@ -45,7 +53,8 @@ export default function BookingPage({ legacy = false }) {
     if (legacy || !locationId || !vehicle || !startTime || !endTime) return undefined;
     const timer = setTimeout(() => {
       parkingLocationsAPI.getById(locationId, {
-        vehicleType: vehicle.vehicleType,
+        vehicleType: physicalVehicleType(vehicle),
+        fuelType: isElectricVehicle(vehicle) ? 'electric' : vehicle.fuelType,
         startTime: new Date(startTime).toISOString(), endTime: new Date(endTime).toISOString(),
       }).then(({ data }) => {
         setLocation(data.location);
@@ -58,7 +67,7 @@ export default function BookingPage({ legacy = false }) {
 
   const hours = useMemo(() => Math.max(0, Math.ceil((new Date(endTime) - new Date(startTime)) / 3600000)), [startTime, endTime]);
   const rate = legacySlot?.pricePerHour ?? location?.pricePerHour ?? 0;
-  const isEv = vehicle?.vehicleType === 'ev';
+  const isEv = isElectricVehicle(vehicle);
   const available = legacy ? legacySlot?.status === 'available' : Number(location?.availability?.available || 0) > 0;
 
   const submit = async (event) => {
@@ -70,7 +79,7 @@ export default function BookingPage({ legacy = false }) {
     setSubmitting(true);
     try {
       await bookingsAPI.create({
-        ...(legacy ? { slotId } : { parkingLocationId: locationId, bookingType: bookingTypeForVehicle(vehicle.vehicleType), ...(isEv ? { slotId: evSlotId } : {}) }),
+        ...(legacy ? { slotId } : { parkingLocationId: locationId, bookingType: bookingTypeForVehicle(vehicle), ...(isEv ? { slotId: evSlotId } : {}) }),
         vehicleId, startTime: new Date(startTime).toISOString(), expectedEndTime: new Date(endTime).toISOString(),
       });
       toast.success(isEv ? 'EV charging slot reserved' : 'Parking capacity reserved');
@@ -89,7 +98,7 @@ export default function BookingPage({ legacy = false }) {
     <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
       <section className="card">
         <h2 style={{ fontSize: 17, marginBottom: 16 }}>Vehicle and time</h2>
-        <div className="form-group"><label className="form-label">Your vehicle</label><select className="form-input" value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} required><option value="">Choose a vehicle</option>{vehicles.map((item) => <option key={item._id} value={item._id}>{item.licensePlate} — {item.brand} {item.model} ({item.vehicleType})</option>)}</select></div>
+        <div className="form-group"><label className="form-label">Your vehicle</label><select className="form-input" value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} required><option value="">Choose a vehicle</option>{vehicles.map((item) => <option key={item._id} value={item._id}>{item.licensePlate} — {item.brand} {item.model} ({vehicleClassificationLabel(item)})</option>)}</select></div>
         {!vehicles.length && <p style={{ color: 'var(--text-muted)', marginTop: 8 }}>Add a vehicle from My Vehicles before reserving.</p>}
         <div className="booking-time-grid" style={{ marginTop: 16 }}><div className="form-group"><label className="form-label">Arrival</label><input className="form-input" type="datetime-local" value={startTime} onChange={(e) => setStartTime(e.target.value)} required /></div><div className="form-group"><label className="form-label">Departure</label><input className="form-input" type="datetime-local" value={endTime} onChange={(e) => setEndTime(e.target.value)} required /></div></div>
       </section>

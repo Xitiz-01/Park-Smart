@@ -231,6 +231,18 @@ npm run migrate:hybrid-parking -- --apply --confirm-db=parking-system
 
 The migration backfills location capacity from legacy non-EV slots, booking location/type/rate metadata, active reservation ledgers, and required indexes. The apply command refuses to write unless `--confirm-db` exactly matches the database in `MONGODB_URI`. Back up production before applying it.
 
+Customer vehicles store physical class (`car`, `motorcycle`, or `suv`) separately from fuel type (`petrol`, `diesel`, `cng`, `hybrid`, or `electric`). Preview the legacy EV conversion before deployment, then apply it only to the confirmed database:
+
+The discovery page derives regular-capacity versus exact-EV-slot availability from the selected registered vehicle. The optional **EV-capable locations only** filter only narrows the location list: it does not turn a petrol, diesel, CNG, or hybrid vehicle into an EV booking.
+
+```bash
+cd backend
+npm run migrate:vehicle-fuel-type
+npm run migrate:vehicle-fuel-type -- --apply --confirm-db=parking-system
+```
+
+The migration converts legacy `vehicleType: "ev"` records to `vehicleType: "car"` with `fuelType: "electric"`. It does not guess a fuel type for other older vehicles. A legacy EV record that already has a contradictory explicit fuel type is reported and left unchanged for manual review. The command is idempotent and refuses write mode without an exact database-name confirmation.
+
 ---
 
 ## Project Structure

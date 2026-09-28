@@ -219,7 +219,7 @@ const getVendorBookings = async (req, res) => {
       .populate('user', 'name email phone')
       .populate({ path: 'slot', populate: { path: 'parkingLocation', select: 'name' } })
       .populate('parkingLocation', 'name')
-      .populate('vehicle', 'licensePlate vehicleType brand model')
+      .populate('vehicle', 'licensePlate vehicleType fuelType brand model')
       .sort({ createdAt: -1 });
     res.json({ success: true, bookings });
   } catch {
