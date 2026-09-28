@@ -22,12 +22,13 @@ const createInitialState = (location) => location ? {
   },
   vehicleTypes: location.vehicleTypes || [],
   pricing: location.pricing || {},
+  capacity: location.capacity || {},
   evSupported: Boolean(location.evSupported),
   evDetails: location.evDetails || { slotCount: 0, chargerType: '' },
   amenities: location.amenities || [],
   operatingHours: location.operatingHours || defaultHours,
 } : {
-  name: '', description: '', address: emptyAddressSelection, vehicleTypes: ['car'], pricing: { car: 0 },
+  name: '', description: '', address: emptyAddressSelection, vehicleTypes: ['car'], pricing: { car: 0 }, capacity: { car: 1 },
   evSupported: false, evDetails: { slotCount: 0, chargerType: '' }, amenities: [], operatingHours: defaultHours,
 };
 
@@ -38,7 +39,13 @@ export default function ParkingLocationForm({ initialLocation, onSubmit, saving 
   const toggleVehicle = (type) => {
     const exists = form.vehicleTypes.includes(type);
     const vehicleTypes = exists ? form.vehicleTypes.filter((item) => item !== type) : [...form.vehicleTypes, type];
-    setForm({ ...form, vehicleTypes, evSupported: type === 'ev' && !exists ? true : form.evSupported });
+    setForm({
+      ...form,
+      vehicleTypes,
+      pricing: !exists && form.pricing[type] === undefined ? { ...form.pricing, [type]: 0 } : form.pricing,
+      capacity: !exists && type !== 'ev' && form.capacity[type] === undefined ? { ...form.capacity, [type]: 1 } : form.capacity,
+      evSupported: type === 'ev' && !exists ? true : form.evSupported,
+    });
   };
   const toggleAmenity = (value) => setForm({ ...form, amenities: form.amenities.includes(value) ? form.amenities.filter((item) => item !== value) : [...form.amenities, value] });
   const updateDay = (day, updates) => setForm({ ...form, operatingHours: { ...form.operatingHours, [day]: { ...form.operatingHours[day], ...updates } } });
@@ -63,6 +70,7 @@ export default function ParkingLocationForm({ initialLocation, onSubmit, saving 
       selectionToken: form.address.selectionToken,
       vehicleTypes: form.vehicleTypes,
       pricing: form.pricing,
+      capacity: form.capacity,
       evSupported: form.evSupported,
       evDetails: form.evDetails,
       amenities: form.amenities,
@@ -85,6 +93,9 @@ export default function ParkingLocationForm({ initialLocation, onSubmit, saving 
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14, marginTop: 18 }}>
           {VEHICLES.filter(([type]) => form.vehicleTypes.includes(type)).map(([type, label]) => <div className="form-group" key={type}><label className="form-label">{label} ₹ / hour</label><input className="form-input" type="number" min="0" step="0.01" value={form.pricing[type] ?? ''} onChange={(e) => setForm({ ...form, pricing: { ...form.pricing, [type]: e.target.value } })} required /></div>)}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14, marginTop: 14 }}>
+          {VEHICLES.filter(([type]) => type !== 'ev' && form.vehicleTypes.includes(type)).map(([type, label]) => <div className="form-group" key={type}><label className="form-label">{label} capacity</label><input className="form-input" type="number" min="0" max="100000" step="1" value={form.capacity[type] ?? ''} onChange={(e) => setForm({ ...form, capacity: { ...form.capacity, [type]: e.target.value } })} required /></div>)}
         </div>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 18 }}><input type="checkbox" checked={form.evSupported} onChange={(e) => setForm({ ...form, evSupported: e.target.checked })} /> EV charging available</label>
         {form.evSupported && <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 14 }}>

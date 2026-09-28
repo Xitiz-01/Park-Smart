@@ -99,13 +99,13 @@ export default function MyBookings() {
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                     <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700 }}>
-                      Slot {b.slot?.slotNumber}
+                      {b.parkingLocation?.name || b.slot?.parkingLocation?.name || (b.slot?.slotNumber ? `Slot ${b.slot.slotNumber}` : 'Parking reservation')}
                     </div>
                     <StatusBadge status={b.status} />
                   </div>
                   <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-muted)' }}>
-                      <MapPin size={14} /> Zone {b.slot?.zone} · Floor {b.slot?.floor}
+                      <MapPin size={14} /> {b.bookingType === 'regular' ? 'Capacity reservation' : b.slot?.slotNumber ? `EV/slot ${b.slot.slotNumber}` : 'Legacy parking'}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-muted)' }}>
                       <Car size={14} /> {b.vehicle?.licensePlate}
@@ -130,7 +130,7 @@ export default function MyBookings() {
                     <PaymentBadge status={b.paymentStatus} />
                   </div>
                   <div style={{ marginBottom: 8, fontSize: 12, color: 'var(--text-muted)' }}>
-                    {PAYMENT_METHOD_LABELS[b.paymentMethod] || 'Method unavailable'}
+                    {PAYMENT_METHOD_LABELS[b.paymentMethod] || 'Payment not collected'}
                   </div>
                   {(b.status === 'upcoming' || b.status === 'active') && (
                     <button onClick={() => handleCancel(b._id)} disabled={cancelling === b._id}

@@ -109,7 +109,7 @@ export default function AdminBookings() {
                       {b.user?.name}
                       <br /><span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{b.user?.phone}</span>
                     </td>
-                    <td>{b.slot?.slotNumber}<br /><span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Zone {b.slot?.zone}</span></td>
+                    <td>{b.slot?.slotNumber || 'Capacity'}<br /><span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{b.parkingLocation?.name || b.slot?.parkingLocation?.name || 'Legacy'}</span></td>
                     <td style={{ fontFamily: 'var(--font-display)', fontSize: 13 }}>{b.vehicle?.licensePlate}</td>
                     <td style={{ fontSize: 13 }}>{format(new Date(b.startTime), 'dd MMM, hh:mm a')}</td>
                     <td style={{ fontSize: 13 }}>{format(new Date(b.expectedEndTime), 'dd MMM, hh:mm a')}</td>

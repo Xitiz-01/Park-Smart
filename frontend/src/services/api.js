@@ -47,6 +47,11 @@ export const bookingsAPI = {
   checkOut: (id) => API.put(`/bookings/${id}/checkout`),
 };
 
+export const parkingLocationsAPI = {
+  getNearby: (params) => API.get('/parking-locations/nearby', { params }),
+  getById: (id, params) => API.get(`/parking-locations/${id}`, { params }),
+};
+
 // Vehicles
 export const vehiclesAPI = {
   getAll: () => API.get('/vehicles'),
@@ -84,6 +89,8 @@ export const vendorsAPI = {
   bulkCreateSlots: (id, data) => API.post(`/vendors/parking-locations/${id}/slots/bulk`, data),
   updateSlot: (slotId, data) => API.patch(`/vendors/slots/${slotId}`, data),
   getBookings: () => API.get('/vendors/bookings'),
+  checkInBooking: (id) => API.put(`/vendors/bookings/${id}/checkin`),
+  checkOutBooking: (id) => API.put(`/vendors/bookings/${id}/checkout`),
 };
 
 export const locationAPI = {

@@ -30,14 +30,14 @@ export default function VendorDashboard() {
       <PageHeader eyebrow="Operations overview" title="Your parking business, at a glance" description="Live inventory and booking signals across every managed location." actions={<Link to="/vendor/locations/new" className="btn btn-primary"><Plus size={16} /> Add location</Link>} />
       <section className="dashboard-metrics">
         <MetricCard label="Parking locations" value={stats.parkingLocations} icon={<MapPin size={20} />} detail="Managed facilities" />
-        <MetricCard label="Available slots" value={stats.availableSlots} icon={<CircleParking size={20} />} tone="green" detail={`${stats.totalSlots} total spaces`} />
+        <MetricCard label="Available now" value={stats.availableSlots} icon={<CircleParking size={20} />} tone="green" detail={`${stats.totalSlots} regular + EV spaces`} />
         <MetricCard label="Active bookings" value={stats.activeBookings} icon={<CalendarDays size={20} />} tone="amber" detail="Currently in progress" />
         <MetricCard label="Total earnings" value={`₹${stats.totalEarnings}`} icon={<IndianRupee size={20} />} tone="coral" detail="Recorded payments" />
       </section>
 
       <div className="dashboard-grid">
         <section className="card">
-          <div className="panel-head"><h2>Live slot operations</h2><Link to="/vendor/slots">Manage slots <ArrowRight size={13} /></Link></div>
+          <div className="panel-head"><h2>Live hybrid inventory</h2><Link to="/vendor/locations">Manage capacity <ArrowRight size={13} /></Link></div>
           <div className="legend-row">
             <span className="legend-item"><i style={{ background: 'var(--green)' }} />Available <strong>{stats.availableSlots}</strong></span>
             <span className="legend-item"><i style={{ background: 'var(--yellow)' }} />Occupied / reserved <strong>{stats.occupiedSlots}</strong></span>
@@ -54,7 +54,7 @@ export default function VendorDashboard() {
           <div className="quick-actions">
             <Link to="/vendor/locations" className="quick-action"><span><MapPin size={18} /></span><div><strong>Parking locations</strong><small>Review address and pricing</small></div><ArrowRight size={14} /></Link>
             <Link to="/vendor/bookings" className="quick-action"><span><BadgeCheck size={18} /></span><div><strong>Incoming bookings</strong><small>Track customer activity</small></div><ArrowRight size={14} /></Link>
-            <Link to="/vendor/slots" className="quick-action"><span><ParkingSquare size={18} /></span><div><strong>Slot inventory</strong><small>Add or update spaces</small></div><ArrowRight size={14} /></Link>
+            <Link to="/vendor/slots" className="quick-action"><span><ParkingSquare size={18} /></span><div><strong>EV slot inventory</strong><small>Manage exact charging bays</small></div><ArrowRight size={14} /></Link>
           </div>
         </aside>
       </div>
