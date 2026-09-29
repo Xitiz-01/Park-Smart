@@ -46,3 +46,4 @@ dist/
 # MISC
 # ======================
 *.local
+backend/private-verification-storage/

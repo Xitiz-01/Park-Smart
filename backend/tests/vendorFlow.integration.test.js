@@ -13,6 +13,7 @@ process.env.MONGODB_URI = mongoUri;
 process.env.BETTER_AUTH_SECRET = 'parksmart-better-auth-test-secret-32-characters-minimum';
 process.env.GEOCODING_PROVIDER = 'geoapify';
 process.env.GEOCODING_API_KEY = 'test-key';
+process.env.VERIFICATION_STORAGE_LOCAL_PATH = '/tmp/parksmart-verification-integration-storage';
 
 const { app, server } = require('../server');
 const User = require('../models/User');
@@ -47,17 +48,25 @@ class CookieJar {
 }
 
 const request = async (path, { method = 'GET', client, body } = {}) => {
+  const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
   const response = await originalFetch(`${baseUrl}${path}`, {
     method,
     headers: {
-      ...(body ? { 'Content-Type': 'application/json' } : {}),
+      ...(body && !isForm ? { 'Content-Type': 'application/json' } : {}),
       Origin: 'http://localhost:3000',
       ...(client?.header() ? { Cookie: client.header() } : {}),
     },
-    body: body ? JSON.stringify(body) : undefined,
+    body: body ? (isForm ? body : JSON.stringify(body)) : undefined,
   });
   client?.update(response);
   return { status: response.status, payload: await response.json() };
+};
+
+const verificationUpload = (fields, content = Buffer.from('%PDF-1.4\n%%EOF'), options = {}) => {
+  const form = new FormData();
+  Object.entries(fields).forEach(([key, value]) => form.append(key, String(value)));
+  form.append('document', new Blob([content], { type: options.type || 'application/pdf' }), options.name || 'evidence.pdf');
+  return form;
 };
 
 const place = (overrides = {}) => ({
@@ -177,6 +186,41 @@ test('Better Auth, RBAC, migration, and ParkSmart domain flows work end-to-end',
   assert.equal((await request('/vendors/parking-locations', { client: customerClient })).status, 403, 'customer cannot access vendor parking APIs');
   assert.equal((await request('/admin/dashboard', { client: adminClient })).status, 200, 'admin access remains intact');
 
+  const ownVerification = await request('/vendor-verification', { client: vendorAClient });
+  assert.equal(ownVerification.status, 200, 'vendor can view own verification');
+  assert.equal(ownVerification.payload.verification.vendor, applicationA.payload.vendorProfile._id);
+  const ignoredVendorOverride = await request(`/vendor-verification?vendorId=${applicationB.payload.vendorProfile._id}`, { client: vendorAClient });
+  assert.equal(ignoredVendorOverride.payload.verification.vendor, applicationA.payload.vendorProfile._id, 'vendor ID query cannot expose another vendor verification');
+  assert.equal((await request('/vendor-verification', { client: customerClient })).status, 403, 'customer cannot access vendor verification');
+  assert.equal(ownVerification.payload.providerAvailability.digilocker, false, 'DigiLocker is disabled without credentials');
+  assert.equal((await request('/vendor-verification/digilocker/start', { method: 'POST', client: vendorAClient, body: { consent: true } })).status, 503, 'disabled DigiLocker cannot fake verification');
+  assert.equal((await request('/vendor-verification/digilocker/callback?state=invalid&code=invalid')).status, 400, 'invalid DigiLocker callback state is rejected');
+
+  const invalidUpload = verificationUpload({ category: 'IDENTITY', documentType: 'PAN', consent: true }, Buffer.from('plain text'), { type: 'text/plain', name: 'pan.txt' });
+  assert.equal((await request('/vendor-verification/documents', { method: 'POST', client: vendorAClient, body: invalidUpload })).status, 400, 'invalid verification file type is rejected');
+  const oversizedUpload = verificationUpload({ category: 'IDENTITY', documentType: 'PAN', consent: true }, Buffer.concat([Buffer.from('%PDF-'), Buffer.alloc(5 * 1024 * 1024)]));
+  assert.equal((await request('/vendor-verification/documents', { method: 'POST', client: vendorAClient, body: oversizedUpload })).status, 413, 'oversized verification document is rejected');
+
+  const identityDocument = await request('/vendor-verification/documents', { method: 'POST', client: vendorAClient, body: verificationUpload({ category: 'IDENTITY', documentType: 'PAN', consent: true }) });
+  const businessDocument = await request('/vendor-verification/documents', { method: 'POST', client: vendorAClient, body: verificationUpload({ category: 'BUSINESS', documentType: 'BUSINESS_REGISTRATION', consent: true }) });
+  const bankDocument = await request('/vendor-verification/documents', { method: 'POST', client: vendorAClient, body: verificationUpload({ category: 'BANK', documentType: 'BANK_PROOF', consent: true }) });
+  assert.deepEqual([identityDocument.status, businessDocument.status, bankDocument.status], [201, 201, 201], 'manual identity, business, and bank evidence can be submitted');
+  assert.equal((await request(`/admin/vendor-verifications/${applicationA.payload.vendorProfile._id}`, { client: adminClient })).status, 200, 'admin can inspect a verification case');
+  assert.equal((await request(`/admin/vendor-verifications/document/${identityDocument.payload.document._id}/resubmit`, { method: 'PATCH', client: adminClient, body: { reason: 'Image needs a clearer edge' } })).status, 200, 'admin can request resubmission');
+  assert.equal((await request(`/admin/vendor-verifications/document/${businessDocument.payload.document._id}/reject`, { method: 'PATCH', client: adminClient, body: { reason: 'Registration details need confirmation' } })).status, 200, 'admin can reject evidence with a reason');
+  assert.equal((await request(`/admin/vendor-verifications/document/${identityDocument.payload.document._id}/approve`, { method: 'PATCH', client: adminClient, body: {} })).status, 200, 'admin can approve resubmitted evidence');
+  assert.equal((await request(`/admin/vendor-verifications/document/${businessDocument.payload.document._id}/approve`, { method: 'PATCH', client: adminClient, body: {} })).status, 200, 'admin can approve previously rejected evidence');
+  assert.equal((await request(`/admin/vendor-verifications/document/${bankDocument.payload.document._id}/approve`, { method: 'PATCH', client: adminClient, body: {} })).status, 200, 'admin can approve bank readiness evidence');
+  assert.equal((await request(`/admin/vendor-verifications/document/${identityDocument.payload.document._id}/content`, { client: customerClient })).status, 403, 'customer cannot access private verification documents');
+  const adminDocumentResponse = await originalFetch(`${baseUrl}/admin/vendor-verifications/document/${identityDocument.payload.document._id}/content`, { headers: { Origin: 'http://localhost:3000', Cookie: adminClient.header() } });
+  assert.equal(adminDocumentResponse.status, 200, 'authorized admin can access a private verification document');
+  assert.equal(adminDocumentResponse.headers.get('cache-control'), 'no-store, private');
+  const verifiedSummary = await request('/vendor-verification', { client: vendorAClient });
+  assert.equal(verifiedSummary.payload.verification.overallStatus, 'VERIFIED');
+  assert.equal(verifiedSummary.payload.verification.bankStatus, 'VERIFIED');
+  assert.equal(verifiedSummary.payload.verification.payoutEligible, true, 'payout eligibility is derived from overall and bank verification');
+  assert.ok(verifiedSummary.payload.audit.some((entry) => entry.action === 'RESUBMISSION_REQUESTED'), 'verification actions create audit entries');
+
   const invalidCoordinates = await request('/vendors/parking-locations', {
     method: 'POST', client: vendorAClient, body: { ...locationPayload('Bad Coordinates', selected()), latitude: 999 },
   });
@@ -198,6 +242,17 @@ test('Better Auth, RBAC, migration, and ParkSmart domain flows work end-to-end',
   const moshiId = createMoshi.payload.location._id;
   const wakadId = createWakad.payload.location._id;
   const banerId = createBaner.payload.location._id;
+  assert.equal(createMoshi.payload.location.status, 'draft', 'new locations start as drafts');
+  assert.equal((await request(`/vendors/parking-locations/${moshiId}/publish`, { method: 'POST', client: vendorAClient })).status, 409, 'verified vendor cannot publish without location authorization');
+  assert.equal((await request(`/vendors/parking-locations/${banerId}/publish`, { method: 'POST', client: vendorBClient })).status, 409, 'unverified vendor cannot publish');
+
+  const moshiAuthorization = await request(`/vendor-verification/parking-authorizations/${moshiId}`, { method: 'POST', client: vendorAClient, body: verificationUpload({ documentType: 'OWNERSHIP_PROOF', consent: true }) });
+  const wakadAuthorization = await request(`/vendor-verification/parking-authorizations/${wakadId}`, { method: 'POST', client: vendorAClient, body: verificationUpload({ documentType: 'LEASE', consent: true }) });
+  assert.deepEqual([moshiAuthorization.status, wakadAuthorization.status], [201, 201], 'vendor can submit per-location authorization evidence');
+  assert.equal((await request(`/admin/vendor-verifications/authorization/${moshiAuthorization.payload.authorization._id}/approve`, { method: 'PATCH', client: adminClient, body: {} })).status, 200);
+  assert.equal((await request(`/admin/vendor-verifications/authorization/${wakadAuthorization.payload.authorization._id}/approve`, { method: 'PATCH', client: adminClient, body: {} })).status, 200);
+  assert.equal((await request(`/vendors/parking-locations/${moshiId}/publish`, { method: 'POST', client: vendorAClient })).status, 200, 'verified vendor can publish an authorized location');
+  assert.equal((await request(`/vendors/parking-locations/${wakadId}/publish`, { method: 'POST', client: vendorAClient })).status, 200, 'publishing gate is scoped per location');
 
   const vendorAList = await request('/vendors/parking-locations', { client: vendorAClient });
   assert.equal(vendorAList.payload.locations.length, 2);

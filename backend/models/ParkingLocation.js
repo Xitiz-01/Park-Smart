@@ -64,7 +64,8 @@ const parkingLocationSchema = new mongoose.Schema({
     motorcycle: { type: Number, min: 0, default: 0 },
     suv: { type: Number, min: 0, default: 0 },
   },
-  status: { type: String, enum: ['active', 'inactive'], default: 'active', index: true },
+  status: { type: String, enum: ['draft', 'active', 'inactive'], default: 'draft', index: true },
+  publishedAt: Date,
 }, { timestamps: true });
 
 parkingLocationSchema.index({ location: '2dsphere' });

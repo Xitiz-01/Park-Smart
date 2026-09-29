@@ -56,6 +56,7 @@ app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/vehicles', require('./routes/vehicleRoutes'));
 app.use('/api/vehicle-catalog', require('./routes/vehicleCatalogRoutes'));
 app.use('/api/vendors', require('./routes/vendorRoutes'));
+app.use('/api/vendor-verification', require('./routes/vendorVerificationRoutes'));
 app.use('/api/parking-locations', require('./routes/parkingLocationRoutes'));
 app.use('/api/location', require('./routes/locationRoutes'));
 
@@ -65,10 +66,16 @@ app.get('/', (req, res) => {
 });
 // Error handler
 app.use((err, req, res, next) => {
-  const statusCode = err.statusCode || 500;
+  const isUploadError = err.name === 'MulterError';
+  const statusCode = err.statusCode || (err.code === 'LIMIT_FILE_SIZE' ? 413 : isUploadError ? 400 : 500);
+  const safeMessage = err.code === 'LIMIT_FILE_SIZE'
+    ? 'Document must be 5 MB or smaller'
+    : statusCode >= 500 && !err.statusCode
+      ? 'Internal Server Error'
+      : (err.message || 'Request could not be completed');
   res.status(statusCode).json({
     success: false,
-    message: err.message || 'Internal Server Error',
+    message: safeMessage,
     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
   });
 });

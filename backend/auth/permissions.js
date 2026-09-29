@@ -18,6 +18,7 @@ const ROLE_PERMISSIONS = Object.freeze({
     'slot:manage-own',
     'booking:read-vendor',
     'booking:manage-vendor',
+    'verification:manage-own',
   ]),
   admin: Object.freeze([
     'parking:read',
@@ -27,6 +28,7 @@ const ROLE_PERMISSIONS = Object.freeze({
     'booking:read-all',
     'booking:manage-all',
     'parking:manage-all',
+    'verification:review',
   ]),
   super_admin: Object.freeze([
     'parking:read',
@@ -39,6 +41,7 @@ const ROLE_PERMISSIONS = Object.freeze({
     'parking:manage-all',
     'admin:create',
     'admin:remove',
+    'verification:review',
   ]),
 });
 

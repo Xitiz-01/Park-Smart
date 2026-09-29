@@ -63,6 +63,18 @@ EXTERNAL_PARKING_CACHE_TTL_MS=120000
 GEOCODING_PROVIDER=geoapify
 GEOCODING_API_KEY=your_geoapify_api_key
 API_NINJAS_API_KEY=
+VERIFICATION_STORAGE_PROVIDER=local
+DIGILOCKER_ENABLED=false
+DIGILOCKER_CLIENT_ID=
+DIGILOCKER_CLIENT_SECRET=
+DIGILOCKER_REDIRECT_URI=https://api.parksmart.live/api/vendor-verification/digilocker/callback
+DIGILOCKER_AUTHORIZATION_URL=
+DIGILOCKER_TOKEN_URL=
+DIGILOCKER_DOCUMENTS_URL=
+CASHFREE_VERIFY_ENABLED=false
+CASHFREE_CLIENT_ID=
+CASHFREE_CLIENT_SECRET=
+CASHFREE_VERIFY_BASE_URL=https://sandbox.cashfree.com/verification
 ```
 
 **frontend/.env**
@@ -278,6 +290,20 @@ For broader production coverage, provision an API Ninjas plan permitted for the 
 ```bash
 API_NINJAS_API_KEY=your_backend_only_key
 ```
+
+## Vendor verification and trust onboarding (Phase 5A)
+
+Vendor application approval and vendor trust verification are separate. Once an application is approved, the vendor can submit identity, business, and payout-readiness evidence. `VendorVerification` holds normalized aggregate states, `VerificationDocument` holds evidence metadata, `ParkingAuthorization` holds evidence for one parking location, and `VerificationAudit` records status changes without document contents. States are `NOT_STARTED`, `PENDING`, `UNDER_REVIEW`, `VERIFIED`, `REJECTED`, and `RESUBMISSION_REQUIRED`.
+
+`VerificationService` is the provider-independent boundary. Manual review is always available. Cashfree Secure ID is optional and currently uses only its documented synchronous PAN and GSTIN verification APIs. DigiLocker is an optional Requester adapter with a short-lived, hashed, single-use OAuth state, an HttpOnly callback cookie, server-side code exchange, and normalized metadata retrieval. DigiLocker production verification works only when valid requester credentials have been approved and every DigiLocker endpoint variable has been configured. ParkSmart never simulates a successful provider response. The production callback is `https://api.parksmart.live/api/vendor-verification/digilocker/callback`; the result returns to `/vendor/verification`.
+
+Manual files accept signature-validated PDF, JPEG, or PNG content up to 5 MB. Files live behind `StorageService`, not in MongoDB or a public directory. MongoDB stores a random private key plus safe name, MIME, and size metadata. The local provider writes mode-0600 files and is suitable for local/single-instance development. Before horizontally scaling production, add a private S3-compatible adapter or mount durable private storage. Admin downloads are permission checked and sent with no-store, nosniff, sandbox, and attachment headers. Virus scanning is not currently available; the storage boundary is intentionally extensible so scanning/quarantine can be added before high-volume production use.
+
+The UI records explicit consent before every manual or external request. ParkSmart stores the provider, source, timestamp, purpose, and scope. Provider tokens, raw identifiers, banking secrets, and document bodies are never placed in browser storage or audit entries. Cashfree identifiers are sent directly from the backend and only a masked value plus useful provider reference/metadata is persisted. Aadhaar is not required or supported.
+
+New parking locations begin as drafts. A vendor can edit a draft, but publishing requires both overall vendor status `VERIFIED` and a `VERIFIED` authorization for that exact location. Existing records already marked `active` remain active and therefore do not disappear during deployment; the gate is enforced when a new draft is published. Payout readiness is exposed as `payoutEligible = overallStatus === VERIFIED && bankStatus === VERIFIED`; Phase 5A does not create payouts or settlements.
+
+Provider and storage settings belong only on the backend. Leave both provider feature flags `false` in CI and local environments without credentials; provider calls are mocked in tests. `VERIFICATION_STORAGE_LOCAL_PATH` is optional and defaults to the ignored `backend/private-verification-storage` directory. Cashfree production use must also change its base URL as required by the provisioned account. Never put any of these secrets in `REACT_APP_*` variables.
 
 Do not use a `REACT_APP_*` catalog key. Neither selected provider guarantees a complete worldwide or Indian catalog, so the supplement still needs reviewed maintenance and the UI must continue to tolerate empty year/body/fuel metadata.
 
