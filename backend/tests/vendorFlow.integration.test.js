@@ -205,6 +205,9 @@ test('Better Auth, RBAC, migration, and ParkSmart domain flows work end-to-end',
   const businessDocument = await request('/vendor-verification/documents', { method: 'POST', client: vendorAClient, body: verificationUpload({ category: 'BUSINESS', documentType: 'BUSINESS_REGISTRATION', consent: true }) });
   const bankDocument = await request('/vendor-verification/documents', { method: 'POST', client: vendorAClient, body: verificationUpload({ category: 'BANK', documentType: 'BANK_PROOF', consent: true }) });
   assert.deepEqual([identityDocument.status, businessDocument.status, bankDocument.status], [201, 201, 201], 'manual identity, business, and bank evidence can be submitted');
+  const filteredVerificationCases = await request('/admin/vendor-verifications?status=UNDER_REVIEW&type=document&vendor=Vendor%20A', { client: adminClient });
+  assert.equal(filteredVerificationCases.status, 200);
+  assert.equal(filteredVerificationCases.payload.cases.length, 1, 'admin can filter verification cases by status, evidence type, and vendor');
   assert.equal((await request(`/admin/vendor-verifications/${applicationA.payload.vendorProfile._id}`, { client: adminClient })).status, 200, 'admin can inspect a verification case');
   assert.equal((await request(`/admin/vendor-verifications/document/${identityDocument.payload.document._id}/resubmit`, { method: 'PATCH', client: adminClient, body: { reason: 'Image needs a clearer edge' } })).status, 200, 'admin can request resubmission');
   assert.equal((await request(`/admin/vendor-verifications/document/${businessDocument.payload.document._id}/reject`, { method: 'PATCH', client: adminClient, body: { reason: 'Registration details need confirmation' } })).status, 200, 'admin can reject evidence with a reason');
