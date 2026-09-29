@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { FUEL_TYPES } = require('../utils/vehicleClassification');
+const { BODY_STYLES, FUEL_TYPES } = require('../utils/vehicleClassification');
 
 const vehicleSchema = new mongoose.Schema(
   {
@@ -25,8 +25,21 @@ const vehicleSchema = new mongoose.Schema(
       enum: FUEL_TYPES,
       default: null,
     },
+    make: { type: String, trim: true },
+    // Retained as a compatibility alias for existing clients and records.
     brand: { type: String, trim: true },
     model: { type: String, trim: true },
+    modelYear: {
+      type: Number,
+      min: 1886,
+      max: new Date().getFullYear() + 2,
+      default: null,
+    },
+    bodyStyle: {
+      type: String,
+      enum: BODY_STYLES,
+      default: null,
+    },
     color: { type: String, trim: true },
     isDefault: { type: Boolean, default: false },
   },

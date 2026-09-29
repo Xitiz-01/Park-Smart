@@ -1,0 +1,32 @@
+// Small Indian-market supplement and outage fallback. This is intentionally not
+// ParkSmart's primary catalog; remote providers supply the broad make/model list.
+// Source links and maintenance notes live in README.
+module.exports = [
+  { make: 'Ather', model: '450X', yearFrom: 2018, vehicleType: 'motorcycle', bodyStyle: 'other', fuelTypes: ['electric'] },
+  { make: 'Ather', model: 'Rizta', yearFrom: 2024, vehicleType: 'motorcycle', bodyStyle: 'other', fuelTypes: ['electric'] },
+  { make: 'Honda', model: 'Amaze', yearFrom: 2013, vehicleType: 'car', bodyStyle: 'sedan', fuelTypes: ['petrol'] },
+  { make: 'Honda', model: 'City', yearFrom: 1998, vehicleType: 'car', bodyStyle: 'sedan', fuelTypes: ['petrol', 'hybrid'] },
+  { make: 'Honda', model: 'Elevate', yearFrom: 2023, vehicleType: 'car', bodyStyle: 'suv', fuelTypes: ['petrol'] },
+  { make: 'Hyundai', model: 'Alcazar', yearFrom: 2021, vehicleType: 'car', bodyStyle: 'suv', fuelTypes: ['petrol', 'diesel'] },
+  { make: 'Hyundai', model: 'Creta', yearFrom: 2015, vehicleType: 'car', bodyStyle: 'suv', fuelTypes: ['petrol', 'diesel'] },
+  { make: 'Hyundai', model: 'Creta Electric', yearFrom: 2025, vehicleType: 'car', bodyStyle: 'suv', fuelTypes: ['electric'] },
+  { make: 'Hyundai', model: 'Exter', yearFrom: 2023, vehicleType: 'car', bodyStyle: 'crossover', fuelTypes: ['petrol', 'cng'] },
+  { make: 'Hyundai', model: 'i20', yearFrom: 2008, vehicleType: 'car', bodyStyle: 'hatchback', fuelTypes: ['petrol'] },
+  { make: 'Hyundai', model: 'IONIQ 5', yearFrom: 2023, vehicleType: 'car', bodyStyle: 'crossover', fuelTypes: ['electric'] },
+  { make: 'Hyundai', model: 'Venue', yearFrom: 2019, vehicleType: 'car', bodyStyle: 'suv', fuelTypes: ['petrol', 'diesel'] },
+  { make: 'Mahindra', model: 'BE 6', yearFrom: 2025, vehicleType: 'car', bodyStyle: 'suv', fuelTypes: ['electric'] },
+  { make: 'Mahindra', model: 'Scorpio N', yearFrom: 2022, vehicleType: 'car', bodyStyle: 'suv', fuelTypes: ['petrol', 'diesel'] },
+  { make: 'Mahindra', model: 'Thar', yearFrom: 2010, vehicleType: 'car', bodyStyle: 'suv', fuelTypes: ['petrol', 'diesel'] },
+  { make: 'Mahindra', model: 'XEV 9e', yearFrom: 2025, vehicleType: 'car', bodyStyle: 'suv', fuelTypes: ['electric'] },
+  { make: 'Mahindra', model: 'XUV700', yearFrom: 2021, vehicleType: 'car', bodyStyle: 'suv', fuelTypes: ['petrol', 'diesel'] },
+  { make: 'Maruti Suzuki', model: 'Baleno', yearFrom: 2015, vehicleType: 'car', bodyStyle: 'hatchback', fuelTypes: ['petrol', 'cng'] },
+  { make: 'Maruti Suzuki', model: 'Brezza', yearFrom: 2016, vehicleType: 'car', bodyStyle: 'suv', fuelTypes: ['petrol', 'cng'] },
+  { make: 'Maruti Suzuki', model: 'Grand Vitara', yearFrom: 2022, vehicleType: 'car', bodyStyle: 'suv', fuelTypes: ['petrol', 'cng', 'hybrid'] },
+  { make: 'Maruti Suzuki', model: 'Swift', yearFrom: 2005, vehicleType: 'car', bodyStyle: 'hatchback', fuelTypes: ['petrol', 'cng'] },
+  { make: 'Tata Motors', model: 'Curvv', yearFrom: 2024, vehicleType: 'car', bodyStyle: 'suv', fuelTypes: ['petrol', 'diesel'] },
+  { make: 'Tata Motors', model: 'Curvv.ev', yearFrom: 2024, vehicleType: 'car', bodyStyle: 'suv', fuelTypes: ['electric'] },
+  { make: 'Tata Motors', model: 'Nexon', yearFrom: 2017, vehicleType: 'car', bodyStyle: 'suv', fuelTypes: ['petrol', 'diesel', 'cng'] },
+  { make: 'Tata Motors', model: 'Nexon.ev', yearFrom: 2020, vehicleType: 'car', bodyStyle: 'suv', fuelTypes: ['electric'] },
+  { make: 'Tata Motors', model: 'Punch', yearFrom: 2021, vehicleType: 'car', bodyStyle: 'suv', fuelTypes: ['petrol', 'cng'] },
+  { make: 'Tata Motors', model: 'Punch.ev', yearFrom: 2024, vehicleType: 'car', bodyStyle: 'suv', fuelTypes: ['electric'] },
+];

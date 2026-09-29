@@ -7,6 +7,7 @@ const {
   normalizeVehicleType,
   normalizeFuelType,
   inventoryVehicleType,
+  inventoryAliasesFor,
 } = require('../utils/vehicleClassification');
 
 const parseSearchWindow = (query) => {
@@ -15,7 +16,11 @@ const parseSearchWindow = (query) => {
   return parseWindow(start, end);
 };
 
-const priceFor = (location, vehicleType) => Number(location.pricing?.[vehicleType] ?? 0);
+const priceFor = (location, vehicleType) => {
+  const aliases = inventoryAliasesFor(vehicleType);
+  const price = aliases.map((type) => location.pricing?.[type]).find((value) => value !== undefined);
+  return Number(price ?? 0);
+};
 
 const requestedVehicle = (query) => {
   const requestedType = normalizeVehicleType(query.vehicleType || 'car');
@@ -46,7 +51,8 @@ const nearbyParking = async (req, res) => {
     if (window.error) return res.status(400).json({ success: false, message: window.error });
 
     const amenities = String(req.query.amenities || '').split(',').map((value) => value.trim()).filter(Boolean);
-    const query = { status: 'active', vehicleTypes: inventoryType };
+    const aliases = inventoryAliasesFor(inventoryType);
+    const query = { status: 'active', vehicleTypes: aliases.length === 1 ? aliases[0] : { $in: aliases } };
     if (inventoryType === 'ev' || req.query.ev === 'true') query.evSupported = true;
     if (amenities.length) query.amenities = { $all: amenities };
     const locations = await ParkingLocation.aggregate([

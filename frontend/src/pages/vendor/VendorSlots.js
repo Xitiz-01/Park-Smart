@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { io } from 'socket.io-client';
 import { ParkingSquare, Plus, RefreshCw, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { vendorsAPI } from '../../services/api';
+import EVSlotBoard, { slotDisplayStatus } from '../../components/parking/EVSlotBoard';
+import { isAvailabilityEventForLocation } from '../../utils/hybridParking';
 
 const emptyForm = { slotNumber: '', prefix: 'EV', count: 4, vehicleType: 'ev', evCompatible: true, chargerType: 'CCS2', connectorType: 'CCS2', chargerPowerKw: 22 };
 
@@ -23,14 +26,26 @@ export default function VendorSlots() {
       setLocationId((current) => evLocations.some((item) => item._id === current) ? current : evLocations[0]?._id || '');
     }).finally(() => setLoading(false));
   }, []);
-  const loadSlots = async (id = locationId) => {
+  const loadSlots = useCallback(async (id = locationId) => {
     if (!id) return setSlots([]);
     setLoading(true);
     try { const { data } = await vendorsAPI.getLocationSlots(id); setSlots(data.slots); }
     catch (error) { toast.error(error.response?.data?.message || 'Unable to load EV slots'); }
     finally { setLoading(false); }
-  };
-  useEffect(() => { if (locationId) loadSlots(locationId); }, [locationId]);
+  }, [locationId]);
+  useEffect(() => { if (locationId) loadSlots(locationId); }, [locationId, loadSlots]);
+  useEffect(() => {
+    if (!locationId) return undefined;
+    const socket = io((process.env.REACT_APP_API_URL || 'http://localhost:5001/api').replace(/\/api\/?$/, ''), { transports: ['websocket'], withCredentials: true });
+    let timer;
+    const refreshIfRelevant = ({ locationId: changedLocation } = {}) => {
+      if (!isAvailabilityEventForLocation({ locationId: changedLocation }, locationId)) return;
+      clearTimeout(timer);
+      timer = setTimeout(() => loadSlots(locationId), 180);
+    };
+    socket.on('availability:changed', refreshIfRelevant);
+    return () => { clearTimeout(timer); socket.disconnect(); };
+  }, [loadSlots, locationId]);
   const current = locations.find((location) => location._id === locationId);
 
   const submit = async (event) => {
@@ -63,8 +78,9 @@ export default function VendorSlots() {
         </div>
         <button className="btn btn-primary" style={{ marginTop: 16 }} disabled={saving || current?.status !== 'active'}><Plus size={15} /> {saving ? 'Creating…' : mode === 'bulk' ? 'Create EV slots' : 'Add EV slot'}</button>
       </form>
-      <div className="card"><div className="flex items-center justify-between" style={{ marginBottom: 14 }}><h2 style={{ fontSize: 16 }}>{slots.length} EV Slots</h2><button className="btn btn-sm btn-outline" onClick={() => loadSlots()}><RefreshCw size={13} /> Refresh</button></div>
-        <div className="table-wrapper"><table><thead><tr><th>Slot</th><th>Charger</th><th>Connector</th><th>Power</th><th>Rate</th><th>Status</th><th>Action</th></tr></thead><tbody>{slots.map((slot) => <tr key={slot._id}><td style={{ fontWeight: 700 }}>{slot.slotNumber}</td><td>{slot.chargerType || '—'}</td><td>{slot.connectorType || '—'}</td><td>{slot.chargerPowerKw ? `${slot.chargerPowerKw} kW` : '—'}</td><td>₹{slot.pricePerHour}/hr</td><td><span className={`badge ${slot.status === 'available' ? 'badge-green' : 'badge-yellow'}`}>{slot.status}</span></td><td>{['available', 'maintenance'].includes(slot.status) && <button className="btn btn-sm btn-outline" onClick={() => setStatus(slot, slot.status === 'available' ? 'maintenance' : 'available')}>{slot.status === 'available' ? 'Maintenance' : 'Make available'}</button>}</td></tr>)}</tbody></table>{!loading && !slots.length && <div className="empty-state"><ParkingSquare size={38} /><h3>No EV slots at this location yet.</h3></div>}</div>
+      <div className="card"><div className="flex items-center justify-between" style={{ marginBottom: 14 }}><div><h2 style={{ fontSize: 16 }}>{slots.length} EV Slots</h2><p style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 3 }}>Operational state for the current hour</p></div><button className="btn btn-sm btn-outline" onClick={() => loadSlots()}><RefreshCw size={13} /> Refresh</button></div>
+        <EVSlotBoard slots={slots} title={`${current?.name || 'Location'} EV board`} subtitle="Live operational view. Use the controls below to place a bay into or out of maintenance." />
+        <div className="table-wrapper" style={{ marginTop: 18 }}><table><thead><tr><th>Slot</th><th>Charger</th><th>Connector</th><th>Power</th><th>Rate</th><th>Live status</th><th>Action</th></tr></thead><tbody>{slots.map((slot) => { const liveStatus = slotDisplayStatus(slot); return <tr key={slot._id}><td style={{ fontWeight: 700 }}>{slot.slotNumber}</td><td>{slot.chargerType || '—'}</td><td>{slot.connectorType || '—'}</td><td>{slot.chargerPowerKw ? `${slot.chargerPowerKw} kW` : '—'}</td><td>₹{slot.pricePerHour}/hr</td><td><span className={`badge ${liveStatus === 'available' ? 'badge-green' : liveStatus === 'maintenance' ? 'badge-coral' : liveStatus === 'occupied' ? 'status-neutral' : 'badge-yellow'}`}>{liveStatus}</span></td><td>{['available', 'maintenance'].includes(slot.status) && <button className="btn btn-sm btn-outline" onClick={() => setStatus(slot, slot.status === 'available' ? 'maintenance' : 'available')}>{slot.status === 'available' ? 'Maintenance' : 'Make available'}</button>}</td></tr>; })}</tbody></table>{!loading && !slots.length && <div className="empty-state"><ParkingSquare size={38} /><h3>No EV slots at this location yet.</h3></div>}</div>
       </div>
     </>}
   </div>;

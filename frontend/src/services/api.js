@@ -60,6 +60,13 @@ export const vehiclesAPI = {
   delete: (id) => API.delete(`/vehicles/${id}`),
 };
 
+export const vehicleCatalogAPI = {
+  getBrands: (params) => API.get('/vehicle-catalog/brands', { params }),
+  getModels: (params) => API.get('/vehicle-catalog/models', { params }),
+  getYears: (params) => API.get('/vehicle-catalog/years', { params }),
+  getDetails: (params) => API.get('/vehicle-catalog/details', { params }),
+};
+
 // Admin
 export const adminAPI = {
   getDashboard: () => API.get('/admin/dashboard'),

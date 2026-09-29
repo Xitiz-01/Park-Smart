@@ -62,6 +62,7 @@ ADDRESS_SELECTION_SECRET=replace_with_a_separate_long_random_string
 EXTERNAL_PARKING_CACHE_TTL_MS=120000
 GEOCODING_PROVIDER=geoapify
 GEOCODING_API_KEY=your_geoapify_api_key
+API_NINJAS_API_KEY=
 ```
 
 **frontend/.env**
@@ -155,7 +156,7 @@ The intended development flow is:
 7. Merge only after the required checks pass.
 8. Let Vercel and Render deploy the merged `main` branch automatically.
 
-Production credentials, including the production MongoDB URI, Better Auth secret, address-selection secret, and Geoapify key, stay in Render environment configuration. They must not be added to GitHub Actions for this workflow.
+Production credentials, including the production MongoDB URI, Better Auth secret, address-selection secret, Geoapify key, and optional API Ninjas key, stay in Render environment configuration. They must not be added to GitHub Actions for this workflow.
 
 ---
 
@@ -215,7 +216,7 @@ This creates 60 slots across 4 zones (A/B/C/D) and 3 floors (G/1/2).
 
 The main customer flow at `/dashboard/nearby` discovers real, active vendor `ParkingLocation` records with MongoDB GeoJSON distance search. A selected arrival/departure range drives operating-hours checks and live availability:
 
-- cars, motorcycles/bikes, and SUVs reserve one unit from the location's configured capacity; they are not assigned a numbered slot;
+- cars and motorcycles reserve one unit from the location's configured capacity; SUV is body metadata and uses car capacity, never a separate parking type;
 - EVs reserve an exact vendor-managed charging bay, including charger/connector/power metadata;
 - booking price is snapshotted when the reservation is made, while payment remains pending because settlement is intentionally out of scope;
 - check-in and checkout are available to owning vendors and admins, with ownership enforced by the backend;
@@ -231,7 +232,7 @@ npm run migrate:hybrid-parking -- --apply --confirm-db=parking-system
 
 The migration backfills location capacity from legacy non-EV slots, booking location/type/rate metadata, active reservation ledgers, and required indexes. The apply command refuses to write unless `--confirm-db` exactly matches the database in `MONGODB_URI`. Back up production before applying it.
 
-Customer vehicles store physical class (`car`, `motorcycle`, or `suv`) separately from fuel type (`petrol`, `diesel`, `cng`, `hybrid`, or `electric`). Preview the legacy EV conversion before deployment, then apply it only to the confirmed database:
+Customer vehicles store canonical parking class (`car` or `motorcycle`), optional body style (including `suv`), optional model year, and fuel type (`petrol`, `diesel`, `cng`, `hybrid`, or `electric`). Fuel type alone selects booking mode: electric vehicles use exact EV bays and all others use regular capacity. Legacy `vehicleType: "ev"` remains readable until migration. Preview that conversion before deployment, then apply it only to the confirmed database:
 
 The discovery page derives regular-capacity versus exact-EV-slot availability from the selected registered vehicle. The optional **EV-capable locations only** filter only narrows the location list: it does not turn a petrol, diesel, CNG, or hybrid vehicle into an EV booking.
 
@@ -242,6 +243,49 @@ npm run migrate:vehicle-fuel-type -- --apply --confirm-db=parking-system
 ```
 
 The migration converts legacy `vehicleType: "ev"` records to `vehicleType: "car"` with `fuelType: "electric"`. It does not guess a fuel type for other older vehicles. A legacy EV record that already has a contradictory explicit fuel type is reported and left unchanged for manual review. The command is idempotent and refuses write mode without an exact database-name confirmation.
+
+Legacy SUV records have their own safe conversion. A dry run reports scanned, migrated, skipped, conflict, and applied counts. Apply mode changes `vehicleType: "suv"` to `vehicleType: "car"`, sets `bodyStyle: "suv"` only when body style is missing, and preserves/report explicit conflicting body styles:
+
+```bash
+cd backend
+npm run migrate:vehicle-body-style
+npm run migrate:vehicle-body-style -- --apply --confirm-db=parking-system
+```
+
+Both migration commands are idempotent. New parking locations and vehicles accept only canonical parking types; discovery, booking, pricing, capacity, and dashboard aggregation continue to recognize legacy `suv` and `bike` buckets until data is migrated.
+
+---
+
+## Vehicle intelligence and EV bay experience
+
+ParkSmart validates new vehicle registrations through a backend-only provider layer. The UI never calls a catalog vendor and never receives an API key or provider-specific record. The normalized contract exposes make, model, available model years, canonical parking type, body style, and fuel types only when the source supplies them. Unknown metadata stays empty so ParkSmart does not fabricate classifications.
+
+Provider evaluation (reviewed 29 September 2026):
+
+| Provider | Coverage and useful fields | Authentication / limits | ParkSmart decision |
+|---|---|---|---|
+| [API Ninjas Cars](https://api-ninjas.com/api/cars) | Advertises 84,000+ vehicles, 5,000+ models, 400+ makes; facet API includes make, model, year, body, and fuel. This is broad catalog data, but the provider does not promise exhaustive Indian-market or worldwide coverage. | Backend `X-Api-Key`. The [free plan](https://api-ninjas.com/pricing) is limited to 3,000 calls/month and excludes commercial use; production use requires an appropriate paid plan. | Optional primary when `API_NINJAS_API_KEY` is configured. |
+| [NHTSA vPIC](https://vpic.nhtsa.dot.gov/api/) | Free official manufacturer-submitted US regulatory data; make/model lookups and model-year validation, mainly intended for 1981+ vehicles. It does not provide reliable global/India fuel or body metadata. | No key; traffic is rate controlled. | Secondary breadth/fallback. Missing metadata remains unset. |
+| [CarAPI.app](https://carapi.app/api) | Strong historical range (1900–2027), trims and specs, but explicitly covers vehicles sold in the United States. | JWT key/secret, paid production plans and daily limits; unauthenticated sample years are narrow. | Not selected because geography and authentication/plan fit are weaker for ParkSmart. |
+| Versioned local supplement | A deliberately small India-focused set with known year ranges/body/fuel metadata, reviewed against official manufacturer pages from [Mahindra](https://www.mahindra.com/our-business/automotive), [Hyundai India](https://www.hyundai.com/in/en/find-a-car), [Maruti Suzuki](https://www.marutisuzuki.com/), [Tata Motors Cars](https://cars.tatamotors.com/), [Honda Cars India](https://www.hondacarindia.com/), and [Ather](https://www.atherenergy.com/). | No key. | India supplement and last-resort outage fallback, not the primary or an exhaustive registry. |
+
+Runtime order is API Ninjas (when configured), NHTSA vPIC, then the local India supplement. Results from successful providers are normalized and merged. Makes, models, model years, and details each have a six-hour in-memory cache. If every remote provider fails because of a timeout, invalid/forbidden key, rate limit, malformed response, network problem, or upstream error, ParkSmart serves the last successful stale cache when available and otherwise returns the local supplement. Tests disable remote network calls and exercise adapters with mocks.
+
+The customer sequence is License Plate → Make → Model → optional Model Year → Vehicle Type → Body Style → Fuel Type → Color → Default. Reliable single-value metadata prefills a choice; ambiguous or absent metadata remains a user choice. Existing records retain the `brand` compatibility alias, remain readable, and can be edited without changing make/model/year during a provider outage.
+
+For broader production coverage, provision an API Ninjas plan permitted for the application's usage and set only the backend variable:
+
+```bash
+API_NINJAS_API_KEY=your_backend_only_key
+```
+
+Do not use a `REACT_APP_*` catalog key. Neither selected provider guarantees a complete worldwide or Indian catalog, so the supplement still needs reviewed maintenance and the UI must continue to tolerate empty year/body/fuel metadata.
+
+The customer EV booking page uses real `ParkingSlot` records in an accessible visual board. Effective states are `available`, `selected`, `reserved`, `occupied`, `maintenance`, and `unavailable`; every state has a textual label and is not communicated by color alone. The selected bay panel shows charger, connector, requested time, rate, and estimate. The backend rechecks location ownership, EV compatibility, operational state, interval conflicts, and the atomic reservation ledger when booking. A stale selection is rejected and the board refreshes.
+
+Customer and vendor EV boards listen only to the existing location-scoped `availability:changed` event. Slot creation, bulk creation, maintenance updates, reservation, cancellation, check-in, and checkout cause an authoritative refresh. The vendor board shows the current-hour operational state while retaining the detailed management table. Regular vehicles continue to reserve capacity and never receive a numbered-slot board. The landing-page visual remains illustrative and is not connected to production inventory.
+
+Catalog maintenance is intentionally manual in this phase. The fallback is not an exhaustive registry of every Indian vehicle, variant, discontinued model, or commercial vehicle; additions should be verified against a manufacturer source and reviewed like code.
 
 ---
 
@@ -299,6 +343,10 @@ parking-system/
 | PATCH | /api/admin/vendors/:id/reject | Admin | Reject vendor |
 | PATCH | /api/admin/vendors/:id/suspend | Admin | Suspend active vendor |
 | GET | /api/location/autocomplete?q= | Authenticated | Search structured Indian addresses |
+| GET | /api/vehicle-catalog/brands | Authenticated | List normalized makes (`makes` plus legacy `brands` alias) |
+| GET | /api/vehicle-catalog/models?make= | Authenticated | List models for a make (`brand` query alias retained) |
+| GET | /api/vehicle-catalog/years?make=&model= | Authenticated | List known model years, newest first |
+| GET | /api/vehicle-catalog/details?make=&model=&modelYear= | Authenticated | Get normalized year/body/fuel metadata without provider internals |
 | GET | /api/vendors/parking-locations | Approved vendor | List owned parking locations |
 | POST | /api/vendors/parking-locations | Approved vendor | Create a parking location |
 | GET | /api/vendors/parking-locations/:id | Approved vendor/owner | View an owned location |

@@ -2,13 +2,14 @@ import React, { useMemo, useState } from 'react';
 import AddressLocationPicker, { emptyAddressSelection } from '../shared/AddressLocationPicker';
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-const VEHICLES = [['car', 'Car'], ['bike', 'Bike'], ['ev', 'EV'], ['motorcycle', 'Motorcycle'], ['suv', 'SUV']];
+const VEHICLES = [['car', 'Car'], ['motorcycle', 'Motorcycle'], ['ev', 'EV']];
 const AMENITIES = [
   ['covered', 'Covered Parking'], ['cctv', 'CCTV'], ['security_guard', 'Security Guard'],
   ['ev_charging', 'EV Charging'], ['accessible', 'Accessible Parking'], ['24_7_access', '24/7 Access'],
 ];
 const defaultHours = Object.fromEntries(DAYS.map((day) => [day, { open: true, allDay: false, openTime: '06:00', closeTime: '23:00' }]));
 
+const canonicalVehicleType = (type) => ['car', 'suv'].includes(type) ? 'car' : ['bike', 'motorcycle'].includes(type) ? 'motorcycle' : type;
 const createInitialState = (location) => location ? {
   name: location.name,
   description: location.description || '',
@@ -20,9 +21,16 @@ const createInitialState = (location) => location ? {
     longitude: location.location.coordinates[0],
     verified: true,
   },
-  vehicleTypes: location.vehicleTypes || [],
-  pricing: location.pricing || {},
-  capacity: location.capacity || {},
+  vehicleTypes: [...new Set((location.vehicleTypes || []).map(canonicalVehicleType))],
+  pricing: {
+    car: location.pricing?.car ?? location.pricing?.suv ?? 0,
+    motorcycle: location.pricing?.motorcycle ?? location.pricing?.bike ?? 0,
+    ev: location.pricing?.ev ?? 0,
+  },
+  capacity: {
+    car: Number(location.capacity?.car || 0) + Number(location.capacity?.suv || 0),
+    motorcycle: Number(location.capacity?.motorcycle || 0) + Number(location.capacity?.bike || 0),
+  },
   evSupported: Boolean(location.evSupported),
   evDetails: location.evDetails || { slotCount: 0, chargerType: '' },
   amenities: location.amenities || [],
