@@ -8,6 +8,7 @@ import {
   Receipt,
   Settings,
   UserRound,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import AppShell from '../layout/AppShell';
@@ -20,6 +21,7 @@ const navItems = [
   { to: '/vendor/transactions', icon: Receipt, label: 'Transactions' },
   { to: '/vendor/earnings', icon: IndianRupee, label: 'Earnings' },
   { to: '/vendor/profile', icon: UserRound, label: 'Business Profile' },
+  { to: '/vendor/verification', icon: ShieldCheck, label: 'Verification' },
   { to: '/vendor/settings', icon: Settings, label: 'Settings' },
 ];
 

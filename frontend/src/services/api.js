@@ -78,6 +78,10 @@ export const adminAPI = {
   approveVendor: (id) => API.patch(`/admin/vendors/${id}/approve`),
   rejectVendor: (id) => API.patch(`/admin/vendors/${id}/reject`),
   suspendVendor: (id) => API.patch(`/admin/vendors/${id}/suspend`),
+  getVerificationCases: (params) => API.get('/admin/vendor-verifications', { params }),
+  getVerificationCase: (vendorId) => API.get(`/admin/vendor-verifications/${vendorId}`),
+  reviewVerificationEvidence: (type, id, action, reason) => API.patch(`/admin/vendor-verifications/${type}/${id}/${action}`, { reason }),
+  getVerificationDocument: (type, id) => API.get(`/admin/vendor-verifications/${type}/${id}/content`, { responseType: 'blob' }),
 };
 
 // Vendors
@@ -91,6 +95,7 @@ export const vendorsAPI = {
   createLocation: (data) => API.post('/vendors/parking-locations', data),
   updateLocation: (id, data) => API.patch(`/vendors/parking-locations/${id}`, data),
   deactivateLocation: (id) => API.delete(`/vendors/parking-locations/${id}`),
+  publishLocation: (id) => API.post(`/vendors/parking-locations/${id}/publish`),
   getLocationSlots: (id) => API.get(`/vendors/parking-locations/${id}/slots`),
   createSlot: (id, data) => API.post(`/vendors/parking-locations/${id}/slots`, data),
   bulkCreateSlots: (id, data) => API.post(`/vendors/parking-locations/${id}/slots/bulk`, data),
@@ -98,6 +103,14 @@ export const vendorsAPI = {
   getBookings: () => API.get('/vendors/bookings'),
   checkInBooking: (id) => API.put(`/vendors/bookings/${id}/checkin`),
   checkOutBooking: (id) => API.put(`/vendors/bookings/${id}/checkout`),
+};
+
+export const verificationAPI = {
+  getMine: () => API.get('/vendor-verification'),
+  submitDocument: (formData) => API.post('/vendor-verification/documents', formData),
+  submitParkingAuthorization: (locationId, formData) => API.post(`/vendor-verification/parking-authorizations/${locationId}`, formData),
+  startDigiLocker: (consent) => API.post('/vendor-verification/digilocker/start', { consent }),
+  verifyExternal: (kind, data) => API.post(`/vendor-verification/external/${kind}`, data),
 };
 
 export const locationAPI = {

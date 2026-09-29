@@ -24,6 +24,7 @@ import AdminSlots from './pages/admin/AdminSlots';
 import AdminBookings from './pages/admin/AdminBookings';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminVendors from './pages/admin/AdminVendors';
+import AdminVerifications from './pages/admin/AdminVerifications';
 
 // Vendor Pages
 import VendorLayout from './components/vendor/VendorLayout';
@@ -36,6 +37,7 @@ import ParkingLocations from './pages/vendor/ParkingLocations';
 import ParkingLocationEditor from './pages/vendor/ParkingLocationEditor';
 import VendorSlots from './pages/vendor/VendorSlots';
 import VendorBookings from './pages/vendor/VendorBookings';
+import VendorVerification from './pages/vendor/VendorVerification';
 import { getDefaultRoute } from './utils/authRouting';
 
 // Protected Route
@@ -78,6 +80,7 @@ const AppRoutes = () => {
         <Route path="bookings" element={<AdminBookings />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="vendors" element={<AdminVendors />} />
+        <Route path="verifications" element={<AdminVerifications />} />
       </Route>
 
       <Route path="/vendor/apply" element={<ProtectedRoute roles={['customer']}><VendorApplication /></ProtectedRoute>} />
@@ -90,6 +93,7 @@ const AppRoutes = () => {
         <Route path="slots" element={<VendorSlots />} />
         <Route path="bookings" element={<VendorBookings />} />
         <Route path="profile" element={<VendorProfile />} />
+        <Route path="verification" element={<VendorVerification />} />
         <Route path=":section" element={<VendorPlaceholder />} />
       </Route>
 
