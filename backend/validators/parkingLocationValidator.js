@@ -1,7 +1,7 @@
 const { isIndianState, normalizeIndianState } = require('../constants/indianStates');
 const GeocodingService = require('../services/geocodingService');
 
-const VEHICLE_TYPES = ['car', 'bike', 'ev', 'motorcycle', 'suv'];
+const VEHICLE_TYPES = ['car', 'ev', 'motorcycle'];
 const AMENITIES = ['covered', 'cctv', 'security_guard', 'ev_charging', 'accessible', '24_7_access'];
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;

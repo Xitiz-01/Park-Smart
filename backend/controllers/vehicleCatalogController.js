@@ -1,18 +1,9 @@
-const { VEHICLE_TYPES } = require('../utils/vehicleClassification');
 const { vehicleCatalogService } = require('../services/vehicleCatalogService');
-
-const vehicleTypeOption = (query) => {
-  const vehicleType = String(query.vehicleType || '').trim().toLowerCase();
-  if (vehicleType && !VEHICLE_TYPES.includes(vehicleType)) return { error: 'Invalid vehicle type' };
-  return { vehicleType: vehicleType || undefined };
-};
 
 const getBrands = async (req, res) => {
   try {
-    const options = vehicleTypeOption(req.query);
-    if (options.error) return res.status(400).json({ success: false, message: options.error });
-    const result = await vehicleCatalogService.getBrands(options);
-    res.json({ success: true, brands: result.brands });
+    const result = await vehicleCatalogService.getMakes();
+    res.json({ success: true, makes: result.makes, brands: result.makes });
   } catch {
     res.status(503).json({ success: false, message: 'Vehicle catalog is temporarily unavailable' });
   }
@@ -20,13 +11,23 @@ const getBrands = async (req, res) => {
 
 const getModels = async (req, res) => {
   try {
-    const brand = String(req.query.brand || '').trim();
-    if (!brand) return res.status(400).json({ success: false, message: 'Brand is required' });
-    const options = vehicleTypeOption(req.query);
-    if (options.error) return res.status(400).json({ success: false, message: options.error });
-    const result = await vehicleCatalogService.getModels(brand, options);
-    if (!result.models.length) return res.status(404).json({ success: false, message: 'Brand was not found in the vehicle catalog' });
-    res.json({ success: true, brand, models: result.models });
+    const make = String(req.query.make || req.query.brand || '').trim();
+    if (!make) return res.status(400).json({ success: false, message: 'Make is required' });
+    const result = await vehicleCatalogService.getModels(make);
+    if (!result.models.length) return res.status(404).json({ success: false, message: 'Make was not found in the vehicle catalog' });
+    res.json({ success: true, make: result.make, brand: result.make, models: result.models });
+  } catch {
+    res.status(503).json({ success: false, message: 'Vehicle catalog is temporarily unavailable' });
+  }
+};
+
+const getModelYears = async (req, res) => {
+  try {
+    const make = String(req.query.make || req.query.brand || '').trim();
+    const model = String(req.query.model || '').trim();
+    if (!make || !model) return res.status(400).json({ success: false, message: 'Make and model are required' });
+    const result = await vehicleCatalogService.getModelYears(make, model);
+    res.json({ success: true, ...result });
   } catch {
     res.status(503).json({ success: false, message: 'Vehicle catalog is temporarily unavailable' });
   }
@@ -34,10 +35,11 @@ const getModels = async (req, res) => {
 
 const getModelDetails = async (req, res) => {
   try {
-    const brand = String(req.query.brand || '').trim();
+    const make = String(req.query.make || req.query.brand || '').trim();
     const model = String(req.query.model || '').trim();
-    if (!brand || !model) return res.status(400).json({ success: false, message: 'Brand and model are required' });
-    const details = await vehicleCatalogService.getModelDetails(brand, model);
+    const modelYear = req.query.modelYear || req.query.year;
+    if (!make || !model) return res.status(400).json({ success: false, message: 'Make and model are required' });
+    const details = await vehicleCatalogService.getModelDetails(make, model, modelYear);
     if (!details) return res.status(404).json({ success: false, message: 'Vehicle model was not found in the catalog' });
     const { source, ...vehicle } = details;
     res.json({ success: true, vehicle });
@@ -46,4 +48,4 @@ const getModelDetails = async (req, res) => {
   }
 };
 
-module.exports = { getBrands, getModels, getModelDetails };
+module.exports = { getBrands, getModels, getModelYears, getModelDetails };

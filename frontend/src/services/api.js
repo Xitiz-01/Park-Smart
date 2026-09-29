@@ -63,6 +63,7 @@ export const vehiclesAPI = {
 export const vehicleCatalogAPI = {
   getBrands: (params) => API.get('/vehicle-catalog/brands', { params }),
   getModels: (params) => API.get('/vehicle-catalog/models', { params }),
+  getYears: (params) => API.get('/vehicle-catalog/years', { params }),
   getDetails: (params) => API.get('/vehicle-catalog/details', { params }),
 };
 

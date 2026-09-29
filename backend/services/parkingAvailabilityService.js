@@ -2,6 +2,7 @@ const Booking = require('../models/Booking');
 const ParkingSlot = require('../models/ParkingSlot');
 const ReservationLedger = require('../models/ReservationLedger');
 const { overlappingReservations, resourceKeyFor } = require('./parkingReservationService');
+const { inventoryAliasesFor } = require('../utils/vehicleClassification');
 
 const IST_OFFSET_MS = 330 * 60 * 1000;
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -61,8 +62,8 @@ const isOpenForWindow = (location, startTime, endTime) => {
 };
 
 const regularCapacityFor = (location, vehicleType) => {
-  if (vehicleType === 'motorcycle') return location.capacity?.motorcycle ?? location.capacity?.bike ?? 0;
-  return location.capacity?.[vehicleType] ?? 0;
+  const aliases = inventoryAliasesFor(vehicleType);
+  return aliases.reduce((total, type) => total + Number(location.capacity?.[type] || 0), 0);
 };
 
 const getAvailability = async (location, vehicleType, startTime, endTime) => {
@@ -105,7 +106,7 @@ const getAvailability = async (location, vehicleType, startTime, endTime) => {
   const held = overlappingReservations(ledger, startTime, endTime).length;
   const legacyCount = await Booking.countDocuments({
     parkingLocation: location._id,
-    vehicleType,
+    vehicleType: { $in: inventoryAliasesFor(vehicleType) },
     bookingType: { $ne: 'regular' },
     reservationToken: null,
     status: { $in: ['upcoming', 'active'] },

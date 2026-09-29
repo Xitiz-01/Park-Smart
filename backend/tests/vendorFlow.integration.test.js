@@ -20,6 +20,7 @@ const Vehicle = require('../models/Vehicle');
 const GeocodingService = require('../services/geocodingService');
 const { migrateExistingUsers } = require('../services/betterAuthMigration');
 const { migrateVehicleFuelTypes } = require('../scripts/migrateVehicleFuelType');
+const { migrateVehicleBodyStyles } = require('../scripts/migrateVehicleBodyStyle');
 const { closeBetterAuth } = require('../auth/betterAuthBridge');
 
 let baseUrl;
@@ -83,7 +84,7 @@ const operatingHours = () => Object.fromEntries(
     .map((day) => [day, { open: true, allDay: true, openTime: '06:00', closeTime: '23:00' }])
 );
 
-const locationPayload = (name, address, pricing = { car: 50, bike: 20, ev: 70 }) => ({
+const locationPayload = (name, address, pricing = { car: 50, motorcycle: 20, ev: 70 }) => ({
   name, description: `${name} description`,
   address: {
     formattedAddress: address.formattedAddress, addressLine1: address.addressLine1,
@@ -91,10 +92,10 @@ const locationPayload = (name, address, pricing = { car: 50, bike: 20, ev: 70 })
     pincode: address.pincode, country: address.country,
   },
   latitude: address.latitude, longitude: address.longitude, selectionToken: address.selectionToken,
-  vehicleTypes: ['car', 'bike', 'ev'], evSupported: true,
+  vehicleTypes: ['car', 'motorcycle', 'ev'], evSupported: true,
   evDetails: { slotCount: 2, chargerType: 'CCS2' }, operatingHours: operatingHours(),
   amenities: ['covered', 'cctv', 'security_guard', 'accessible'], pricing,
-  capacity: { car: 1, bike: 2 },
+  capacity: { car: 1, motorcycle: 2 },
 });
 
 const register = async (name, email, phone, extras = {}) => {
@@ -181,15 +182,15 @@ test('Better Auth, RBAC, migration, and ParkSmart domain flows work end-to-end',
   });
   assert.equal(invalidCoordinates.status, 400);
   const negativePricing = await request('/vendors/parking-locations', {
-    method: 'POST', client: vendorAClient, body: locationPayload('Bad Pricing', selected(), { car: -1, bike: 20, ev: 70 }),
+    method: 'POST', client: vendorAClient, body: locationPayload('Bad Pricing', selected(), { car: -1, motorcycle: 20, ev: 70 }),
   });
   assert.equal(negativePricing.status, 400);
 
   const moshiAddress = selected();
   const wakadAddress = selected({ formattedAddress: 'Wakad, Pune, Maharashtra 411057, India', addressLine1: 'Wakad Road', city: 'Pune', pincode: '411057', latitude: 18.5975, longitude: 73.7898, providerPlaceId: 'test-place-wakad' });
-  const createMoshi = await request('/vendors/parking-locations', { method: 'POST', client: vendorAClient, body: locationPayload('Moshi Parking', moshiAddress, { car: 50, bike: 20, ev: 70 }) });
-  const createWakad = await request('/vendors/parking-locations', { method: 'POST', client: vendorAClient, body: locationPayload('Wakad Parking', wakadAddress, { car: 80, bike: 30, ev: 100 }) });
-  const createBaner = await request('/vendors/parking-locations', { method: 'POST', client: vendorBClient, body: locationPayload('Baner Parking', bAddress, { car: 65, bike: 25, ev: 85 }) });
+  const createMoshi = await request('/vendors/parking-locations', { method: 'POST', client: vendorAClient, body: locationPayload('Moshi Parking', moshiAddress, { car: 50, motorcycle: 20, ev: 70 }) });
+  const createWakad = await request('/vendors/parking-locations', { method: 'POST', client: vendorAClient, body: locationPayload('Wakad Parking', wakadAddress, { car: 80, motorcycle: 30, ev: 100 }) });
+  const createBaner = await request('/vendors/parking-locations', { method: 'POST', client: vendorBClient, body: locationPayload('Baner Parking', bAddress, { car: 65, motorcycle: 25, ev: 85 }) });
   assert.equal(createMoshi.status, 201);
   assert.equal(createWakad.status, 201, 'vendor can create multiple locations');
   assert.equal(createMoshi.payload.location.pricing.car, 50);
@@ -204,7 +205,7 @@ test('Better Auth, RBAC, migration, and ParkSmart domain flows work end-to-end',
   assert.equal((await request(`/vendors/parking-locations/${banerId}`, { client: vendorAClient })).status, 404, 'Vendor A cannot view Vendor B data');
   assert.equal((await request(`/vendors/parking-locations/${banerId}`, { method: 'PATCH', client: vendorAClient, body: locationPayload('Stolen', bAddress) })).status, 404, 'Vendor A cannot edit Vendor B data');
 
-  const movedMoshi = locationPayload('Moshi Parking Updated', moshiAddress, { car: 55, bike: 22, ev: 75 });
+  const movedMoshi = locationPayload('Moshi Parking Updated', moshiAddress, { car: 55, motorcycle: 22, ev: 75 });
   movedMoshi.latitude += 0.001;
   movedMoshi.longitude += 0.001;
   const updateMoshi = await request(`/vendors/parking-locations/${moshiId}`, { method: 'PATCH', client: vendorAClient, body: movedMoshi });
@@ -225,29 +226,40 @@ test('Better Auth, RBAC, migration, and ParkSmart domain flows work end-to-end',
   assert.equal(evSlot.payload.slot.evCompatible, true);
   assert.equal((await request(`/vendors/parking-locations/${banerId}/slots`, { method: 'POST', client: vendorAClient, body: { slotNumber: 'X01', vehicleType: 'ev' } })).status, 404, 'Vendor A cannot add slots to Vendor B');
 
-  const repricedMoshi = { ...movedMoshi, pricing: { car: 60, bike: 24, ev: 80 } };
+  const repricedMoshi = { ...movedMoshi, pricing: { car: 60, motorcycle: 24, ev: 80 } };
   assert.equal((await request(`/vendors/parking-locations/${moshiId}`, { method: 'PATCH', client: vendorAClient, body: repricedMoshi })).status, 200);
   const repricedSlots = await request(`/vendors/parking-locations/${moshiId}/slots`, { client: vendorAClient });
   assert.equal(repricedSlots.payload.slots.find((slot) => slot.slotNumber === 'C01').pricePerHour, 80, 'location EV pricing updates owned physical slots');
 
-  const catalogBrands = await request('/vehicle-catalog/brands?vehicleType=suv', { client: customerClient });
+  const catalogBrands = await request('/vehicle-catalog/brands', { client: customerClient });
   assert.equal(catalogBrands.status, 200, 'vehicle catalog brands endpoint is available');
   assert.ok(catalogBrands.payload.brands.includes('Mahindra'));
-  const catalogModels = await request('/vehicle-catalog/models?brand=Mahindra&vehicleType=suv', { client: customerClient });
+  const unfilteredLegacyQuery = await request('/vehicle-catalog/brands?vehicleType=suv', { client: customerClient });
+  assert.deepEqual(unfilteredLegacyQuery.payload.makes, catalogBrands.payload.makes, 'make list is not filtered by the old car/SUV distinction');
+  assert.deepEqual(catalogBrands.payload.makes, catalogBrands.payload.brands, 'make and legacy brand response aliases agree');
+  const catalogModels = await request('/vehicle-catalog/models?make=Mahindra', { client: customerClient });
   assert.equal(catalogModels.status, 200, 'vehicle catalog models endpoint is available');
   assert.ok(catalogModels.payload.models.some((item) => item.model === 'XEV 9e'));
   assert.equal((await request('/vehicle-catalog/models?brand=Imaginary%20Motors', { client: customerClient })).status, 404, 'unknown catalog brands are rejected');
-  const catalogDetails = await request('/vehicle-catalog/details?brand=Mahindra&model=XEV%209e', { client: customerClient });
-  assert.deepEqual(catalogDetails.payload.vehicle, { brand: 'Mahindra', model: 'XEV 9e', vehicleType: 'suv', fuelTypes: ['electric'] });
-  assert.equal((await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14FAKE0', vehicleType: 'suv', fuelType: 'electric', brand: 'Imaginary Motors', model: 'X1' } })).status, 400, 'invalid brands are rejected');
-  assert.equal((await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14FAKE1', vehicleType: 'suv', fuelType: 'electric', brand: 'Mahindra', model: 'RandomFakeModel' } })).status, 400, 'invalid brand/model combinations are rejected');
-  assert.equal((await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14WRONG', vehicleType: 'suv', fuelType: 'petrol', brand: 'Hyundai', model: 'i20' } })).status, 400, 'catalog body metadata is validated server-side');
+  const catalogYears = await request('/vehicle-catalog/years?make=Mahindra&model=XEV%209e', { client: customerClient });
+  assert.ok(catalogYears.payload.years.includes(2026), 'historical/current model years are available');
+  const catalogDetails = await request('/vehicle-catalog/details?make=Mahindra&model=XEV%209e&modelYear=2026', { client: customerClient });
+  assert.equal(catalogDetails.payload.vehicle.make, 'Mahindra');
+  assert.equal(catalogDetails.payload.vehicle.vehicleType, 'car');
+  assert.equal(catalogDetails.payload.vehicle.bodyStyle, 'suv');
+  assert.deepEqual(catalogDetails.payload.vehicle.fuelTypes, ['electric']);
+  assert.equal((await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14FAKE0', vehicleType: 'car', bodyStyle: 'suv', fuelType: 'electric', make: 'Imaginary Motors', model: 'X1' } })).status, 400, 'invalid makes are rejected');
+  assert.equal((await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14FAKE1', vehicleType: 'car', bodyStyle: 'suv', fuelType: 'electric', make: 'Mahindra', model: 'RandomFakeModel' } })).status, 400, 'invalid make/model combinations are rejected');
+  assert.equal((await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14WRONG', vehicleType: 'car', bodyStyle: 'suv', fuelType: 'petrol', make: 'Hyundai', model: 'i20' } })).status, 400, 'catalog body metadata is validated server-side');
+  assert.equal((await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14BADYR1', vehicleType: 'car', bodyStyle: 'suv', fuelType: 'electric', make: 'Mahindra', model: 'XEV 9e', modelYear: 2000 } })).status, 400, 'model years outside the catalog range are rejected');
 
-  const vehicle = await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14AB1234', vehicleType: 'CAR', fuelType: 'PETROL', brand: 'Hyundai', model: 'i20', color: 'Blue' } });
+  const vehicle = await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14AB1234', vehicleType: 'CAR', bodyStyle: 'HATCHBACK', fuelType: 'PETROL', make: 'Hyundai', model: 'i20', modelYear: 2024, color: 'Blue' } });
   assert.equal(vehicle.status, 201, 'existing vehicle flow works');
   assert.equal(vehicle.payload.vehicle.vehicleType, 'car', 'physical vehicle type is normalized');
   assert.equal(vehicle.payload.vehicle.fuelType, 'petrol', 'fuel type is normalized and returned by the API');
-  const dieselVehicle = await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14DS1234', vehicleType: 'suv', fuelType: 'diesel', brand: 'Hyundai', model: 'Creta' } });
+  assert.equal(vehicle.payload.vehicle.make, 'Hyundai');
+  assert.equal(vehicle.payload.vehicle.modelYear, 2024);
+  const dieselVehicle = await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14DS1234', vehicleType: 'car', bodyStyle: 'suv', fuelType: 'diesel', make: 'Hyundai', model: 'Creta' } });
   assert.equal(dieselVehicle.status, 201, 'diesel cars can be created');
   assert.equal((await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14NOFUEL', vehicleType: 'car' } })).status, 400, 'new vehicles require a fuel type');
   const customerUser = await User.findOne({ authUserId: customerRegistration.payload.user.id });
@@ -266,7 +278,7 @@ test('Better Auth, RBAC, migration, and ParkSmart domain flows work end-to-end',
   assert.equal((await request(`/vendors/slots/${reservedBay._id}`, { method: 'PATCH', client: vendorAClient, body: { status: 'reserved' } })).status, 200);
   assert.equal((await request(`/vendors/slots/${occupiedBay._id}`, { method: 'PATCH', client: vendorAClient, body: { status: 'occupied' } })).status, 200);
   assert.equal((await request(`/vendors/slots/${maintenanceBay._id}`, { method: 'PATCH', client: vendorAClient, body: { status: 'maintenance' } })).status, 200);
-  const evBoard = await request(`/parking-locations/${moshiId}?vehicleType=suv&fuelType=electric&startTime=${encodeURIComponent(start.toISOString())}&endTime=${encodeURIComponent(end.toISOString())}`, { client: customerClient });
+  const evBoard = await request(`/parking-locations/${moshiId}?vehicleType=car&fuelType=electric&startTime=${encodeURIComponent(start.toISOString())}&endTime=${encodeURIComponent(end.toISOString())}`, { client: customerClient });
   const boardStates = Object.fromEntries(evBoard.payload.location.availability.evSlots.map((slot) => [slot.slotNumber, slot.availabilityStatus]));
   assert.equal(boardStates[reservedBay.slotNumber], 'reserved');
   assert.equal(boardStates[occupiedBay.slotNumber], 'occupied');
@@ -301,10 +313,10 @@ test('Better Auth, RBAC, migration, and ParkSmart domain flows work end-to-end',
   const releasedCapacityBooking = await request('/bookings', { method: 'POST', client: customerClient, body: racePayload });
   assert.equal(releasedCapacityBooking.status, 201, 'cancellation immediately releases regular capacity');
 
-  const evVehicle = await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14EV1234', vehicleType: 'suv', fuelType: 'electric', brand: 'Mahindra', model: 'XEV 9e', color: 'Green' } });
-  assert.equal(evVehicle.status, 201, 'electric SUVs preserve their physical class');
+  const evVehicle = await request('/vehicles', { method: 'POST', client: customerClient, body: { licensePlate: 'MH14EV1234', vehicleType: 'car', bodyStyle: 'suv', fuelType: 'electric', make: 'Mahindra', model: 'XEV 9e', modelYear: 2026, color: 'Green' } });
+  assert.equal(evVehicle.status, 201, 'electric SUVs use car capacity classification and SUV body style');
   assert.equal((await request('/bookings', { method: 'POST', client: customerClient, body: { parkingLocationId: moshiId, bookingType: 'ev', slotId: reservedBay._id, vehicleId: evVehicle.payload.vehicle._id, startTime: raceStart, expectedEndTime: raceEnd } })).status, 400, 'backend rejects an EV bay that became operationally unavailable');
-  const evDiscovery = await request(`/parking-locations/nearby?lat=${movedMoshi.latitude}&lng=${movedMoshi.longitude}&radiusKm=5&vehicleType=suv&fuelType=electric&startTime=${encodeURIComponent(raceStart.toISOString())}&endTime=${encodeURIComponent(raceEnd.toISOString())}`, { client: customerClient });
+  const evDiscovery = await request(`/parking-locations/nearby?lat=${movedMoshi.latitude}&lng=${movedMoshi.longitude}&radiusKm=5&vehicleType=car&fuelType=electric&startTime=${encodeURIComponent(raceStart.toISOString())}&endTime=${encodeURIComponent(raceEnd.toISOString())}`, { client: customerClient });
   assert.equal(evDiscovery.status, 200, 'electric vehicle discovery returns EV-compatible locations');
   assert.ok(evDiscovery.payload.locations.some((item) => item._id === moshiId));
   assert.equal(evDiscovery.payload.requestedWindow.bookingType, 'ev');
@@ -343,6 +355,35 @@ test('Better Auth, RBAC, migration, and ParkSmart domain flows work end-to-end',
   assert.equal(migratedVehicle.fuelType, 'electric');
   const repeatedVehicleMigration = await migrateVehicleFuelTypes({ collection: Vehicle.collection, apply: true, logger: quietLogger });
   assert.equal(repeatedVehicleMigration.migrated, 0, 'vehicle fuel migration is idempotent');
+
+  const legacySuvId = new mongoose.Types.ObjectId();
+  const conflictingSuvId = new mongoose.Types.ObjectId();
+  await Vehicle.collection.insertMany([
+    {
+      _id: legacySuvId, user: customerUser._id, licensePlate: 'MH14OLDSUV', vehicleType: 'suv', fuelType: 'diesel',
+      brand: 'Hyundai', model: 'Creta', isDefault: false, createdAt: new Date(), updatedAt: new Date(),
+    },
+    {
+      _id: conflictingSuvId, user: customerUser._id, licensePlate: 'MH14ODDBDY', vehicleType: 'suv', bodyStyle: 'hatchback', fuelType: 'petrol',
+      brand: 'Legacy', model: 'Imported', isDefault: false, createdAt: new Date(), updatedAt: new Date(),
+    },
+  ]);
+  const editLegacySuv = await request(`/vehicles/${legacySuvId}`, { method: 'PUT', client: customerClient, body: { color: 'Silver' } });
+  assert.equal(editLegacySuv.status, 200, 'an unchanged legacy SUV catalog identity remains editable');
+  assert.equal(editLegacySuv.payload.vehicle.vehicleType, 'suv', 'compatibility read does not silently rewrite persisted data');
+  const bodyPreview = await migrateVehicleBodyStyles({ collection: Vehicle.collection, apply: false, logger: quietLogger });
+  assert.equal(bodyPreview.migrated, 2, 'body-style migration dry run reports legacy SUVs');
+  assert.equal(bodyPreview.conflicts, 1, 'explicit contradictory body style is reported');
+  assert.equal((await Vehicle.collection.findOne({ _id: legacySuvId })).vehicleType, 'suv', 'body-style preview does not write');
+  const appliedBodyMigration = await migrateVehicleBodyStyles({ collection: Vehicle.collection, apply: true, logger: quietLogger });
+  assert.equal(appliedBodyMigration.migrated, 2);
+  const migratedSuv = await Vehicle.collection.findOne({ _id: legacySuvId });
+  assert.equal(migratedSuv.vehicleType, 'car');
+  assert.equal(migratedSuv.bodyStyle, 'suv');
+  const preservedConflict = await Vehicle.collection.findOne({ _id: conflictingSuvId });
+  assert.equal(preservedConflict.vehicleType, 'car');
+  assert.equal(preservedConflict.bodyStyle, 'hatchback', 'migration preserves explicit body style conflicts');
+  assert.equal((await migrateVehicleBodyStyles({ collection: Vehicle.collection, apply: true, logger: quietLogger })).migrated, 0, 'body-style migration is idempotent');
 
   assert.equal((await request(`/vendors/bookings/${booking.payload.booking._id}/checkin`, { method: 'PUT', client: vendorBClient })).status, 404, 'another vendor cannot check in this booking');
   assert.equal((await request(`/vendors/bookings/${booking.payload.booking._id}/checkin`, { method: 'PUT', client: vendorAClient })).status, 200, 'owning vendor can check in');

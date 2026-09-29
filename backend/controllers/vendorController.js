@@ -3,6 +3,7 @@ const ParkingLocation = require('../models/ParkingLocation');
 const ParkingSlot = require('../models/ParkingSlot');
 const Booking = require('../models/Booking');
 const { getAvailability, regularCapacityFor } = require('../services/parkingAvailabilityService');
+const { physicalVehicleType } = require('../utils/vehicleClassification');
 const GeocodingService = require('../services/geocodingService');
 const { isIndianState, normalizeIndianState } = require('../constants/indianStates');
 
@@ -131,7 +132,8 @@ const getVendorDashboard = async (req, res) => {
     let totalSlots = 0;
     let availableSlots = 0;
     for (const location of locations.filter((item) => item.status === 'active')) {
-      for (const vehicleType of location.vehicleTypes) {
+      const vehicleTypes = [...new Set(location.vehicleTypes.map((type) => type === 'ev' ? 'ev' : physicalVehicleType({ vehicleType: type })))];
+      for (const vehicleType of vehicleTypes) {
         const availability = await getAvailability(location, vehicleType, now, oneHourLater);
         totalSlots += vehicleType === 'ev'
           ? await ParkingSlot.countDocuments({ parkingLocation: location._id, vehicleType: 'ev', evCompatible: true })

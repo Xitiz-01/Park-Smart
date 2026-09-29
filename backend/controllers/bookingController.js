@@ -9,6 +9,7 @@ const {
   isElectricVehicle,
   physicalVehicleType,
   inventoryVehicleType,
+  inventoryAliasesFor,
 } = require('../utils/vehicleClassification');
 
 const populateBooking = (query) => query
@@ -72,7 +73,7 @@ const createBooking = async (req, res) => {
     if (!location) return res.status(404).json({ success: false, message: 'Active parking location not found' });
     const vehicleType = physicalVehicleType(vehicle);
     const inventoryType = inventoryVehicleType(vehicle);
-    if (!location.vehicleTypes.includes(inventoryType)) {
+    if (!inventoryAliasesFor(inventoryType).some((type) => location.vehicleTypes.includes(type))) {
       return res.status(400).json({ success: false, message: 'This location does not support the selected vehicle' });
     }
     if (!isOpenForWindow(location, window.startTime, window.endTime)) {
@@ -102,7 +103,7 @@ const createBooking = async (req, res) => {
     }
     if (bookingType === 'regular') {
       const unmigratedReservations = await Booking.countDocuments({
-        parkingLocation: location._id, vehicleType, bookingType: { $ne: 'regular' }, reservationToken: null,
+        parkingLocation: location._id, vehicleType: { $in: inventoryAliasesFor(vehicleType) }, bookingType: { $ne: 'regular' }, reservationToken: null,
         status: { $in: ['upcoming', 'active'] }, startTime: { $lt: window.endTime }, expectedEndTime: { $gt: window.startTime },
       });
       capacity = Math.max(0, capacity - unmigratedReservations);
@@ -115,7 +116,11 @@ const createBooking = async (req, res) => {
     });
     if (!reservation) return res.status(409).json({ success: false, message: 'Parking is sold out for the selected time' });
 
-    const hourlyRate = Number(location.pricing?.[inventoryType] || slot?.pricePerHour || 0);
+    const hourlyRate = Number(
+      inventoryAliasesFor(inventoryType).map((type) => location.pricing?.[type]).find((value) => value !== undefined)
+      ?? slot?.pricePerHour
+      ?? 0
+    );
     const hours = Math.ceil((window.endTime - window.startTime) / 3600000);
     const booking = await Booking.create({
       user: req.user._id, parkingLocation: location._id, slot: slot?._id || null,
