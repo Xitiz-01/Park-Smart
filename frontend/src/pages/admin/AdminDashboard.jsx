@@ -18,9 +18,9 @@ export default function AdminDashboard() {
   const { stats, recentBookings } = data;
   const totalSlots = stats.slots.total || 0;
   const slotSegments = [
-    { label: 'Available', value: stats.slots.available, color: 'var(--green)' },
-    { label: 'Occupied', value: stats.slots.occupied, color: 'var(--red)' },
-    { label: 'Reserved', value: stats.slots.reserved, color: 'var(--yellow)' },
+    { label: 'Available', value: stats.slots.available, color: 'var(--legacy-green)' },
+    { label: 'Occupied', value: stats.slots.occupied, color: 'var(--legacy-red)' },
+    { label: 'Reserved', value: stats.slots.reserved, color: 'var(--legacy-yellow)' },
   ];
 
   return (
@@ -42,7 +42,7 @@ export default function AdminDashboard() {
       <section className="card">
         <div className="panel-head"><h2>Recent bookings</h2><Link to="/admin/bookings">View all <ArrowRight size={13} /></Link></div>
         {recentBookings.length === 0 ? <div className="empty-state"><CalendarDays size={35} /><h3>No bookings yet</h3><p>New activity will appear here.</p></div> : (
-          <div className="table-wrapper"><table><thead><tr><th>Booking</th><th>Customer</th><th>Slot</th><th>Vehicle</th><th>Date</th><th>Status</th></tr></thead><tbody>{recentBookings.map((booking) => <tr key={booking._id}><td style={{ color: 'var(--accent)', fontWeight: 700 }}>#{booking.bookingCode}</td><td>{booking.user?.name}<br /><small>{booking.user?.email}</small></td><td>{booking.slot?.slotNumber} · Zone {booking.slot?.zone}</td><td>{booking.vehicle?.licensePlate}</td><td>{format(new Date(booking.createdAt), 'dd MMM yy')}</td><td><StatusBadge status={booking.status} /></td></tr>)}</tbody></table></div>
+          <div className="table-wrapper"><table><thead><tr><th>Booking</th><th>Customer</th><th>Slot</th><th>Vehicle</th><th>Date</th><th>Status</th></tr></thead><tbody>{recentBookings.map((booking) => <tr key={booking._id}><td style={{ color: 'var(--legacy-accent)', fontWeight: 700 }}>#{booking.bookingCode}</td><td>{booking.user?.name}<br /><small>{booking.user?.email}</small></td><td>{booking.slot?.slotNumber} · Zone {booking.slot?.zone}</td><td>{booking.vehicle?.licensePlate}</td><td>{format(new Date(booking.createdAt), 'dd MMM yy')}</td><td><StatusBadge status={booking.status} /></td></tr>)}</tbody></table></div>
         )}
       </section>
     </div>

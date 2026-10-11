@@ -82,12 +82,12 @@ export default function AdminUsers() {
               <tbody>
                 {filtered.map(u => (
                   <tr key={u._id}>
-                    <td style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                    <td style={{ color: 'var(--legacy-text-primary)', fontWeight: 600 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{
                           width: 34, height: 34, borderRadius: '50%',
-                          background: 'var(--accent-glow)', display: 'flex', alignItems: 'center',
-                          justifyContent: 'center', color: 'var(--accent)', fontFamily: 'var(--font-display)',
+                          background: 'var(--legacy-accent-glow)', display: 'flex', alignItems: 'center',
+                          justifyContent: 'center', color: 'var(--legacy-accent)', fontFamily: 'var(--legacy-font-display)',
                           fontWeight: 700, fontSize: 14, flexShrink: 0,
                         }}>
                           {u.name.charAt(0).toUpperCase()}
@@ -126,7 +126,7 @@ export default function AdminUsers() {
                             <ShieldOff size={13} /> Demote Admin
                           </button>
                         )}
-                        {u.role === 'super_admin' && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Bootstrap protected</span>}
+                        {u.role === 'super_admin' && <span style={{ fontSize: 12, color: 'var(--legacy-text-muted)' }}>Bootstrap protected</span>}
                       </div>
                     </td>
                   </tr>

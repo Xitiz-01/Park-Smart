@@ -29,11 +29,11 @@ export default function VendorStatus() {
   return (
     <div style={{ maxWidth: 620, margin: '80px auto', padding: 24 }} className="fade-in">
       <div className="card" style={{ textAlign: 'center', padding: 40 }}>
-        <Store size={42} color="var(--accent)" style={{ marginBottom: 16 }} />
+        <Store size={42} color="var(--legacy-accent)" style={{ marginBottom: 16 }} />
         <h1 style={{ fontSize: 24, marginBottom: 10 }}>Vendor Application</h1>
         <span className={`badge ${badge}`} style={{ marginBottom: 18 }}><Clock size={13} /> {label}</span>
         <h2 style={{ fontSize: 18, marginBottom: 8 }}>{profile.businessName}</h2>
-        <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>{message}</p>
+        <p style={{ color: 'var(--legacy-text-secondary)', lineHeight: 1.6 }}>{message}</p>
         <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginTop: 24, flexWrap: 'wrap' }}>
           <button className="btn btn-primary" onClick={refresh} disabled={refreshing}>
             <RefreshCw size={15} /> {refreshing ? 'Refreshing...' : 'Refresh Status'}

@@ -160,7 +160,7 @@ export default function VehiclesPage() {
       <button onClick={startAdd} className="btn btn-primary"><Plus size={16} /> Add Vehicle</button>
     </div>
 
-    {showForm && <div className="card fade-in" style={{ marginBottom: 24, borderColor: 'var(--accent)' }}>
+    {showForm && <div className="card fade-in" style={{ marginBottom: 24, borderColor: 'var(--legacy-accent)' }}>
       <h3 style={{ fontWeight: 700, marginBottom: 20, fontSize: 15 }}>{editingId ? 'Edit Vehicle' : 'Add New Vehicle'}</h3>
       <form onSubmit={handleSave}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 16 }}>
@@ -171,7 +171,7 @@ export default function VehiclesPage() {
           <SearchableSelect label="Make" value={form.make} options={makeOptions} onChange={selectMake} placeholder="Search makes" loading={makesLoading} error={makeError} onRetry={loadMakes} required />
           <SearchableSelect label="Model" value={form.model} options={modelOptions} onChange={selectModel} placeholder={form.make ? 'Search models' : 'Choose a make first'} loading={modelsLoading} error={modelError} onRetry={() => loadModels(form.make, form.model)} disabled={!form.make} required />
           <div className="form-group">
-            <label className="form-label">Model Year <span style={{ color: 'var(--text-muted)' }}>(optional)</span></label>
+            <label className="form-label">Model Year <span style={{ color: 'var(--legacy-text-muted)' }}>(optional)</span></label>
             {years.length ? <select className="form-input" value={form.modelYear} onChange={(e) => selectYear(e.target.value)} disabled={yearsLoading}>
               <option value="">Not specified</option>{years.map((year) => <option key={year} value={year}>{year}</option>)}
             </select> : <input className="form-input" type="number" min="1886" max={new Date().getFullYear() + 2} placeholder={yearsLoading ? 'Loading…' : 'Enter year if known'} value={form.modelYear} onChange={(e) => selectYear(e.target.value)} disabled={!form.model || yearsLoading} />}
@@ -197,7 +197,7 @@ export default function VehiclesPage() {
           </div>
           <div className="form-group"><label className="form-label">Color</label><input className="form-input" placeholder="White, Black..." value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} /></div>
         </div>
-        <div style={{ width: '100%', margin: '10px 0 20px' }}><label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--text-secondary)', cursor: 'pointer' }}>
+        <div style={{ width: '100%', margin: '10px 0 20px' }}><label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--legacy-text-secondary)', cursor: 'pointer' }}>
           <input type="checkbox" checked={form.isDefault} onChange={(e) => setForm({ ...form, isDefault: e.target.checked })} style={{ width: 16, height: 16 }} /> Set as default vehicle
         </label></div>
         <div style={{ display: 'flex', gap: 12 }}>
@@ -212,11 +212,11 @@ export default function VehiclesPage() {
         {vehicles.map((vehicle) => <div key={vehicle._id} className="card" style={{ position: 'relative' }}>
           {vehicle.isDefault && <div style={{ position: 'absolute', top: 12, right: 12 }}><span className="badge badge-yellow"><Star size={10} fill="currentColor" /> Default</span></div>}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-            <div style={{ width: 44, height: 44, background: 'var(--accent-glow)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Truck color="var(--accent)" size={20} /></div>
-            <div><div style={{ fontWeight: 700, fontSize: 16 }}>{vehicle.licensePlate}</div><div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'capitalize' }}>{vehicleClassificationLabel(vehicle)}</div></div>
+            <div style={{ width: 44, height: 44, background: 'var(--legacy-accent-glow)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Truck color="var(--legacy-accent)" size={20} /></div>
+            <div><div style={{ fontWeight: 700, fontSize: 16 }}>{vehicle.licensePlate}</div><div style={{ fontSize: 12, color: 'var(--legacy-text-muted)', textTransform: 'capitalize' }}>{vehicleClassificationLabel(vehicle)}</div></div>
           </div>
-          {(vehicle.make || vehicle.brand || vehicle.model) && <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 4 }}>{vehicle.make || vehicle.brand} {vehicle.model} {vehicle.modelYear || ''}</div>}
-          {vehicle.color && <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>Color: {vehicle.color}</div>}
+          {(vehicle.make || vehicle.brand || vehicle.model) && <div style={{ fontSize: 14, color: 'var(--legacy-text-secondary)', marginBottom: 4 }}>{vehicle.make || vehicle.brand} {vehicle.model} {vehicle.modelYear || ''}</div>}
+          {vehicle.color && <div style={{ fontSize: 13, color: 'var(--legacy-text-muted)', marginBottom: 16 }}>Color: {vehicle.color}</div>}
           <div style={{ display: 'flex', gap: 8 }}><button onClick={() => startEdit(vehicle)} className="btn btn-outline btn-sm"><Pencil size={14} /> Edit</button><button onClick={() => handleDelete(vehicle._id)} className="btn btn-danger btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Trash2 size={14} /> Remove</button></div>
         </div>)}
       </div>}

@@ -124,7 +124,7 @@ export default function ParkingLocationForm({ initialLocation, onSubmit, saving 
         </div>
       </section>
       <section className="card"><h2 style={{ fontSize: 17, marginBottom: 16 }}>Amenities</h2><div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>{AMENITIES.map(([value, label]) => <label key={value} style={{ display: 'flex', gap: 7, alignItems: 'center' }}><input type="checkbox" checked={form.amenities.includes(value)} onChange={() => toggleAmenity(value)} /> {label}</label>)}</div></section>
-      {!form.address.verified && <div style={{ color: 'var(--yellow)', fontSize: 13 }}>Select a verified address before saving.</div>}
+      {!form.address.verified && <div style={{ color: 'var(--legacy-yellow)', fontSize: 13 }}>Select a verified address before saving.</div>}
       <button className="btn btn-primary" disabled={saving || !form.address.verified || !form.vehicleTypes.length} style={{ alignSelf: 'flex-start' }}>{saving ? 'Saving…' : initialLocation ? 'Save Location' : 'Create Parking Location'}</button>
     </form>
   );

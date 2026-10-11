@@ -109,7 +109,7 @@ export default function AdminSlots() {
 
       {/* Add/Edit form */}
       {showForm && (
-        <div className="card fade-in" style={{ marginBottom: 24, borderColor: 'var(--accent)' }}>
+        <div className="card fade-in" style={{ marginBottom: 24, borderColor: 'var(--legacy-accent)' }}>
           <h3 style={{ fontWeight: 700, marginBottom: 20 }}>{editSlot ? 'Edit Slot' : 'Add New Slot'}</h3>
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 16 }}>
@@ -150,7 +150,7 @@ export default function AdminSlots() {
             </div>
             <div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
               {[['hasCCTV','CCTV'],['hasCover','Covered'],['hasEVCharger','EV Charger']].map(([k, label]) => (
-                <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: 'var(--legacy-text-secondary)', cursor: 'pointer' }}>
                   <input type="checkbox" checked={form.features[k]} onChange={e => setForm({ ...form, features: { ...form.features, [k]: e.target.checked } })} />
                   {label}
                 </label>
@@ -176,13 +176,13 @@ export default function AdminSlots() {
             <tbody>
               {slots.map(slot => (
                 <tr key={slot._id}>
-                  <td style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)', fontWeight: 700 }}>{slot.slotNumber}</td>
+                  <td style={{ fontFamily: 'var(--legacy-font-display)', color: 'var(--legacy-text-primary)', fontWeight: 700 }}>{slot.slotNumber}</td>
                   <td>{slot.parkingLocation ? slot.parkingLocation.name : slot.floor}</td>
                   <td>{slot.parkingLocation ? 'Vendor' : slot.zone}</td>
                   <td style={{ textTransform: 'capitalize' }}>{slot.type}</td>
                   <td><StatusBadge status={slot.status} /></td>
-                  <td style={{ color: 'var(--accent)', fontWeight: 600 }}>₹{slot.pricePerHour}</td>
-                  <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  <td style={{ color: 'var(--legacy-accent)', fontWeight: 600 }}>₹{slot.pricePerHour}</td>
+                  <td style={{ fontSize: 12, color: 'var(--legacy-text-muted)' }}>
                     {slot.features?.hasCCTV ? '📷 ' : ''}{slot.features?.hasCover ? '🏠 ' : ''}{slot.features?.hasEVCharger ? '⚡' : ''}
                   </td>
                   <td>

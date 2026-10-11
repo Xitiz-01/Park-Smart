@@ -3,25 +3,25 @@ import { Link } from 'react-router-dom';
 import { slotsAPI } from '../../services/api';
 import { MapPin, Zap, Shield, Wind, Filter } from 'lucide-react';
 
-const TYPE_COLORS = { standard: 'var(--accent)', compact: 'var(--green)', disabled: 'var(--yellow)', ev: 'var(--ps-coral)' };
+const TYPE_COLORS = { standard: 'var(--legacy-accent)', compact: 'var(--legacy-green)', disabled: 'var(--legacy-yellow)', ev: 'var(--ps-coral)' };
 const TYPE_LABELS = { standard: 'Standard', compact: 'Compact', disabled: 'Accessible', ev: 'EV Charging' };
 
 const SlotCard = ({ slot }) => {
   const isAvailable = slot.status === 'available';
   return (
     <div style={{
-      background: 'var(--bg-card)', border: `1px solid ${isAvailable ? 'var(--border)' : 'var(--border)'}`,
-      borderRadius: 'var(--radius)', padding: '18px 20px', transition: 'border-color 0.2s, transform 0.2s',
+      background: 'var(--legacy-bg-card)', border: `1px solid ${isAvailable ? 'var(--legacy-border)' : 'var(--legacy-border)'}`,
+      borderRadius: 'var(--legacy-radius)', padding: '18px 20px', transition: 'border-color 0.2s, transform 0.2s',
       opacity: isAvailable ? 1 : 0.6,
     }}
-      onMouseEnter={e => { if (isAvailable) { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none'; }}>
+      onMouseEnter={e => { if (isAvailable) { e.currentTarget.style.borderColor = 'var(--legacy-accent)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--legacy-border)'; e.currentTarget.style.transform = 'none'; }}>
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
         <div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700 }}>{slot.slotNumber}</div>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+          <div style={{ fontFamily: 'var(--legacy-font-display)', fontSize: 18, fontWeight: 700 }}>{slot.slotNumber}</div>
+          <div style={{ fontSize: 12, color: 'var(--legacy-text-muted)' }}>
             {slot.parkingLocation ? slot.parkingLocation.name : `Floor ${slot.floor} · Zone ${slot.zone}`}
           </div>
         </div>
@@ -40,21 +40,21 @@ const SlotCard = ({ slot }) => {
 
       {/* Features */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-        {slot.features?.hasCCTV && <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)' }}><Shield size={12} />CCTV</div>}
-        {slot.features?.hasCover && <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)' }}><Wind size={12} />Covered</div>}
+        {slot.features?.hasCCTV && <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--legacy-text-muted)' }}><Shield size={12} />CCTV</div>}
+        {slot.features?.hasCover && <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--legacy-text-muted)' }}><Wind size={12} />Covered</div>}
         {slot.features?.hasEVCharger && <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--ps-coral)' }}><Zap size={12} />EV Charger</div>}
       </div>
 
       {/* Price & Action */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>₹{slot.pricePerHour}</span>
-          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>/hr</span>
+          <span style={{ fontFamily: 'var(--legacy-font-display)', fontSize: 16, fontWeight: 700, color: 'var(--legacy-text-primary)' }}>₹{slot.pricePerHour}</span>
+          <span style={{ fontSize: 12, color: 'var(--legacy-text-muted)' }}>/hr</span>
         </div>
         {isAvailable ? (
           <Link to={`/dashboard/book/${slot._id}`} className="btn btn-primary btn-sm">Book Now</Link>
         ) : (
-          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Unavailable</span>
+          <span style={{ fontSize: 13, color: 'var(--legacy-text-muted)' }}>Unavailable</span>
         )}
       </div>
     </div>
@@ -89,7 +89,7 @@ export default function SlotsPage() {
 
       {/* Filters */}
       <div className="card" style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, color: 'var(--text-secondary)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, color: 'var(--legacy-text-secondary)' }}>
           <Filter size={16} /> <span style={{ fontWeight: 600, fontSize: 14 }}>Filters</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>

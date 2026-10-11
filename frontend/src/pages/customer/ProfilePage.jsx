@@ -56,17 +56,17 @@ export default function ProfilePage() {
 
       {/* Profile info */}
       <div className="card" style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, color: 'var(--text-secondary)' }}>
-          <User size={16} /> <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)' }}>Personal Information</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, color: 'var(--legacy-text-secondary)' }}>
+          <User size={16} /> <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--legacy-text-primary)' }}>Personal Information</span>
         </div>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
           <span className="badge badge-info" style={{ fontSize: 13, padding: '4px 12px' }}>
             {{ customer: '👤 Customer', vendor: '🏢 Vendor', admin: '🛡 Admin', super_admin: '🔐 Super Admin' }[user?.role] || '👤 Customer'}
           </span>
-          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{user?.email}</span>
+          <span style={{ fontSize: 13, color: 'var(--legacy-text-muted)' }}>{user?.email}</span>
         </div>
         {user?.authUserId && (
-          <p style={{ margin: '-12px 0 20px', fontSize: 12, color: 'var(--text-muted)' }}>
+          <p style={{ margin: '-12px 0 20px', fontSize: 12, color: 'var(--legacy-text-muted)' }}>
             Auth ID: <code>{user.authUserId}</code>
           </p>
         )}
@@ -91,8 +91,8 @@ export default function ProfilePage() {
 
       {/* Change password */}
       <div className="card">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, color: 'var(--text-secondary)' }}>
-          <Lock size={16} /> <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)' }}>Change Password</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, color: 'var(--legacy-text-secondary)' }}>
+          <Lock size={16} /> <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--legacy-text-primary)' }}>Change Password</span>
         </div>
         <form onSubmit={handlePwSave} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="form-group">

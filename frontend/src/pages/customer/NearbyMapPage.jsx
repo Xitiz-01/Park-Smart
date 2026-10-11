@@ -14,7 +14,6 @@ import {
   physicalVehicleType,
   vehicleClassificationLabel,
 } from '../../utils/hybridParking';
-import 'leaflet/dist/leaflet.css';
 
 const DEFAULT_CENTER = { lat: 18.5204, lng: 73.8567 };
 const CACHE_KEY = 'parksmart-location-discovery-v1';

@@ -75,8 +75,8 @@ export default function AdminVendors() {
         <div className="card"><div className="table-wrapper"><table>
           <thead><tr><th>Business</th><th>Owner</th><th>Location</th><th>Created</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody>{vendors.map((vendor) => <tr key={vendor._id}>
-            <td style={{ fontWeight: 600 }}>{vendor.businessName}<br /><span style={{ color: 'var(--text-muted)', fontSize: 12 }}>{vendor.businessType}</span></td>
-            <td>{vendor.userId?.name || '—'}<br /><span style={{ color: 'var(--text-muted)', fontSize: 12 }}>{vendor.userId?.email}</span></td>
+            <td style={{ fontWeight: 600 }}>{vendor.businessName}<br /><span style={{ color: 'var(--legacy-text-muted)', fontSize: 12 }}>{vendor.businessType}</span></td>
+            <td>{vendor.userId?.name || '—'}<br /><span style={{ color: 'var(--legacy-text-muted)', fontSize: 12 }}>{vendor.userId?.email}</span></td>
             <td>{vendor.city}, {vendor.state}</td>
             <td>{format(new Date(vendor.createdAt), 'dd MMM yyyy')}</td>
             <td><span className={`badge ${badgeFor(vendor.vendorStatus)}`}>{vendor.vendorStatus}</span></td>

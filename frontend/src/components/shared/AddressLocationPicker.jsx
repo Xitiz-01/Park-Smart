@@ -19,7 +19,7 @@ export default function AddressLocationPicker({ value, onChange }) {
       <div className="form-group">
         <label className="form-label">Search Address</label>
         <AddressAutocomplete value={value.search || ''} onChange={changeSearch} onSelect={selectSuggestion} />
-        <div style={{ fontSize: 12, color: value.verified ? 'var(--green)' : 'var(--text-muted)', marginTop: 4 }}>
+        <div style={{ fontSize: 12, color: value.verified ? 'var(--legacy-green)' : 'var(--legacy-text-muted)', marginTop: 4 }}>
           {value.verified ? <><CheckCircle2 size={13} style={{ verticalAlign: 'middle', marginRight: 5 }} />Location selected — drag the marker to fine-tune it</> : 'Select an autocomplete suggestion to verify this address.'}
         </div>
       </div>
@@ -31,7 +31,7 @@ export default function AddressLocationPicker({ value, onChange }) {
       {value.verified && <>
         <LocationMapSelector latitude={value.latitude} longitude={value.longitude}
           onMove={({ latitude, longitude }) => onChange({ ...value, latitude, longitude })} />
-        <div style={{ textAlign: 'right', fontSize: 11, color: 'var(--text-muted)', marginTop: 5 }}>{Number(value.latitude).toFixed(6)}, {Number(value.longitude).toFixed(6)}</div>
+        <div style={{ textAlign: 'right', fontSize: 11, color: 'var(--legacy-text-muted)', marginTop: 5 }}>{Number(value.latitude).toFixed(6)}, {Number(value.longitude).toFixed(6)}</div>
       </>}
     </div>
   );

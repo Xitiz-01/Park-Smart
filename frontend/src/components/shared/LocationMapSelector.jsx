@@ -32,7 +32,7 @@ export default function LocationMapSelector({ latitude, longitude, onMove }) {
   const position = useMemo(() => [Number(latitude), Number(longitude)], [latitude, longitude]);
   if (!Number.isFinite(position[0]) || !Number.isFinite(position[1])) return null;
   return (
-    <div style={{ height: 310, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border)', marginTop: 12 }}>
+    <div style={{ height: 310, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--legacy-border)', marginTop: 12 }}>
       <MapContainer center={position} zoom={16} style={{ height: '100%', width: '100%' }} scrollWheelZoom>
         <TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <Recenter position={position} />

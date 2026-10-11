@@ -75,9 +75,9 @@ export default function MyBookings() {
         {['', 'upcoming', 'active', 'completed', 'cancelled'].map((s) => (
           <button className="filter-chip" key={s} onClick={() => setFilter(s)} style={{
             padding: '7px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none',
-            background: filter === s ? 'var(--accent)' : 'var(--bg-card)',
-            color: filter === s ? '#fff' : 'var(--text-secondary)',
-            border: `1px solid ${filter === s ? 'var(--accent)' : 'var(--border)'}`,
+            background: filter === s ? 'var(--legacy-accent)' : 'var(--legacy-bg-card)',
+            color: filter === s ? '#fff' : 'var(--legacy-text-secondary)',
+            border: `1px solid ${filter === s ? 'var(--legacy-accent)' : 'var(--legacy-border)'}`,
           }}>
             {s === '' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
           </button>
@@ -98,38 +98,38 @@ export default function MyBookings() {
                 {/* Left */}
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700 }}>
+                    <div style={{ fontFamily: 'var(--legacy-font-display)', fontSize: 18, fontWeight: 700 }}>
                       {b.parkingLocation?.name || b.slot?.parkingLocation?.name || (b.slot?.slotNumber ? `Slot ${b.slot.slotNumber}` : 'Parking reservation')}
                     </div>
                     <StatusBadge status={b.status} />
                   </div>
                   <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-muted)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--legacy-text-muted)' }}>
                       <MapPin size={14} /> {b.bookingType === 'regular' ? 'Capacity reservation' : b.slot?.slotNumber ? `EV/slot ${b.slot.slotNumber}` : 'Legacy parking'}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-muted)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--legacy-text-muted)' }}>
                       <Car size={14} /> {b.vehicle?.licensePlate}
                     </div>
                   </div>
-                  <div style={{ marginTop: 10, fontSize: 13, color: 'var(--text-muted)' }}>
+                  <div style={{ marginTop: 10, fontSize: 13, color: 'var(--legacy-text-muted)' }}>
                     <span>From: {format(new Date(b.startTime), 'dd MMM yy, hh:mm a')}</span>
                     <span style={{ margin: '0 8px' }}>→</span>
                     <span>To: {format(new Date(b.expectedEndTime), 'dd MMM yy, hh:mm a')}</span>
                   </div>
-                  <div style={{ marginTop: 6, fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-display)' }}>
+                  <div style={{ marginTop: 6, fontSize: 12, color: 'var(--legacy-text-muted)', fontFamily: 'var(--legacy-font-display)' }}>
                     #{b.bookingCode}
                   </div>
                 </div>
 
                 {/* Right */}
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>
+                  <div style={{ fontFamily: 'var(--legacy-font-display)', fontSize: 20, fontWeight: 700, color: 'var(--legacy-text-primary)', marginBottom: 8 }}>
                     ₹{b.totalAmount}
                   </div>
                   <div style={{ marginBottom: 8 }}>
                     <PaymentBadge status={b.paymentStatus} />
                   </div>
-                  <div style={{ marginBottom: 8, fontSize: 12, color: 'var(--text-muted)' }}>
+                  <div style={{ marginBottom: 8, fontSize: 12, color: 'var(--legacy-text-muted)' }}>
                     {PAYMENT_METHOD_LABELS[b.paymentMethod] || 'Payment not collected'}
                   </div>
                   {(b.status === 'upcoming' || b.status === 'active') && (

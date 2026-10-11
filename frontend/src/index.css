@@ -39,34 +39,49 @@
   --ps-radius-lg: 20px;
   --content-width: 1180px;
 
-  /* Compatibility aliases used by existing feature components. */
-  --bg-primary: var(--ps-bg);
-  --bg-secondary: var(--ps-bg-secondary);
-  --bg-card: var(--ps-surface);
-  --bg-elevated: var(--ps-surface-elevated);
-  --border: var(--ps-border);
-  --border-light: var(--ps-border-strong);
-  --accent: var(--ps-primary);
-  --accent-hover: var(--ps-primary-hover);
-  --accent-glow: var(--ps-primary-soft);
-  --accent-strong: var(--ps-primary-dark);
-  --green: var(--ps-success);
-  --green-bg: var(--ps-success-soft);
-  --red: var(--ps-danger);
-  --red-bg: var(--ps-danger-soft);
-  --yellow: var(--ps-amber);
-  --yellow-bg: var(--ps-amber-soft);
-  --text-primary: var(--ps-text);
-  --text-secondary: var(--ps-text-secondary);
-  --text-muted: var(--ps-muted);
-  --font-display: Inter, Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-body: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --radius: var(--ps-radius);
-  --radius-sm: var(--ps-radius-sm);
-  --radius-lg: var(--ps-radius-lg);
-  --shadow-sm: var(--ps-shadow-sm);
-  --shadow-lg: var(--ps-shadow-md);
+  /* Compatibility aliases used by existing feature components (prefixed so they
+     cannot collide with shadcn/Tailwind variable names). */
+  --legacy-bg-primary: var(--ps-bg);
+  --legacy-bg-secondary: var(--ps-bg-secondary);
+  --legacy-bg-card: var(--ps-surface);
+  --legacy-bg-elevated: var(--ps-surface-elevated);
+  --legacy-border: var(--ps-border);
+  --legacy-border-light: var(--ps-border-strong);
+  --legacy-accent: var(--ps-primary);
+  --legacy-accent-hover: var(--ps-primary-hover);
+  --legacy-accent-glow: var(--ps-primary-soft);
+  --legacy-accent-strong: var(--ps-primary-dark);
+  --legacy-green: var(--ps-success);
+  --legacy-green-bg: var(--ps-success-soft);
+  --legacy-red: var(--ps-danger);
+  --legacy-red-bg: var(--ps-danger-soft);
+  --legacy-yellow: var(--ps-amber);
+  --legacy-yellow-bg: var(--ps-amber-soft);
+  --legacy-text-primary: var(--ps-text);
+  --legacy-text-secondary: var(--ps-text-secondary);
+  --legacy-text-muted: var(--ps-muted);
+  --legacy-font-display: Inter, Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --legacy-font-body: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --legacy-radius: var(--ps-radius);
+  --legacy-radius-sm: var(--ps-radius-sm);
+  --legacy-radius-lg: var(--ps-radius-lg);
+  --legacy-shadow-sm: var(--ps-shadow-sm);
+  --legacy-shadow-lg: var(--ps-shadow-md);
 }
+
+/* Undo Tailwind preflight for legacy markup: this file sits in the "legacy"
+   layer above preflight, and `revert` restores the browser defaults these
+   screens were designed against. Removed together with this file. */
+h1, h2, h3, h4, h5, h6 { font-size: revert; font-weight: revert; }
+h5, h6, ol, ul, dl, dd, blockquote, figure, hr, pre { margin: revert; }
+ol, ul, menu { padding: revert; list-style: revert; }
+small, code, kbd, samp, pre { font-family: revert; font-size: revert; }
+::file-selector-button { all: revert; }
+input[type="checkbox"], input[type="radio"] { margin: revert; padding: revert; border: revert; border-radius: revert; background-color: revert; color: revert; }
+::-webkit-date-and-time-value { min-height: revert; text-align: revert; }
+::-webkit-datetime-edit, ::-webkit-datetime-edit-fields-wrapper,
+::-webkit-datetime-edit-year-field, ::-webkit-datetime-edit-month-field, ::-webkit-datetime-edit-day-field,
+::-webkit-datetime-edit-hour-field, ::-webkit-datetime-edit-minute-field, ::-webkit-datetime-edit-meridiem-field { display: revert; padding: revert; }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; background: var(--ps-bg); }
@@ -75,14 +90,14 @@ body {
   min-width: 320px;
   color: var(--ps-text);
   background: var(--ps-bg);
-  font-family: var(--font-body);
+  font-family: var(--legacy-font-body);
   font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
 body, #root { min-height: 100vh; }
 h1, h2, h3, h4, p { margin: 0; }
-h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.025em; }
+h1, h2, h3, h4 { font-family: var(--legacy-font-display); letter-spacing: -0.025em; }
 a { color: inherit; text-decoration: none; }
 button, input, textarea, select { font: inherit; }
 button { border: 0; cursor: pointer; }
@@ -418,7 +433,7 @@ tbody tr:hover { background: #f7faf7; }
 .map-result-item .btn { width: 100%; }
 .map-canvas { min-width: 0; overflow: hidden; }
 .map-canvas .leaflet-container { height: 100% !important; min-height: 560px; }
-.leaflet-container { min-height: 540px; width: 100%; background: #e7e1d5; font-family: var(--font-body); }
+.leaflet-container { min-height: 540px; width: 100%; background: #e7e1d5; font-family: var(--legacy-font-body); }
 .leaflet-bar a { color: var(--ps-graphite) !important; border-color: var(--ps-border) !important; background: var(--ps-surface) !important; }
 .leaflet-bar a:hover { color: var(--ps-primary) !important; background: var(--ps-primary-soft) !important; }
 .leaflet-control-attribution { color: var(--ps-text-secondary) !important; background: rgba(255,254,251,.88) !important; }
@@ -639,7 +654,8 @@ button.ev-slot-tile:disabled { opacity: 1; }
   .auth-form-panel { align-items: stretch; }
   .auth-mobile-brand { margin-bottom: 45px; }
   .leaflet-container { min-height: 450px; }
-  .page-header.flex { align-items: flex-start; flex-direction: column; }
+  /* !important: Tailwind's items-center utility sits in a later layer than this file. */
+  .page-header.flex { align-items: flex-start !important; flex-direction: column; }
   .dashboard-grid { grid-template-columns: 1fr; }
   .map-workspace { display: flex; flex-direction: column; }
   .map-results { max-height: 310px; border-right: 0; border-bottom: 1px solid var(--ps-border); }

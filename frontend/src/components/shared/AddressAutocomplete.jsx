@@ -42,18 +42,18 @@ export default function AddressAutocomplete({ value, onChange, onSelect }) {
   return (
     <div style={{ position: 'relative' }}>
       <div style={{ position: 'relative' }}>
-        <Search size={16} style={{ position: 'absolute', left: 12, top: 13, color: 'var(--text-muted)' }} />
+        <Search size={16} style={{ position: 'absolute', left: 12, top: 13, color: 'var(--legacy-text-muted)' }} />
         <input className="form-input" style={{ paddingLeft: 38 }} value={value}
           onChange={(event) => onChange(event.target.value)} placeholder="Search a complete Indian address..." autoComplete="off" required />
       </div>
-      {loading && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>Searching addresses…</div>}
-      {message && <div style={{ fontSize: 12, color: 'var(--yellow)', marginTop: 6 }}>{message}</div>}
+      {loading && <div style={{ fontSize: 12, color: 'var(--legacy-text-muted)', marginTop: 6 }}>Searching addresses…</div>}
+      {message && <div style={{ fontSize: 12, color: 'var(--legacy-yellow)', marginTop: 6 }}>{message}</div>}
       {suggestions.length > 0 && (
-        <div className="suggestion-menu" style={{ position: 'absolute', zIndex: 1000, top: 'calc(100% + 5px)', left: 0, right: 0, background: 'var(--ps-surface)', border: '1px solid var(--border-light)', borderRadius: 8, boxShadow: 'var(--ps-shadow-md)', overflow: 'hidden' }}>
+        <div className="suggestion-menu" style={{ position: 'absolute', zIndex: 1000, top: 'calc(100% + 5px)', left: 0, right: 0, background: 'var(--ps-surface)', border: '1px solid var(--legacy-border-light)', borderRadius: 8, boxShadow: 'var(--ps-shadow-md)', overflow: 'hidden' }}>
           {suggestions.map((suggestion) => (
             <button className="suggestion-option" type="button" key={`${suggestion.providerPlaceId}:${suggestion.latitude}`} onClick={() => choose(suggestion)}
-              style={{ width: '100%', display: 'flex', gap: 10, textAlign: 'left', padding: '11px 13px', color: 'var(--text-primary)', background: 'transparent', borderBottom: '1px solid var(--border)', lineHeight: 1.4 }}>
-              <MapPin size={16} color="var(--accent)" style={{ flexShrink: 0, marginTop: 2 }} />
+              style={{ width: '100%', display: 'flex', gap: 10, textAlign: 'left', padding: '11px 13px', color: 'var(--legacy-text-primary)', background: 'transparent', borderBottom: '1px solid var(--legacy-border)', lineHeight: 1.4 }}>
+              <MapPin size={16} color="var(--legacy-accent)" style={{ flexShrink: 0, marginTop: 2 }} />
               <span>{suggestion.formattedAddress}</span>
             </button>
           ))}

@@ -39,15 +39,15 @@ export default function VendorDashboard() {
         <section className="card">
           <div className="panel-head"><h2>Live hybrid inventory</h2><Link to="/vendor/locations">Manage capacity <ArrowRight size={13} /></Link></div>
           <div className="legend-row">
-            <span className="legend-item"><i style={{ background: 'var(--green)' }} />Available <strong>{stats.availableSlots}</strong></span>
-            <span className="legend-item"><i style={{ background: 'var(--yellow)' }} />Occupied / reserved <strong>{stats.occupiedSlots}</strong></span>
+            <span className="legend-item"><i style={{ background: 'var(--legacy-green)' }} />Available <strong>{stats.availableSlots}</strong></span>
+            <span className="legend-item"><i style={{ background: 'var(--legacy-yellow)' }} />Occupied / reserved <strong>{stats.occupiedSlots}</strong></span>
             <span className="legend-item"><i style={{ background: 'var(--ps-muted)' }} />Other <strong>{Math.max(0, total - stats.availableSlots - stats.occupiedSlots)}</strong></span>
           </div>
           <div className="occupancy-track" aria-label="Slot utilisation">
-            <span className="occupancy-segment" style={{ width: `${availablePct}%`, background: 'var(--green)' }} />
-            <span className="occupancy-segment" style={{ width: `${occupiedPct}%`, background: 'var(--yellow)' }} />
+            <span className="occupancy-segment" style={{ width: `${availablePct}%`, background: 'var(--legacy-green)' }} />
+            <span className="occupancy-segment" style={{ width: `${occupiedPct}%`, background: 'var(--legacy-yellow)' }} />
           </div>
-          <p style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 15 }}>Totals are calculated from your vendor-owned parking data and update with live booking activity.</p>
+          <p style={{ color: 'var(--legacy-text-muted)', fontSize: 11, marginTop: 15 }}>Totals are calculated from your vendor-owned parking data and update with live booking activity.</p>
         </section>
         <aside className="card">
           <div className="panel-head"><h2>Account readiness</h2><StatusBadge status={data?.vendorStatus || 'active'} /></div>

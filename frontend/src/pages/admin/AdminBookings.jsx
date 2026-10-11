@@ -81,9 +81,9 @@ export default function AdminBookings() {
         {['', 'upcoming', 'active', 'completed', 'cancelled'].map(s => (
           <button className="filter-chip" key={s} onClick={() => setFilter(s)} style={{
             padding: '7px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            background: filter === s ? 'var(--accent)' : 'var(--bg-card)',
-            color: filter === s ? '#fff' : 'var(--text-secondary)',
-            border: `1px solid ${filter === s ? 'var(--accent)' : 'var(--border)'}`,
+            background: filter === s ? 'var(--legacy-accent)' : 'var(--legacy-bg-card)',
+            color: filter === s ? '#fff' : 'var(--legacy-text-secondary)',
+            border: `1px solid ${filter === s ? 'var(--legacy-accent)' : 'var(--legacy-border)'}`,
           }}>
             {s === '' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
           </button>
@@ -104,19 +104,19 @@ export default function AdminBookings() {
               <tbody>
                 {bookings.map(b => (
                   <tr key={b._id}>
-                    <td style={{ fontFamily: 'var(--font-display)', fontSize: 12, color: 'var(--accent)' }}>#{b.bookingCode}</td>
-                    <td style={{ color: 'var(--text-primary)' }}>
+                    <td style={{ fontFamily: 'var(--legacy-font-display)', fontSize: 12, color: 'var(--legacy-accent)' }}>#{b.bookingCode}</td>
+                    <td style={{ color: 'var(--legacy-text-primary)' }}>
                       {b.user?.name}
-                      <br /><span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{b.user?.phone}</span>
+                      <br /><span style={{ fontSize: 12, color: 'var(--legacy-text-muted)' }}>{b.user?.phone}</span>
                     </td>
-                    <td>{b.slot?.slotNumber || 'Capacity'}<br /><span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{b.parkingLocation?.name || b.slot?.parkingLocation?.name || 'Legacy'}</span></td>
-                    <td style={{ fontFamily: 'var(--font-display)', fontSize: 13 }}>{b.vehicle?.licensePlate}</td>
+                    <td>{b.slot?.slotNumber || 'Capacity'}<br /><span style={{ fontSize: 12, color: 'var(--legacy-text-muted)' }}>{b.parkingLocation?.name || b.slot?.parkingLocation?.name || 'Legacy'}</span></td>
+                    <td style={{ fontFamily: 'var(--legacy-font-display)', fontSize: 13 }}>{b.vehicle?.licensePlate}</td>
                     <td style={{ fontSize: 13 }}>{format(new Date(b.startTime), 'dd MMM, hh:mm a')}</td>
                     <td style={{ fontSize: 13 }}>{format(new Date(b.expectedEndTime), 'dd MMM, hh:mm a')}</td>
-                    <td style={{ color: 'var(--accent)', fontWeight: 600 }}>₹{b.totalAmount}</td>
+                    <td style={{ color: 'var(--legacy-accent)', fontWeight: 600 }}>₹{b.totalAmount}</td>
                     <td>
                       <PaymentBadge status={b.paymentStatus} />
-                      <div style={{ marginTop: 6, fontSize: 12, color: 'var(--text-muted)' }}>
+                      <div style={{ marginTop: 6, fontSize: 12, color: 'var(--legacy-text-muted)' }}>
                         {PAYMENT_METHOD_LABELS[b.paymentMethod] || 'N/A'}
                       </div>
                     </td>
