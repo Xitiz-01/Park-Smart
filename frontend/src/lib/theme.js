@@ -1,18 +1,20 @@
 // Theme preference: 'light' | 'dark' | 'system' (default), stored per browser.
-// index.html runs a copy of resolveTheme/isThemedPath before React loads so the
-// first paint already has the right theme; theme.test.js keeps the two in sync.
+// index.html runs a copy of resolveTheme/isRedesignedPath before React loads so
+// the first paint already has the right theme and surface; theme.test.js keeps
+// the two in sync.
 
 export const THEME_STORAGE_KEY = 'parksmart-theme';
 export const THEME_PREFERENCES = ['system', 'light', 'dark'];
 
-// Dark mode only applies to screens that have been redesigned. Legacy screens
-// are light-only, so they stay light whatever the preference. Grows phase by
-// phase and goes away once every screen is on the new kit.
-export const THEMED_PATHS = { exact: [], prefixes: ['/_design'] };
+// Screens already on the new kit. Elsewhere <html> gets data-surface="legacy",
+// which switches on index.css's element rules, and the theme stays light
+// (legacy screens are light-only). Grows phase by phase; goes away once every
+// screen is redesigned.
+export const REDESIGNED_PATHS = { exact: [], prefixes: ['/_design'] };
 
-export function isThemedPath(pathname) {
-  return THEMED_PATHS.exact.includes(pathname)
-    || THEMED_PATHS.prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+export function isRedesignedPath(pathname) {
+  return REDESIGNED_PATHS.exact.includes(pathname)
+    || REDESIGNED_PATHS.prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
 export function readThemePreference() {
@@ -42,9 +44,10 @@ export function resolveTheme(preference, systemPrefersDark) {
 // Browser chrome colours, matching --surface in each theme.
 export const THEME_COLORS = { light: '#f3f5f8', dark: '#0e131a' };
 
-export function applyTheme(theme) {
+export function applyTheme(theme, surface) {
   const root = document.documentElement;
   root.classList.toggle('dark', theme === 'dark');
+  root.dataset.surface = surface;
   document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => {
     meta.setAttribute('content', THEME_COLORS[theme]);
   });

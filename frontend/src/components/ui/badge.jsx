@@ -26,22 +26,25 @@ const badgeVariants = cva(
   }
 )
 
-function Badge({
+// forwardRef: React 18 drops `ref` on plain function components, and Radix
+// asChild triggers need it to anchor popovers and tooltips.
+const Badge = React.forwardRef(function Badge({
   className,
   variant = "default",
   asChild = false,
   ...props
-}) {
+}, ref) {
   const Comp = asChild ? Slot.Root : "span"
 
   return (
     <Comp
+      ref={ref}
       data-slot="badge"
       data-variant={variant}
       className={cn(badgeVariants({ variant }), className)}
       {...props}
     />
   )
-}
+})
 
 export { Badge, badgeVariants }

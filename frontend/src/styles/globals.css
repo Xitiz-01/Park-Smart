@@ -57,6 +57,8 @@
   --color-brand-soft: var(--brand-soft);
   --color-brand-foreground: var(--brand-foreground);
   --color-road-yellow: var(--road-yellow);
+  --color-logo-tile: var(--logo-tile);
+  --color-logo-glyph: var(--logo-glyph);
   --color-asphalt: var(--asphalt);
   --color-asphalt-raised: var(--asphalt-raised);
   --color-lane-paint: var(--lane-paint);

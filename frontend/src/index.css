@@ -70,23 +70,32 @@
   --legacy-shadow-lg: var(--ps-shadow-md);
 }
 
-/* Undo Tailwind preflight for legacy markup: this file sits in the "legacy"
-   layer above preflight, and `revert` restores the browser defaults these
-   screens were designed against. Removed together with this file. */
-h1, h2, h3, h4, h5, h6 { font-size: revert; font-weight: revert; }
-h5, h6, ol, ul, dl, dd, blockquote, figure, hr, pre { margin: revert; }
-ol, ul, menu { padding: revert; list-style: revert; }
-small, code, kbd, samp, pre { font-family: revert; font-size: revert; }
-::file-selector-button { all: revert; }
-input[type="checkbox"], input[type="radio"] { margin: revert; padding: revert; border: revert; border-radius: revert; background-color: revert; color: revert; }
-::-webkit-date-and-time-value { min-height: revert; text-align: revert; }
-::-webkit-datetime-edit, ::-webkit-datetime-edit-fields-wrapper,
-::-webkit-datetime-edit-year-field, ::-webkit-datetime-edit-month-field, ::-webkit-datetime-edit-day-field,
-::-webkit-datetime-edit-hour-field, ::-webkit-datetime-edit-minute-field, ::-webkit-datetime-edit-meridiem-field { display: revert; padding: revert; }
+/* Element-level rules below only apply on legacy routes: <html> carries
+   data-surface="legacy" there (see src/lib/theme.js), so redesigned pages and
+   the new kit are not restyled by them. :where() keeps their specificity.
 
-* { box-sizing: border-box; }
-html { scroll-behavior: smooth; background: var(--ps-bg); }
-body {
+   The first block undoes Tailwind preflight for legacy markup: this file sits
+   in the "legacy" layer above preflight, and `revert` restores the browser
+   defaults these screens were designed against. Removed with this file. */
+:where(:root[data-surface="legacy"]) h1, :where(:root[data-surface="legacy"]) h2, :where(:root[data-surface="legacy"]) h3, :where(:root[data-surface="legacy"]) h4, :where(:root[data-surface="legacy"]) h5, :where(:root[data-surface="legacy"]) h6 { font-size: revert; font-weight: revert; }
+:where(:root[data-surface="legacy"]) h5, :where(:root[data-surface="legacy"]) h6, :where(:root[data-surface="legacy"]) ol, :where(:root[data-surface="legacy"]) ul, :where(:root[data-surface="legacy"]) dl, :where(:root[data-surface="legacy"]) dd, :where(:root[data-surface="legacy"]) blockquote, :where(:root[data-surface="legacy"]) figure, :where(:root[data-surface="legacy"]) hr, :where(:root[data-surface="legacy"]) pre { margin: revert; }
+:where(:root[data-surface="legacy"]) ol, :where(:root[data-surface="legacy"]) ul, :where(:root[data-surface="legacy"]) menu { padding: revert; list-style: revert; }
+:where(:root[data-surface="legacy"]) small, :where(:root[data-surface="legacy"]) code, :where(:root[data-surface="legacy"]) kbd, :where(:root[data-surface="legacy"]) samp, :where(:root[data-surface="legacy"]) pre { font-family: revert; font-size: revert; }
+:where(:root[data-surface="legacy"]) ::file-selector-button { all: revert; }
+:where(:root[data-surface="legacy"]) input[type="checkbox"], :where(:root[data-surface="legacy"]) input[type="radio"] { margin: revert; padding: revert; border: revert; border-radius: revert; background-color: revert; color: revert; }
+:where(:root[data-surface="legacy"]) ::-webkit-date-and-time-value { min-height: revert; text-align: revert; }
+:where(:root[data-surface="legacy"]) ::-webkit-datetime-edit,
+:where(:root[data-surface="legacy"]) ::-webkit-datetime-edit-fields-wrapper,
+:where(:root[data-surface="legacy"]) ::-webkit-datetime-edit-year-field,
+:where(:root[data-surface="legacy"]) ::-webkit-datetime-edit-month-field,
+:where(:root[data-surface="legacy"]) ::-webkit-datetime-edit-day-field,
+:where(:root[data-surface="legacy"]) ::-webkit-datetime-edit-hour-field,
+:where(:root[data-surface="legacy"]) ::-webkit-datetime-edit-minute-field,
+:where(:root[data-surface="legacy"]) ::-webkit-datetime-edit-meridiem-field { display: revert; padding: revert; }
+
+:where(:root[data-surface="legacy"]) * { box-sizing: border-box; }
+html:where([data-surface="legacy"]) { scroll-behavior: smooth; background: var(--ps-bg); }
+:where(:root[data-surface="legacy"]) body {
   margin: 0;
   min-width: 320px;
   color: var(--ps-text);
@@ -96,17 +105,17 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
-body, #root { min-height: 100vh; }
-h1, h2, h3, h4, p { margin: 0; }
-h1, h2, h3, h4 { font-family: var(--legacy-font-display); letter-spacing: -0.025em; }
-a { color: inherit; text-decoration: none; }
-button, input, textarea, select { font: inherit; }
-button { border: 0; cursor: pointer; }
-button:disabled { cursor: not-allowed; opacity: 0.58; }
-img, svg { display: block; }
-::selection { color: #fff; background: var(--ps-primary); }
-:focus-visible { outline: 2px solid var(--ps-primary); outline-offset: 2px; }
-* { scrollbar-color: #bdb7ac transparent; scrollbar-width: thin; }
+:where(:root[data-surface="legacy"]) body, :where(:root[data-surface="legacy"]) #root { min-height: 100vh; }
+:where(:root[data-surface="legacy"]) h1, :where(:root[data-surface="legacy"]) h2, :where(:root[data-surface="legacy"]) h3, :where(:root[data-surface="legacy"]) h4, :where(:root[data-surface="legacy"]) p { margin: 0; }
+:where(:root[data-surface="legacy"]) h1, :where(:root[data-surface="legacy"]) h2, :where(:root[data-surface="legacy"]) h3, :where(:root[data-surface="legacy"]) h4 { font-family: var(--legacy-font-display); letter-spacing: -0.025em; }
+:where(:root[data-surface="legacy"]) a { color: inherit; text-decoration: none; }
+:where(:root[data-surface="legacy"]) button, :where(:root[data-surface="legacy"]) input, :where(:root[data-surface="legacy"]) textarea, :where(:root[data-surface="legacy"]) select { font: inherit; }
+:where(:root[data-surface="legacy"]) button { border: 0; cursor: pointer; }
+:where(:root[data-surface="legacy"]) button:disabled { cursor: not-allowed; opacity: 0.58; }
+:where(:root[data-surface="legacy"]) img, :where(:root[data-surface="legacy"]) svg { display: block; }
+:where(:root[data-surface="legacy"]) ::selection { color: #fff; background: var(--ps-primary); }
+:where(:root[data-surface="legacy"]) :focus-visible { outline: 2px solid var(--ps-primary); outline-offset: 2px; }
+:where(:root[data-surface="legacy"]) * { scrollbar-color: #bdb7ac transparent; scrollbar-width: thin; }
 
 .container { width: min(var(--content-width), calc(100% - 48px)); margin-inline: auto; }
 .flex { display: flex; }
@@ -154,7 +163,7 @@ img, svg { display: block; }
 .form-input:disabled { color: var(--ps-muted); background: var(--ps-bg-secondary); }
 textarea.form-input { resize: vertical; }
 select.form-input { appearance: auto; color-scheme: light; }
-input[type="checkbox"], input[type="radio"] { width: 16px; height: 16px; accent-color: var(--ps-primary); }
+:where(:root[data-surface="legacy"]) input[type="checkbox"], :where(:root[data-surface="legacy"]) input[type="radio"] { width: 16px; height: 16px; accent-color: var(--ps-primary); }
 .input-with-icon { position: relative; }
 .input-with-icon > svg { position: absolute; z-index: 1; top: 50%; left: 13px; color: var(--ps-muted); transform: translateY(-50%); pointer-events: none; }
 .input-with-icon .form-input { padding-left: 40px; }
@@ -174,11 +183,11 @@ input[type="checkbox"], input[type="radio"] { width: 16px; height: 16px; accent-
 .catalog-control-message button { display: inline-flex; align-items: center; gap: 4px; color: var(--ps-primary); background: transparent; font-size: 11px; font-weight: 700; }
 
 .table-wrapper { width: 100%; overflow-x: auto; border: 1px solid var(--ps-border); border-radius: 11px; background: #fff; }
-table { width: 100%; min-width: 690px; border-collapse: collapse; }
-th { padding: 12px 15px; color: var(--ps-text-secondary); background: var(--ps-bg-secondary); font-size: 10px; font-weight: 800; letter-spacing: .075em; text-align: left; text-transform: uppercase; white-space: nowrap; }
-td { padding: 14px 15px; color: var(--ps-text-secondary); border-top: 1px solid var(--ps-border); font-size: 13px; }
-tbody tr { transition: background-color var(--ps-motion-fast); }
-tbody tr:hover { background: #f7faf7; }
+:where(:root[data-surface="legacy"]) table { width: 100%; min-width: 690px; border-collapse: collapse; }
+:where(:root[data-surface="legacy"]) th { padding: 12px 15px; color: var(--ps-text-secondary); background: var(--ps-bg-secondary); font-size: 10px; font-weight: 800; letter-spacing: .075em; text-align: left; text-transform: uppercase; white-space: nowrap; }
+:where(:root[data-surface="legacy"]) td { padding: 14px 15px; color: var(--ps-text-secondary); border-top: 1px solid var(--ps-border); font-size: 13px; }
+:where(:root[data-surface="legacy"]) tbody tr { transition: background-color var(--ps-motion-fast); }
+:where(:root[data-surface="legacy"]) tbody tr:hover { background: #f7faf7; }
 
 .badge, .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border: 1px solid transparent; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: .03em; line-height: 1; text-transform: capitalize; white-space: nowrap; }
 .badge-green, .status-success { color: var(--ps-success); border-color: #c6e4cf; background: var(--ps-success-soft); }

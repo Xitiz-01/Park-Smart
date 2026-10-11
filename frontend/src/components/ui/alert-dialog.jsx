@@ -26,12 +26,15 @@ function AlertDialogPortal({
   )
 }
 
-function AlertDialogOverlay({
+// forwardRef: Radix portals hand their children a ref (Presence) to run exit
+// animations; React 18 drops it on plain function components.
+const AlertDialogOverlay = React.forwardRef(function AlertDialogOverlay({
   className,
   ...props
-}) {
+}, ref) {
   return (
     <AlertDialogPrimitive.Overlay
+      ref={ref}
       data-slot="alert-dialog-overlay"
       className={cn(
         "fixed inset-0 z-50 bg-scrim duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
@@ -40,7 +43,7 @@ function AlertDialogOverlay({
       {...props}
     />
   )
-}
+})
 
 function AlertDialogContent({
   className,

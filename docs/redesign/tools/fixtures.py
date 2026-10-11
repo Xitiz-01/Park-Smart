@@ -328,7 +328,7 @@ def routes(ids):
                                      'endTime': (start + dt.timedelta(hours=2)).isoformat().replace('+00:00', 'Z')})
     loc = ids['evLocationId']
     return [
-        (None, 'landing', '/'), (None, 'login', '/login'), (None, 'register', '/register'),
+        (None, 'landing', '/'), (None, 'login', '/login'), (None, 'register', '/register'), (None, 'design', '/_design'),
         ('customer', 'customer-dashboard', '/dashboard'),
         ('customer', 'customer-find-parking', '/dashboard/nearby'),
         ('customer', 'customer-booking-regular', f'/dashboard/parking/{loc}?{window}&vehicleType=car&fuelType=petrol&vehicleId={ids["petrolVehicleId"]}&distanceKm=0.4'),
@@ -502,6 +502,7 @@ def cmd_shoot(args):
             shot = cdp('Page.captureScreenshot', format='png')
             (out / f'{name}-{width}.png').write_bytes(base64.b64decode(shot['data']))
 
+        cdp('Emulation.setEmulatedMedia', features=[{'name': 'prefers-color-scheme', 'value': args.color_scheme}])
         report, current = [], 'unset'
         for role, name, path in selected:
             if role != current:
@@ -518,15 +519,16 @@ def cmd_shoot(args):
                 errors = console_errors(events)
                 cdp('Emulation.setDeviceMetricsOverride', width=width, height=min(int(full), 7000), deviceScaleFactor=1, mobile=width < 768)
                 time.sleep(0.6)
-                capture(name, width)
-                report.append({'name': name, 'route': path.split('?')[0], 'width': width, 'finalPath': final,
+                capture(name if args.color_scheme == 'light' else f'{name}-dark', width)
+                report.append({'name': name, 'colorScheme': args.color_scheme, 'route': path.split('?')[0], 'width': width, 'finalPath': final,
                                'horizontalOverflowPx': overflow, 'pageHeight': full, 'consoleErrors': errors})
                 flag = f' OVERFLOW {overflow}px' if overflow else ''
                 print(f'{name}-{width}.png{flag}{" errors " + str(len(errors)) if errors else ""}', flush=True)
 
         if not args.no_reduced_motion:
             login('customer')
-            cdp('Emulation.setEmulatedMedia', features=[{'name': 'prefers-reduced-motion', 'value': 'reduce'}])
+            cdp('Emulation.setEmulatedMedia', features=[{'name': 'prefers-reduced-motion', 'value': 'reduce'},
+                                                        {'name': 'prefers-color-scheme', 'value': args.color_scheme}])
             cdp('Emulation.setDeviceMetricsOverride', width=390, height=844, deviceScaleFactor=1, mobile=True)
             cdp('Page.navigate', url=APP + '/dashboard'); time.sleep(args.settle)
             drawer = js("(() => { const el = document.querySelector('.ps-sidebar-mobile, [data-mobile-nav]'); if (!el) return null;"
@@ -581,6 +583,8 @@ def main():
     shoot.add_argument('--only', help='comma-separated route names to capture (see routes() in this file)')
     shoot.add_argument('--settle', type=float, default=3.2, help='seconds to wait after navigation')
     shoot.add_argument('--no-reduced-motion', action='store_true', help='skip the reduced-motion mobile capture')
+    shoot.add_argument('--color-scheme', choices=['light', 'dark'], default='light',
+                       help='emulated prefers-color-scheme; dark captures are named <name>-dark-<width>.png')
     shoot.set_defaults(fn=cmd_shoot)
     smoke = sub.add_parser('smoke', help='log in through the form as each role, then load every route')
     smoke.add_argument('--settle', type=float, default=2.5, help='seconds to wait after navigation')

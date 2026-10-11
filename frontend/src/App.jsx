@@ -1,6 +1,10 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import { LazyMotion, MotionConfig } from 'motion/react';
+import { Toaster as LegacyToaster } from 'react-hot-toast';
+import { Toaster } from './components/ui/sonner';
+import { ConfirmProvider } from './components/kit/ConfirmDialog';
+import { TooltipProvider } from './components/ui/tooltip';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './components/theme/ThemeProvider';
 
@@ -40,6 +44,11 @@ import VendorSlots from './pages/vendor/VendorSlots';
 import VendorBookings from './pages/vendor/VendorBookings';
 import VendorVerification from './pages/vendor/VendorVerification';
 import { getDefaultRoute } from './utils/authRouting';
+
+// Dev-only style guide. import.meta.env.DEV is false in production builds, so
+// the page and its chunk are dropped entirely.
+const DesignPage = import.meta.env.DEV ? lazy(() => import('./pages/_design/DesignPage')) : null;
+const loadMotionFeatures = () => import('./lib/motionFeatures').then((mod) => mod.default);
 
 // Protected Route
 const ProtectedRoute = ({ children, roles, approvedVendor = false }) => {
@@ -98,6 +107,8 @@ const AppRoutes = () => {
         <Route path=":section" element={<VendorPlaceholder />} />
       </Route>
 
+      {DesignPage && <Route path="/_design" element={<Suspense fallback={null}><DesignPage /></Suspense>} />}
+
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
@@ -107,24 +118,34 @@ function App() {
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ThemeProvider>
-      <AuthProvider>
-        <AppRoutes />
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            style: {
-              background: '#fffefb',
-              color: '#262a2e',
-              border: '1px solid #ddd8ce',
-              borderRadius: '10px',
-              boxShadow: '0 12px 30px rgba(50, 45, 35, 0.12)',
-              fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-            },
-            success: { iconTheme: { primary: '#147d6f', secondary: '#fff' } },
-            error:   { iconTheme: { primary: '#c94a4a', secondary: '#fff' } },
-          }}
-        />
-      </AuthProvider>
+        <MotionConfig reducedMotion="user">
+          <LazyMotion features={loadMotionFeatures} strict>
+            <TooltipProvider delayDuration={300}>
+              <ConfirmProvider>
+                <AuthProvider>
+                  <AppRoutes />
+                  <Toaster position="top-right" />
+                  {/* Existing screens still call react-hot-toast until they move to Sonner. */}
+                  <LegacyToaster
+                    position="top-right"
+                    toastOptions={{
+                      style: {
+                        background: '#fffefb',
+                        color: '#262a2e',
+                        border: '1px solid #ddd8ce',
+                        borderRadius: '10px',
+                        boxShadow: '0 12px 30px rgba(50, 45, 35, 0.12)',
+                        fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                      },
+                      success: { iconTheme: { primary: '#147d6f', secondary: '#fff' } },
+                      error:   { iconTheme: { primary: '#c94a4a', secondary: '#fff' } },
+                    }}
+                  />
+                </AuthProvider>
+              </ConfirmProvider>
+            </TooltipProvider>
+          </LazyMotion>
+        </MotionConfig>
       </ThemeProvider>
     </Router>
   );

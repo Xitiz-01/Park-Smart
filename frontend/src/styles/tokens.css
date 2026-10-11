@@ -31,6 +31,10 @@
   --brand-soft: #e2ebfa;
   --brand-foreground: #ffffff;
 
+  /* The logomark is a road sign: the same in both themes. */
+  --logo-tile: #0b55c2;
+  --logo-glyph: #ffffff;
+
   /* Road paint and asphalt (hero and CTA backdrops in both themes) */
   --road-yellow: #f0be2c;
   --asphalt: #121821;

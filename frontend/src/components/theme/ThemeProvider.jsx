@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
-  applyTheme, isThemedPath, readThemePreference, resolveTheme, writeThemePreference,
+  applyTheme, isRedesignedPath, readThemePreference, resolveTheme, writeThemePreference,
 } from '@/lib/theme';
 
 const ThemeContext = createContext(null);
@@ -22,17 +22,18 @@ export function ThemeProvider({ children }) {
   const { pathname } = useLocation();
   const systemPrefersDark = useSystemPrefersDark();
   const [preference, setPreferenceState] = useState(readThemePreference);
-  const themed = isThemedPath(pathname);
-  const theme = themed ? resolveTheme(preference, systemPrefersDark) : 'light';
+  const redesigned = isRedesignedPath(pathname);
+  const theme = redesigned ? resolveTheme(preference, systemPrefersDark) : 'light';
+  const surface = redesigned ? 'new' : 'legacy';
 
-  useEffect(() => { applyTheme(theme); }, [theme]);
+  useEffect(() => { applyTheme(theme, surface); }, [theme, surface]);
 
   const setPreference = useCallback((next) => {
     writeThemePreference(next);
     setPreferenceState(next);
   }, []);
 
-  const value = useMemo(() => ({ preference, theme, themed, setPreference }), [preference, theme, themed, setPreference]);
+  const value = useMemo(() => ({ preference, theme, setPreference }), [preference, theme, setPreference]);
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 

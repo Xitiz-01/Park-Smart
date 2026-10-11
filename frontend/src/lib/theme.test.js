@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
-  THEME_COLORS, THEME_STORAGE_KEY, THEMED_PATHS, isThemedPath, readThemePreference, resolveTheme, writeThemePreference,
+  REDESIGNED_PATHS, THEME_COLORS, THEME_STORAGE_KEY, isRedesignedPath, readThemePreference, resolveTheme, writeThemePreference,
 } from './theme';
 
 describe('resolveTheme', () => {
@@ -41,16 +41,16 @@ describe('theme preference storage', () => {
   });
 });
 
-test('only redesigned routes are themed', () => {
-  expect(isThemedPath('/_design')).toBe(true);
-  expect(isThemedPath('/_design/buttons')).toBe(true);
-  expect(isThemedPath('/_designer')).toBe(false);
-  expect(isThemedPath('/dashboard')).toBe(false);
+test('only redesigned routes get the new surface and dark mode', () => {
+  expect(isRedesignedPath('/_design')).toBe(true);
+  expect(isRedesignedPath('/_design/buttons')).toBe(true);
+  expect(isRedesignedPath('/_designer')).toBe(false);
+  expect(isRedesignedPath('/dashboard')).toBe(false);
 });
 
 test('the pre-paint script in index.html mirrors src/lib/theme.js', () => {
   const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
-  expect(html).toContain(`var themed = ${JSON.stringify(THEMED_PATHS)};`);
+  expect(html).toContain(`var redesigned = ${JSON.stringify(REDESIGNED_PATHS)};`);
   expect(html).toContain(`localStorage.getItem('${THEME_STORAGE_KEY}')`);
   expect(html).toContain(`'${THEME_COLORS.dark}'`);
   expect(html).toContain(`content="${THEME_COLORS.light}"`);
