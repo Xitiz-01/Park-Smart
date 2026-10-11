@@ -714,6 +714,11 @@ button.ev-slot-tile:disabled { opacity: 1; }
   .verification-list > div { align-items: flex-start; flex-direction: column; }
 }
 
+/* Reduce motion only. Layout transforms (the closed mobile drawer, centred
+   input icons) must survive, so transforms are never reset here. */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; transform: none !important; }
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  .btn:hover:not(:disabled), .btn:active:not(:disabled), .icon-btn:active, .feature-card:hover, .audience-card:hover,
+  .quick-action:hover, .parking-card:hover, .map-result-item:hover, .map-result-item:focus-within,
+  button.ev-slot-tile:hover:not(:disabled), .auth-back:hover, .filter-chip:active { transform: none; }
 }
