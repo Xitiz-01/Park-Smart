@@ -60,6 +60,7 @@
   --color-asphalt: var(--asphalt);
   --color-asphalt-raised: var(--asphalt-raised);
   --color-lane-paint: var(--lane-paint);
+  --color-scrim: var(--scrim);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-slot-available: var(--slot-available);
@@ -151,6 +152,17 @@
   :focus-visible {
     outline: 2px solid var(--focus);
     outline-offset: 2px;
+  }
+  /* CSS animations and transitions (tw-animate-css enter/exit, spinners)
+     collapse to an instant change. Motion components follow the same
+     setting through <MotionConfig reducedMotion="user">. */
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
   /* Tabular figures wherever mono data appears (plates, bay IDs, prices). */
   .font-mono {

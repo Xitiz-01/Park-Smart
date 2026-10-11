@@ -66,6 +66,7 @@
   --chart-5: #5f6b7b;
 
   --shadow-color: 13 24 40;
+  --scrim: rgb(13 24 40 / 0.45);
   --focus: var(--brand);
 
   /* shadcn/ui names, mapped onto the tokens above */
@@ -141,4 +142,5 @@
   --chart-5: #8794a6;
 
   --shadow-color: 0 0 0;
+  --scrim: rgb(0 0 0 / 0.62);
 }
