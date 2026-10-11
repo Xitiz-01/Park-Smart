@@ -1,32 +1,91 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { vehicleCatalogAPI, vehiclesAPI } from '../../services/api';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Truck, Plus, Trash2, Star, Pencil } from 'lucide-react';
-import SearchableSelect from '../../components/shared/SearchableSelect';
+import { Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { vehicleCatalogAPI, vehiclesAPI } from '../../services/api';
 import {
   applyCatalogDetails,
   isElectricVehicle,
   physicalVehicleType,
-  vehicleClassificationLabel,
   vehicleFormPayload,
 } from '../../utils/hybridParking';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import {
+  Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle,
+} from '@/components/ui/sheet';
+import { Spinner } from '@/components/ui/spinner';
 import { useConfirm } from '@/components/kit/ConfirmDialog';
+import EmptyState, { ErrorState } from '@/components/kit/EmptyState';
+import FormField from '@/components/kit/FormField';
+import { CardGridSkeleton } from '@/components/kit/Loaders';
+import NumberPlate from '@/components/kit/NumberPlate';
+import PageHeader from '@/components/kit/PageHeader';
+import SearchableSelect from '@/components/kit/SearchableSelect';
+import StatusBadge from '@/components/kit/StatusBadge';
+import VehicleBrandLogo from '@/components/kit/VehicleBrandLogo';
 
 const VEHICLE_TYPES = ['car', 'motorcycle'];
 const BODY_STYLES = ['hatchback', 'sedan', 'suv', 'crossover', 'coupe', 'wagon', 'convertible', 'pickup', 'van', 'mpv', 'other'];
 const FUEL_TYPES = ['petrol', 'diesel', 'cng', 'hybrid', 'electric'];
+const ACRONYMS = new Set(['suv', 'mpv', 'cng']);
 
 const emptyForm = {
   licensePlate: '', make: '', brand: '', model: '', modelYear: '',
   vehicleType: '', bodyStyle: '', fuelType: '', color: '', isDefault: false,
 };
 
-const titleCase = (value) => value.replace(/(^|\s)\S/g, (letter) => letter.toUpperCase());
+const optionLabel = (value) => (ACRONYMS.has(value) ? value.toUpperCase() : value[0].toUpperCase() + value.slice(1));
+
+// Same parts as utils/hybridParking's vehicleClassificationLabel, with SUV,
+// MPV and CNG spelt as acronyms.
+const classification = (vehicle) => [
+  physicalVehicleType(vehicle),
+  vehicle?.bodyStyle,
+  vehicle?.fuelType || (String(vehicle?.vehicleType).toLowerCase() === 'ev' ? 'electric' : null),
+].filter(Boolean).map((value) => optionLabel(String(value).toLowerCase())).join(' · ');
+
+function VehicleCard({ vehicle, onEdit, onRemove }) {
+  const electric = isElectricVehicle(vehicle);
+  const make = vehicle.make || vehicle.brand;
+  const name = [make, vehicle.model, vehicle.modelYear].filter(Boolean).join(' ');
+  return (
+    <article className="flex h-full flex-col rounded-xl border bg-card p-5 shadow-hairline">
+      <div className="flex items-start justify-between gap-3">
+        <NumberPlate plate={vehicle.licensePlate} electric={electric} />
+        {vehicle.isDefault && <StatusBadge tone="info">Default</StatusBadge>}
+      </div>
+      <div className="mt-5 flex items-center gap-3">
+        <VehicleBrandLogo make={make} vehicleType={physicalVehicleType(vehicle)} electric={electric} />
+        <div className="min-w-0">
+          <h2 className="truncate font-display text-base font-semibold">{name || 'Vehicle details not set'}</h2>
+          <p className="text-sm text-text-muted">{classification(vehicle)}</p>
+        </div>
+      </div>
+      <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+        <dt className="text-text-muted">Colour</dt>
+        <dd className="m-0">{vehicle.color || 'Not set'}</dd>
+        <dt className="text-text-muted">Parks in</dt>
+        <dd className="m-0">{electric ? 'An exact EV bay' : 'Any free space'}</dd>
+      </dl>
+      <div className="mt-auto flex flex-wrap gap-2 pt-5">
+        <Button variant="outline" size="sm" onClick={() => onEdit(vehicle)}>
+          <Pencil data-icon="inline-start" />Edit<span className="sr-only"> {vehicle.licensePlate}</span>
+        </Button>
+        <Button variant="ghost" size="sm" className="text-danger hover:text-danger" onClick={() => onRemove(vehicle)}>
+          <Trash2 data-icon="inline-start" />Remove<span className="sr-only"> {vehicle.licensePlate}</span>
+        </Button>
+      </div>
+    </article>
+  );
+}
 
 export default function VehiclesPage() {
   const confirm = useConfirm();
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
@@ -41,11 +100,15 @@ export default function VehiclesPage() {
   const [modelError, setModelError] = useState('');
   const [yearError, setYearError] = useState('');
 
-  const fetchVehicles = () => vehiclesAPI.getAll()
-    .then((res) => setVehicles(res.data.vehicles))
-    .finally(() => setLoading(false));
+  const fetchVehicles = useCallback(() => {
+    setFailed(false);
+    return vehiclesAPI.getAll()
+      .then((res) => setVehicles(res.data.vehicles))
+      .catch(() => setFailed(true))
+      .finally(() => setLoading(false));
+  }, []);
 
-  useEffect(() => { fetchVehicles(); }, []);
+  useEffect(() => { fetchVehicles(); }, [fetchVehicles]);
 
   const loadMakes = useCallback(async () => {
     setMakesLoading(true); setMakeError('');
@@ -115,6 +178,8 @@ export default function VehiclesPage() {
     if (modelYear) fetchAndApplyDetails(form.make, form.model, modelYear);
   };
 
+  const closeForm = () => { setShowForm(false); setEditingId(null); setForm(emptyForm); };
+
   const handleSave = async (event) => {
     event.preventDefault(); setSaving(true);
     try {
@@ -122,7 +187,7 @@ export default function VehiclesPage() {
       if (editingId) await vehiclesAPI.update(editingId, payload);
       else await vehiclesAPI.add(payload);
       toast.success(editingId ? 'Vehicle updated' : 'Vehicle added');
-      setShowForm(false); setForm(emptyForm); setEditingId(null); fetchVehicles();
+      closeForm(); fetchVehicles();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to save vehicle');
     } finally { setSaving(false); }
@@ -147,80 +212,141 @@ export default function VehiclesPage() {
     loadYears(make, vehicle.model, vehicle.modelYear);
   };
 
-  const handleDelete = async (id) => {
-    if (!(await confirm({ title: 'Remove this vehicle?', confirmLabel: 'Remove vehicle', cancelLabel: 'Keep vehicle', tone: 'danger' }))) return;
+  const handleDelete = async (vehicle) => {
+    if (!(await confirm({
+      title: `Remove ${vehicle.licensePlate}?`,
+      description: 'Existing bookings for it stay as they are. You can add it again later.',
+      confirmLabel: 'Remove vehicle',
+      cancelLabel: 'Keep vehicle',
+      tone: 'danger',
+    }))) return;
     try {
-      await vehiclesAPI.delete(id); toast.success('Vehicle removed'); fetchVehicles();
+      await vehiclesAPI.delete(vehicle._id); toast.success('Vehicle removed'); fetchVehicles();
     } catch (error) { toast.error(error.response?.data?.message || 'Failed to remove'); }
   };
 
-  if (loading) return <div className="loading-spinner"><div className="spinner" /></div>;
+  const canSave = form.make && form.model && form.vehicleType && form.bodyStyle && form.fuelType;
 
-  return <div className="fade-in">
-    <div className="page-header flex items-center justify-between">
-      <div><h1>My Vehicles</h1><p>{vehicles.length} registered vehicle{vehicles.length !== 1 ? 's' : ''}</p></div>
-      <button onClick={startAdd} className="btn btn-primary"><Plus size={16} /> Add Vehicle</button>
-    </div>
+  return (
+    <>
+      <PageHeader
+        eyebrow="Driver"
+        title="My vehicles"
+        description={loading ? 'Loading your vehicles…' : `${vehicles.length} registered vehicle${vehicles.length === 1 ? '' : 's'}. Electric vehicles book an exact EV bay; everything else books a guaranteed space.`}
+        actions={<Button onClick={startAdd}><Plus data-icon="inline-start" />Add vehicle</Button>}
+      />
 
-    {showForm && <div className="card fade-in" style={{ marginBottom: 24, borderColor: 'var(--legacy-accent)' }}>
-      <h3 style={{ fontWeight: 700, marginBottom: 20, fontSize: 15 }}>{editingId ? 'Edit Vehicle' : 'Add New Vehicle'}</h3>
-      <form onSubmit={handleSave}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 16 }}>
-          <div className="form-group">
-            <label className="form-label">License Plate *</label>
-            <input className="form-input" placeholder="MH12AB1234" value={form.licensePlate} onChange={(e) => setForm({ ...form, licensePlate: e.target.value })} required />
-          </div>
-          <SearchableSelect label="Make" value={form.make} options={makeOptions} onChange={selectMake} placeholder="Search makes" loading={makesLoading} error={makeError} onRetry={loadMakes} required />
-          <SearchableSelect label="Model" value={form.model} options={modelOptions} onChange={selectModel} placeholder={form.make ? 'Search models' : 'Choose a make first'} loading={modelsLoading} error={modelError} onRetry={() => loadModels(form.make, form.model)} disabled={!form.make} required />
-          <div className="form-group">
-            <label className="form-label">Model Year <span style={{ color: 'var(--legacy-text-muted)' }}>(optional)</span></label>
-            {years.length ? <select className="form-input" value={form.modelYear} onChange={(e) => selectYear(e.target.value)} disabled={yearsLoading}>
-              <option value="">Not specified</option>{years.map((year) => <option key={year} value={year}>{year}</option>)}
-            </select> : <input className="form-input" type="number" min="1886" max={new Date().getFullYear() + 2} placeholder={yearsLoading ? 'Loading…' : 'Enter year if known'} value={form.modelYear} onChange={(e) => selectYear(e.target.value)} disabled={!form.model || yearsLoading} />}
-            {yearError && <div className="catalog-control-message" role="alert"><span>{yearError}</span><button type="button" onClick={() => loadYears(form.make, form.model, form.modelYear)}>Retry</button></div>}
-          </div>
-          <div className="form-group">
-            <label className="form-label">Vehicle Type *</label>
-            <select className="form-input" value={form.vehicleType} onChange={(e) => setForm({ ...form, vehicleType: e.target.value })} required>
-              <option value="" disabled>Select vehicle type</option>{VEHICLE_TYPES.map((type) => <option key={type} value={type}>{titleCase(type)}</option>)}
-            </select>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Body Style *</label>
-            <select className="form-input" value={form.bodyStyle} onChange={(e) => setForm({ ...form, bodyStyle: e.target.value })} required>
-              <option value="" disabled>Select body style</option>{BODY_STYLES.map((style) => <option key={style} value={style}>{style.toUpperCase()}</option>)}
-            </select>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Fuel Type *</label>
-            <select className="form-input" value={form.fuelType} onChange={(e) => setForm({ ...form, fuelType: e.target.value })} required>
-              <option value="" disabled>Select fuel type</option>{FUEL_TYPES.map((type) => <option key={type} value={type}>{type.toUpperCase()}</option>)}
-            </select>
-          </div>
-          <div className="form-group"><label className="form-label">Color</label><input className="form-input" placeholder="White, Black..." value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} /></div>
-        </div>
-        <div style={{ width: '100%', margin: '10px 0 20px' }}><label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--legacy-text-secondary)', cursor: 'pointer' }}>
-          <input type="checkbox" checked={form.isDefault} onChange={(e) => setForm({ ...form, isDefault: e.target.checked })} style={{ width: 16, height: 16 }} /> Set as default vehicle
-        </label></div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button type="button" onClick={() => { setShowForm(false); setEditingId(null); setForm(emptyForm); }} className="btn btn-outline">Cancel</button>
-          <button type="submit" className="btn btn-primary" disabled={saving || !form.make || !form.model || !form.vehicleType || !form.bodyStyle || !form.fuelType}>{saving ? 'Saving...' : editingId ? 'Update Vehicle' : 'Save Vehicle'}</button>
-        </div>
-      </form>
-    </div>}
+      {loading ? <CardGridSkeleton count={3} /> : failed ? (
+        <ErrorState description="Your vehicles didn’t load. Check your connection and try again." onRetry={fetchVehicles} />
+      ) : vehicles.length === 0 ? (
+        <EmptyState title="No vehicles yet" description="Add the vehicle you drive so you can book a space for it.">
+          <Button onClick={startAdd}><Plus data-icon="inline-start" />Add vehicle</Button>
+        </EmptyState>
+      ) : (
+        <ul aria-label="Vehicles" className="grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 xl:grid-cols-3">
+          {vehicles.map((vehicle) => (
+            <li key={vehicle._id} className="min-w-0">
+              <VehicleCard vehicle={vehicle} onEdit={startEdit} onRemove={handleDelete} />
+            </li>
+          ))}
+        </ul>
+      )}
 
-    {vehicles.length === 0 ? <div className="empty-state card"><Truck size={40} style={{ margin: '0 auto 12px' }} /><h3>No vehicles registered</h3><p>Add your vehicle to start booking parking slots.</p></div> :
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: 16 }}>
-        {vehicles.map((vehicle) => <div key={vehicle._id} className="card" style={{ position: 'relative' }}>
-          {vehicle.isDefault && <div style={{ position: 'absolute', top: 12, right: 12 }}><span className="badge badge-yellow"><Star size={10} fill="currentColor" /> Default</span></div>}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-            <div style={{ width: 44, height: 44, background: 'var(--legacy-accent-glow)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Truck color="var(--legacy-accent)" size={20} /></div>
-            <div><div style={{ fontWeight: 700, fontSize: 16 }}>{vehicle.licensePlate}</div><div style={{ fontSize: 12, color: 'var(--legacy-text-muted)', textTransform: 'capitalize' }}>{vehicleClassificationLabel(vehicle)}</div></div>
-          </div>
-          {(vehicle.make || vehicle.brand || vehicle.model) && <div style={{ fontSize: 14, color: 'var(--legacy-text-secondary)', marginBottom: 4 }}>{vehicle.make || vehicle.brand} {vehicle.model} {vehicle.modelYear || ''}</div>}
-          {vehicle.color && <div style={{ fontSize: 13, color: 'var(--legacy-text-muted)', marginBottom: 16 }}>Color: {vehicle.color}</div>}
-          <div style={{ display: 'flex', gap: 8 }}><button onClick={() => startEdit(vehicle)} className="btn btn-outline btn-sm"><Pencil size={14} /> Edit</button><button onClick={() => handleDelete(vehicle._id)} className="btn btn-danger btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Trash2 size={14} /> Remove</button></div>
-        </div>)}
-      </div>}
-  </div>;
+      <Sheet open={showForm} onOpenChange={(open) => { if (!open) closeForm(); }}>
+        <SheetContent className="w-full gap-0 sm:max-w-lg">
+          <SheetHeader className="border-b">
+            <SheetTitle className="font-display text-lg">{editingId ? 'Edit vehicle' : 'Add a vehicle'}</SheetTitle>
+            <SheetDescription>Pick the make and model; body style and fuel fill in from the catalogue where we know them.</SheetDescription>
+          </SheetHeader>
+          <form onSubmit={handleSave} className="flex min-h-0 flex-1 flex-col">
+            <div className="grid flex-1 content-start gap-5 overflow-y-auto overscroll-contain p-4">
+              <FormField label="Registration number" required>
+                <Input
+                  name="licensePlate"
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder="MH12AB1234…"
+                  className="font-mono uppercase"
+                  value={form.licensePlate}
+                  onChange={(e) => setForm({ ...form, licensePlate: e.target.value })}
+                />
+              </FormField>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <SearchableSelect label="Make" value={form.make} options={makeOptions} onChange={selectMake} placeholder="Search makes" loading={makesLoading} error={makeError} onRetry={loadMakes} required />
+                <SearchableSelect label="Model" value={form.model} options={modelOptions} onChange={selectModel} placeholder={form.make ? 'Search models' : 'Choose a make first'} loading={modelsLoading} error={modelError} onRetry={() => loadModels(form.make, form.model)} disabled={!form.make} required />
+              </div>
+              <FormField label="Model year" description={yearError ? undefined : 'Optional'}>
+                {years.length ? (
+                  <NativeSelect className="w-full" value={form.modelYear} onChange={(e) => selectYear(e.target.value)} disabled={yearsLoading}>
+                    <NativeSelectOption value="">Not specified</NativeSelectOption>
+                    {years.map((year) => <NativeSelectOption key={year} value={year}>{year}</NativeSelectOption>)}
+                  </NativeSelect>
+                ) : (
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min="1886"
+                    max={new Date().getFullYear() + 2}
+                    placeholder={yearsLoading ? 'Loading…' : 'Enter year if known'}
+                    value={form.modelYear}
+                    onChange={(e) => selectYear(e.target.value)}
+                    disabled={!form.model || yearsLoading}
+                  />
+                )}
+              </FormField>
+              {yearError && (
+                <div role="alert" className="-mt-3 flex items-center justify-between gap-2 text-sm text-danger">
+                  <span>{yearError}</span>
+                  <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={() => loadYears(form.make, form.model, form.modelYear)}>
+                    <RefreshCw data-icon="inline-start" />Retry
+                  </Button>
+                </div>
+              )}
+              <div className="grid gap-5 sm:grid-cols-3">
+                <FormField label="Type" required>
+                  <NativeSelect className="w-full" value={form.vehicleType} onChange={(e) => setForm({ ...form, vehicleType: e.target.value })}>
+                    <NativeSelectOption value="" disabled>Select</NativeSelectOption>
+                    {VEHICLE_TYPES.map((type) => <NativeSelectOption key={type} value={type}>{optionLabel(type)}</NativeSelectOption>)}
+                  </NativeSelect>
+                </FormField>
+                <FormField label="Body style" required>
+                  <NativeSelect className="w-full" value={form.bodyStyle} onChange={(e) => setForm({ ...form, bodyStyle: e.target.value })}>
+                    <NativeSelectOption value="" disabled>Select</NativeSelectOption>
+                    {BODY_STYLES.map((style) => <NativeSelectOption key={style} value={style}>{optionLabel(style)}</NativeSelectOption>)}
+                  </NativeSelect>
+                </FormField>
+                <FormField label="Fuel" required>
+                  <NativeSelect className="w-full" value={form.fuelType} onChange={(e) => setForm({ ...form, fuelType: e.target.value })}>
+                    <NativeSelectOption value="" disabled>Select</NativeSelectOption>
+                    {FUEL_TYPES.map((type) => <NativeSelectOption key={type} value={type}>{optionLabel(type)}</NativeSelectOption>)}
+                  </NativeSelect>
+                </FormField>
+              </div>
+              {form.fuelType && (
+                <p className="rounded-lg bg-surface-sunken px-3 py-2 text-sm text-text-muted">
+                  {form.fuelType === 'electric'
+                    ? 'Electric: you’ll pick an exact EV charging bay when you book.'
+                    : 'You’ll get a guaranteed space; the bay is assigned when you arrive.'}
+                </p>
+              )}
+              <FormField label="Colour">
+                <Input name="color" autoComplete="off" placeholder="White, black…" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} />
+              </FormField>
+              <label className="flex cursor-pointer items-center gap-3 text-sm">
+                <Checkbox checked={form.isDefault} onCheckedChange={(checked) => setForm({ ...form, isDefault: checked === true })} />
+                Use as my default vehicle when booking
+              </label>
+            </div>
+            <SheetFooter className="flex-row justify-end border-t">
+              <Button type="button" variant="outline" onClick={closeForm}>Cancel</Button>
+              <Button type="submit" disabled={saving || !canSave}>
+                {saving && <Spinner data-icon="inline-start" />}
+                {saving ? 'Saving…' : editingId ? 'Save changes' : 'Add vehicle'}
+              </Button>
+            </SheetFooter>
+          </form>
+        </SheetContent>
+      </Sheet>
+    </>
+  );
 }

@@ -64,6 +64,10 @@
   --color-lane-paint: var(--lane-paint);
   --color-scrim: var(--scrim);
   --color-danger: var(--danger);
+  --color-plate-bg: var(--plate-bg);
+  --color-plate-text: var(--plate-text);
+  --color-plate-ind: var(--plate-ind);
+  --color-plate-ev: var(--plate-ev);
   --color-lot-asphalt: var(--lot-asphalt);
   --color-lot-aisle: var(--lot-aisle);
   --color-lot-line: var(--lot-line);

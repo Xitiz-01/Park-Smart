@@ -138,7 +138,7 @@ function Sidebar({ workspace, identity, collapsed, onToggle }) {
       <nav aria-label={`${workspace.label} navigation`} className="flex-1 overflow-y-auto px-3">
         <NavList workspace={workspace} collapsed={collapsed} layoutGroup="sidebar-active" />
       </nav>
-      <div className="grid gap-2 border-t p-3">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-2 border-t p-3">
         <Identity identity={identity} collapsed={collapsed} />
         <Button variant="ghost" size={collapsed ? 'icon' : 'default'} onClick={onToggle} aria-expanded={!collapsed} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} className={cn(!collapsed && 'justify-start text-text-muted')}>
           {collapsed ? <ChevronsRight /> : <><ChevronsLeft data-icon="inline-start" />Collapse</>}
