@@ -37,10 +37,21 @@ Backend runs on: http://localhost:5000
 cd frontend
 cp .env.example .env        # create your .env file
 npm install
-npm start
+npm run dev                 # Vite dev server (npm start is an alias)
 ```
 
 Frontend runs on: http://localhost:3000
+
+The frontend is built with Vite and tested with Vitest. Requires Node 20.19 or newer.
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Dev server on port 3000. Proxies `/api` and `/socket.io` to `http://localhost:5001` (override with `DEV_PROXY_TARGET`). |
+| `npm run build` | Production build into `frontend/build/`. |
+| `npm run preview` | Serves the production build locally. |
+| `npm test` | Runs the test suite once (`npm run test:watch` for watch mode). |
+
+> **Port 5001 on macOS.** macOS 12+ uses port 5000 for AirPlay Receiver, so run the backend with `PORT=5001` in `backend/.env`. The frontend examples and the dev proxy assume 5001.
 
 ---
 
@@ -79,9 +90,11 @@ CASHFREE_VERIFY_BASE_URL=https://sandbox.cashfree.com/verification
 
 **frontend/.env**
 ```
-REACT_APP_API_URL=http://localhost:5000/api
-REACT_APP_AUTH_URL=http://localhost:5000
+REACT_APP_API_URL=http://localhost:5001/api
+REACT_APP_AUTH_URL=http://localhost:5001
 ```
+
+The `REACT_APP_` prefix is kept after the move to Vite (`envPrefix` in `vite.config.js`), so existing Vercel settings keep working. All three backend URLs (API, auth, Socket.IO) are read in `frontend/src/lib/env.js`; an optional `REACT_APP_SOCKET_URL` overrides the socket origin.
 
 Generate independent backend secrets with `openssl rand -base64 32`. `BETTER_AUTH_SECRET` signs/encrypts authentication state. `ADDRESS_SELECTION_SECRET` signs Geoapify selections and is not an authentication token secret.
 
@@ -143,7 +156,7 @@ For local development, use the example values above and keep `BETTER_AUTH_CROSS_
 
 On Render, set `MONGODB_URI`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL=https://<render-service>`, `CLIENT_URL=https://<vercel-site>`, `BETTER_AUTH_TRUSTED_ORIGINS=https://<vercel-site>`, the optional bootstrap ID, `ADDRESS_SELECTION_SECRET`, and the Geoapify variables. Use `BETTER_AUTH_MONGO_TRANSACTIONS=true` only for a Mongo deployment that supports transactions. Never place backend secrets in Vercel or in `REACT_APP_*` variables.
 
-On Vercel, set `REACT_APP_API_URL=https://<render-service>/api` and `REACT_APP_AUTH_URL=https://<render-service>`, then redeploy because React embeds these values at build time. The frontend sends credentials for both Axios and Socket.IO.
+On Vercel, set `REACT_APP_API_URL=https://<render-service>/api` and `REACT_APP_AUTH_URL=https://<render-service>`, then redeploy because Vite embeds these values at build time. `frontend/vercel.json` sets the Vite framework preset, the `build` output directory and the SPA rewrite to `/index.html`. The frontend sends credentials for both Axios and Socket.IO.
 
 Raw `*.vercel.app` → `*.onrender.com` traffic is cross-site. If those hostnames are used directly, set `BETTER_AUTH_CROSS_SITE_COOKIES=true` on Render so cookies are `Secure; SameSite=None`; note that browser third-party-cookie policies, especially Safari, can still block this setup. The production-safe recommendation is to configure custom sibling domains such as `app.example.com` and `api.example.com` (and list the app origin as trusted), or proxy `/api` through the frontend domain. Keep the default same-site cookie mode when using sibling/proxied domains.
 
@@ -151,7 +164,7 @@ Raw `*.vercel.app` → `*.onrender.com` traffic is cross-site. If those hostname
 
 GitHub Actions is the quality gate for ParkSmart. The `CI` workflow runs whenever a pull request targets `main`, whenever `main` is pushed, and when it is started manually from the Actions tab.
 
-- `frontend-ci` installs the locked frontend dependencies, runs the React test command, and creates a production build.
+- `frontend-ci` installs the locked frontend dependencies, runs the Vitest suite, and creates a production build.
 - `backend-ci` installs the locked backend dependencies and runs the integration suite against an isolated MongoDB service. It never connects to the production database.
 - No GitHub Actions secrets are required by the current CI workflow. Tests use harmless local values, and Geoapify requests are mocked by the integration suite.
 - Vercel remains responsible for frontend preview and production deployments.
@@ -328,13 +341,16 @@ parking-system/
 │   ├── server.js
 │   └── .env
 └── frontend/
-    ├── public/index.html
+    ├── index.html
+    ├── vite.config.js
+    ├── vercel.json
     ├── src/
     │   ├── components/
-    │   ├── context/AuthContext.js
+    │   ├── context/AuthContext.jsx
+    │   ├── lib/env.js
     │   ├── pages/
     │   ├── services/api.js
-    │   ├── App.js
+    │   ├── App.jsx
     │   └── index.css
     └── .env
 ```

@@ -7,6 +7,7 @@ import { io } from 'socket.io-client';
 import { LocateFixed, MapPin, Search, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { parkingLocationsAPI, vehiclesAPI } from '../../services/api';
+import { SOCKET_URL } from '../../lib/env';
 import {
   isElectricVehicle,
   parkingDetailsPath,
@@ -106,7 +107,7 @@ export default function NearbyMapPage() {
     }).catch(() => { setLoading(false); toast.error('Unable to load your vehicles'); });
   }, []);
   useEffect(() => {
-    const socket = io((process.env.REACT_APP_API_URL || 'http://localhost:5001/api').replace(/\/api\/?$/, ''), { transports: ['websocket'], withCredentials: true });
+    const socket = io(SOCKET_URL, { transports: ['websocket'], withCredentials: true });
     let timer;
     socket.on('availability:changed', () => {
       clearTimeout(timer);

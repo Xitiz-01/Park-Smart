@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { API_URL } from '../lib/env';
 
 const API = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || '/api',
+  baseURL: API_URL,
   withCredentials: true,
 });
 

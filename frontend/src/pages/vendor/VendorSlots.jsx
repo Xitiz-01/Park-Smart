@@ -4,6 +4,7 @@ import { io } from 'socket.io-client';
 import { ParkingSquare, Plus, RefreshCw, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { vendorsAPI } from '../../services/api';
+import { SOCKET_URL } from '../../lib/env';
 import EVSlotBoard, { slotDisplayStatus } from '../../components/parking/EVSlotBoard';
 import { isAvailabilityEventForLocation } from '../../utils/hybridParking';
 
@@ -36,7 +37,7 @@ export default function VendorSlots() {
   useEffect(() => { if (locationId) loadSlots(locationId); }, [locationId, loadSlots]);
   useEffect(() => {
     if (!locationId) return undefined;
-    const socket = io((process.env.REACT_APP_API_URL || 'http://localhost:5001/api').replace(/\/api\/?$/, ''), { transports: ['websocket'], withCredentials: true });
+    const socket = io(SOCKET_URL, { transports: ['websocket'], withCredentials: true });
     let timer;
     const refreshIfRelevant = ({ locationId: changedLocation } = {}) => {
       if (!isAvailabilityEventForLocation({ locationId: changedLocation }, locationId)) return;

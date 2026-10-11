@@ -6,6 +6,7 @@ import { io } from 'socket.io-client';
 import { BatteryCharging, Car, CheckCircle2, Clock, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { bookingsAPI, parkingLocationsAPI, slotsAPI, vehiclesAPI } from '../../services/api';
+import { SOCKET_URL } from '../../lib/env';
 import EVSlotBoard from '../../components/parking/EVSlotBoard';
 import {
   bookingPayloadForVehicle,
@@ -76,7 +77,7 @@ export default function BookingPage({ legacy = false }) {
 
   useEffect(() => {
     if (!shouldShowEVSlotBoard(vehicle, legacy) || !locationId) return undefined;
-    const socket = io((process.env.REACT_APP_API_URL || 'http://localhost:5001/api').replace(/\/api\/?$/, ''), { transports: ['websocket'], withCredentials: true });
+    const socket = io(SOCKET_URL, { transports: ['websocket'], withCredentials: true });
     let timer;
     const refreshIfRelevant = ({ locationId: changedLocation } = {}) => {
       if (!isAvailabilityEventForLocation({ locationId: changedLocation }, locationId)) return;
