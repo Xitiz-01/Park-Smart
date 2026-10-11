@@ -60,8 +60,9 @@
   --legacy-text-primary: var(--ps-text);
   --legacy-text-secondary: var(--ps-text-secondary);
   --legacy-text-muted: var(--ps-muted);
-  --legacy-font-display: Inter, Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --legacy-font-body: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* Self-hosted via @fontsource (styles/globals.css); Inter/Manrope were never loaded. */
+  --legacy-font-display: var(--font-display);
+  --legacy-font-body: var(--font-sans);
   --legacy-radius: var(--ps-radius);
   --legacy-radius-sm: var(--ps-radius-sm);
   --legacy-radius-lg: var(--ps-radius-lg);
@@ -104,7 +105,7 @@ button { border: 0; cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: 0.58; }
 img, svg { display: block; }
 ::selection { color: #fff; background: var(--ps-primary); }
-:focus-visible { outline: 3px solid rgba(20, 125, 111, 0.22); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--ps-primary); outline-offset: 2px; }
 * { scrollbar-color: #bdb7ac transparent; scrollbar-width: thin; }
 
 .container { width: min(var(--content-width), calc(100% - 48px)); margin-inline: auto; }
@@ -149,6 +150,7 @@ img, svg { display: block; }
 .form-input::placeholder { color: var(--ps-muted); }
 .form-input:hover { border-color: #aaa397; }
 .form-input:focus { outline: none; border-color: var(--ps-primary); background: #fff; box-shadow: 0 0 0 3px rgba(20, 125, 111, 0.12); }
+.form-input:focus-visible { outline: 2px solid var(--ps-primary); outline-offset: 1px; }
 .form-input:disabled { color: var(--ps-muted); background: var(--ps-bg-secondary); }
 textarea.form-input { resize: vertical; }
 select.form-input { appearance: auto; color-scheme: light; }

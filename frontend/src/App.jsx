@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './components/theme/ThemeProvider';
 
 // Pages
 import LandingPage from './pages/LandingPage';
@@ -105,6 +106,7 @@ const AppRoutes = () => {
 function App() {
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <ThemeProvider>
       <AuthProvider>
         <AppRoutes />
         <Toaster
@@ -123,6 +125,7 @@ function App() {
           }}
         />
       </AuthProvider>
+      </ThemeProvider>
     </Router>
   );
 }
