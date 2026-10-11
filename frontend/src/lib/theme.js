@@ -10,11 +10,15 @@ export const THEME_PREFERENCES = ['system', 'light', 'dark'];
 // which switches on index.css's element rules, and the theme stays light
 // (legacy screens are light-only). Grows phase by phase; goes away once every
 // screen is redesigned.
-export const REDESIGNED_PATHS = { exact: ['/', '/login', '/register'], prefixes: ['/_design'] };
+// `excluded` carves legacy screens out of a redesigned prefix.
+export const REDESIGNED_PATHS = { exact: ['/', '/login', '/register'], prefixes: ['/_design'], excluded: [] };
+
+const underPrefix = (pathname, prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`);
 
 export function isRedesignedPath(pathname) {
+  if (REDESIGNED_PATHS.excluded.some((prefix) => underPrefix(pathname, prefix))) return false;
   return REDESIGNED_PATHS.exact.includes(pathname)
-    || REDESIGNED_PATHS.prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+    || REDESIGNED_PATHS.prefixes.some((prefix) => underPrefix(pathname, prefix));
 }
 
 export function readThemePreference() {
