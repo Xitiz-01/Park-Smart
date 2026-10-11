@@ -33,6 +33,7 @@ import SearchableSelect from '@/components/kit/SearchableSelect';
 import { SlotBoard, SlotLegend, SlotTile } from '@/components/kit/SlotBoard';
 import StatusBadge from '@/components/kit/StatusBadge';
 import ThemeToggle from '@/components/kit/ThemeToggle';
+import LiveLot from '@/components/lot/LiveLot';
 import { STATUS_TONES } from '@/lib/status';
 
 // Dev-only style guide (/_design). Not routed in production builds.
@@ -106,6 +107,13 @@ export default function DesignPage() {
           <div className="flex flex-wrap items-center gap-8">
             <Brand size="sm" /><Brand /><Brand size="lg" />
             <Logomark className="size-16" />
+          </div>
+        </Section>
+
+        <Section title="Live Lot">
+          <div className="grid items-start gap-6 lg:grid-cols-[1.4fr_1fr]">
+            <LiveLot />
+            <LiveLot variant="mini" />
           </div>
         </Section>
 

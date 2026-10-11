@@ -41,6 +41,23 @@
   --asphalt-raised: #1a222d;
   --lane-paint: #e9eef5;
 
+  /* The Live Lot is an asphalt surface in both themes, so its palette is
+     fixed: painted lines, glowing status lamps, generic car bodies. */
+  --lot-asphalt: #141a23;
+  --lot-aisle: #1b222d;
+  --lot-line: #dbe3ee;
+  --lot-dash: #f2c94c;
+  --lot-text: #e6ebf2;
+  --lot-text-muted: #9aa7b8;
+  --lot-available: #4cc984;
+  --lot-reserved: #f2b13e;
+  --lot-ev: #38c6d4;
+  --lot-selected: #6ea0ff;
+  --lot-car-1: #56657c;
+  --lot-car-2: #6b7a90;
+  --lot-car-3: #45536a;
+  --lot-glass: #1f2835;
+
   /* Feedback */
   --danger: #c0362c;
   --danger-soft: #fbe6e3;
