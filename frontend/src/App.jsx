@@ -6,42 +6,48 @@ import { ConfirmProvider } from './components/kit/ConfirmDialog';
 import { TooltipProvider } from './components/ui/tooltip';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './components/theme/ThemeProvider';
+import { BayLoader } from './components/kit/Loaders';
 
+// Every screen is its own chunk, so the landing page doesn't download the
+// whole app before it can paint. React Router's v7_startTransition keeps the
+// current screen visible while the next one loads.
 // Pages
+// The landing page ships in the entry bundle: it is the first screen most
+// visitors see, so it should not wait for a second round trip.
 import LandingPage from './pages/LandingPage';
-import LoginPage from './pages/auth/LoginPage';
-import RegisterPage from './pages/auth/RegisterPage';
+const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'));
 
 // Customer Pages
-import CustomerLayout from './components/customer/CustomerLayout';
-import CustomerDashboard from './pages/customer/Dashboard';
-import NearbyMapPage from './pages/customer/NearbyMapPage';
-import BookingPage from './pages/customer/BookingPage';
-import MyBookings from './pages/customer/MyBookings';
-import VehiclesPage from './pages/customer/VehiclesPage';
-import ProfilePage from './pages/customer/ProfilePage';
+const CustomerLayout = lazy(() => import('./components/customer/CustomerLayout'));
+const CustomerDashboard = lazy(() => import('./pages/customer/Dashboard'));
+const NearbyMapPage = lazy(() => import('./pages/customer/NearbyMapPage'));
+const BookingPage = lazy(() => import('./pages/customer/BookingPage'));
+const MyBookings = lazy(() => import('./pages/customer/MyBookings'));
+const VehiclesPage = lazy(() => import('./pages/customer/VehiclesPage'));
+const ProfilePage = lazy(() => import('./pages/customer/ProfilePage'));
 
 // Admin Pages
-import AdminLayout from './components/admin/AdminLayout';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminSlots from './pages/admin/AdminSlots';
-import AdminBookings from './pages/admin/AdminBookings';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminVendors from './pages/admin/AdminVendors';
-import AdminVerifications from './pages/admin/AdminVerifications';
+const AdminLayout = lazy(() => import('./components/admin/AdminLayout'));
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminSlots = lazy(() => import('./pages/admin/AdminSlots'));
+const AdminBookings = lazy(() => import('./pages/admin/AdminBookings'));
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+const AdminVendors = lazy(() => import('./pages/admin/AdminVendors'));
+const AdminVerifications = lazy(() => import('./pages/admin/AdminVerifications'));
 
 // Vendor Pages
-import VendorLayout from './components/vendor/VendorLayout';
-import VendorDashboard from './pages/vendor/VendorDashboard';
-import VendorProfile from './pages/vendor/VendorProfile';
-import VendorApplication from './pages/vendor/VendorApplication';
-import VendorStatus from './pages/vendor/VendorStatus';
-import VendorPlaceholder from './pages/vendor/VendorPlaceholder';
-import ParkingLocations from './pages/vendor/ParkingLocations';
-import ParkingLocationEditor from './pages/vendor/ParkingLocationEditor';
-import VendorSlots from './pages/vendor/VendorSlots';
-import VendorBookings from './pages/vendor/VendorBookings';
-import VendorVerification from './pages/vendor/VendorVerification';
+const VendorLayout = lazy(() => import('./components/vendor/VendorLayout'));
+const VendorDashboard = lazy(() => import('./pages/vendor/VendorDashboard'));
+const VendorProfile = lazy(() => import('./pages/vendor/VendorProfile'));
+const VendorApplication = lazy(() => import('./pages/vendor/VendorApplication'));
+const VendorStatus = lazy(() => import('./pages/vendor/VendorStatus'));
+const VendorPlaceholder = lazy(() => import('./pages/vendor/VendorPlaceholder'));
+const ParkingLocations = lazy(() => import('./pages/vendor/ParkingLocations'));
+const ParkingLocationEditor = lazy(() => import('./pages/vendor/ParkingLocationEditor'));
+const VendorSlots = lazy(() => import('./pages/vendor/VendorSlots'));
+const VendorBookings = lazy(() => import('./pages/vendor/VendorBookings'));
+const VendorVerification = lazy(() => import('./pages/vendor/VendorVerification'));
 import { getDefaultRoute } from './utils/authRouting';
 
 // Dev-only style guide. import.meta.env.DEV is false in production builds, so
@@ -65,6 +71,7 @@ const AppRoutes = () => {
   const { user } = useAuth();
 
   return (
+    <Suspense fallback={<div className="grid min-h-screen place-items-center"><BayLoader /></div>}>
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={user ? <Navigate to={getDefaultRoute(user)} /> : <LoginPage />} />
@@ -110,6 +117,7 @@ const AppRoutes = () => {
 
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
+    </Suspense>
   );
 };
 
