@@ -194,3 +194,27 @@
     transparent 2px 7px
   );
 }
+
+/* Leaflet maps on redesigned pages: token-coloured markers, and the same
+   OpenStreetMap tiles tuned to the dark theme (attribution stays visible). */
+.ps-map-marker {
+  fill: var(--brand);
+  fill-opacity: 1;
+  stroke: var(--surface-raised);
+  stroke-width: 3;
+}
+.dark .ps-map .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6);
+}
+.ps-map .leaflet-container {
+  min-height: 0;
+  background: var(--surface-sunken);
+  font-family: var(--font-sans);
+}
+.ps-map .leaflet-control-attribution {
+  background: color-mix(in oklab, var(--surface-raised) 85%, transparent);
+  color: var(--text-muted);
+}
+.ps-map .leaflet-control-attribution a {
+  color: var(--brand-strong);
+}

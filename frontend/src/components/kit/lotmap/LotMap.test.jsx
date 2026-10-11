@@ -111,6 +111,12 @@ describe('Capacity mode', () => {
 });
 
 describe('Capacity timeline', () => {
+  test('does not call out a window when all are equal', () => {
+    const at = (h) => new Date(`2026-10-11T${String(h).padStart(2, '0')}:00:00`);
+    render(<CapacityTimeline windows={[10, 11].map((h) => ({ start: at(h), end: at(h + 2), available: 5, total: 5, isOpen: true }))} />);
+    expect(screen.queryByText('Most free')).toBeNull();
+  });
+
   test('starts at the next whole hour', () => {
     const starts = timelineStarts(new Date('2026-10-11T09:20:00'), 3);
     expect(starts.map((d) => d.getHours())).toEqual([10, 11, 12]);

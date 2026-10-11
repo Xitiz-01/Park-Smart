@@ -95,7 +95,8 @@ export function ArrivingCar({ containerRef, laneRef, targetRef, onArrived }) {
     const box = container.getBoundingClientRect();
     const laneBox = lane.getBoundingClientRect();
     const laneY = laneBox.top - box.top + laneBox.height / 2;
-    const startX = laneBox.left - box.left + 40;
+    // Enter from just outside the lane, past the parking sign.
+    const startX = laneBox.left - box.left - 12;
     const target = targetRef?.current?.getBoundingClientRect();
     if (target) {
       const x = target.left - box.left + target.width / 2;

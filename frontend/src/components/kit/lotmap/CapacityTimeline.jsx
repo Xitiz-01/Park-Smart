@@ -17,7 +17,9 @@ export default function CapacityTimeline({ windows = [], loading = false, select
   if (!windows.length) return null;
 
   const known = windows.filter((w) => !w.unknown && w.isOpen && w.total > 0);
-  const best = known.reduce((top, w) => (!top || w.available > top.available ? w : top), null);
+  const top = known.reduce((max, w) => (!max || w.available > max.available ? w : max), null);
+  // Only call out a window when it really is quieter than the rest.
+  const best = top && known.some((w) => w.available < top.available) ? top : null;
   const selected = selectedStart ? new Date(selectedStart).getTime() : null;
 
   return (
