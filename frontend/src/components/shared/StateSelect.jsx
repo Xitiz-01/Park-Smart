@@ -1,11 +1,12 @@
-import React from 'react';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { INDIAN_STATES } from '../../data/indianStates';
 
-export default function StateSelect({ value, onChange, required = true }) {
+// Extra props (id, aria-*) come from FormField and land on the <select>.
+export default function StateSelect({ value, onChange, required = true, ...props }) {
   return (
-    <select className="form-input" value={value || ''} onChange={(event) => onChange(event.target.value)} required={required}>
-      <option value="">Select state or union territory</option>
-      {INDIAN_STATES.map((state) => <option key={state} value={state}>{state}</option>)}
-    </select>
+    <NativeSelect className="w-full" value={value || ''} onChange={(event) => onChange(event.target.value)} required={required} {...props}>
+      <NativeSelectOption value="">Select state or union territory</NativeSelectOption>
+      {INDIAN_STATES.map((state) => <NativeSelectOption key={state} value={state}>{state}</NativeSelectOption>)}
+    </NativeSelect>
   );
 }

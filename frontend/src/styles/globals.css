@@ -257,3 +257,16 @@
   box-shadow: var(--shadow-overlay);
 }
 .ps-map .leaflet-popup-content { margin: 0.75rem 0.875rem; font-family: var(--font-sans); }
+
+/* Location editor: the draggable pin that marks the entrance. */
+.ps-drop-pin {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: 50% 50% 50% 0;
+  background: var(--brand);
+  border: 3px solid var(--surface-raised);
+  transform: rotate(-45deg);
+  box-shadow: var(--shadow-raised);
+  cursor: grab;
+}
