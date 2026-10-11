@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<!-- Source for frontend/public/og-image.png (1200x630). Rebuild with brand_assets.py. -->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  @font-face { font-family: "Bricolage"; font-weight: 200 800; src: url(../../../../frontend/node_modules/@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-opsz-normal.woff2) format("woff2-variations"); }
+  @font-face { font-family: "Geist"; font-weight: 100 900; src: url(../../../../frontend/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2) format("woff2-variations"); }
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+  body { position: relative; background: #121821; color: #e9eef5; font-family: "Geist", sans-serif; }
+  .copy { position: absolute; left: 72px; top: 72px; width: 520px; }
+  .brand { display: flex; align-items: center; gap: 16px; font-family: "Bricolage"; font-size: 34px; font-weight: 700; letter-spacing: -0.01em; }
+  .brand svg { width: 56px; height: 56px; }
+  h1 { margin: 108px 0 0; font-family: "Bricolage"; font-size: 76px; font-weight: 750; line-height: 0.98; letter-spacing: -0.035em; font-variation-settings: "opsz" 96; }
+  p { margin: 28px 0 0; max-width: 470px; color: #aab6c6; font-size: 25px; line-height: 1.4; }
+  .lot { position: absolute; right: 0; top: 0; width: 560px; height: 630px; }
+</style>
+</head>
+<body>
+  <div class="copy">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#0b55c2"/><path d="M11 25V7.5h5.25a5.5 5.5 0 0 1 0 11H11" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16.25" cy="13" r="1.9" fill="#f0be2c"/></svg>
+      ParkSmart
+    </div>
+    <h1>Parking, without the searching.</h1>
+    <p>See free spaces live, reserve one, and drive straight in.</p>
+  </div>
+
+  <svg class="lot" viewBox="0 0 560 630" aria-hidden="true">
+    <defs>
+      <g id="car"><rect x="-17" y="-34" width="34" height="68" rx="11" fill="#3a4658"/><rect x="-13" y="-18" width="26" height="22" rx="5" fill="#273141"/><rect x="-13" y="14" width="26" height="12" rx="4" fill="#273141"/></g>
+      <path id="bolt" d="M2 -11 L-6 2 H0 L-2 11 L6 -2 H0 Z" fill="currentColor"/>
+      <pattern id="hatch" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="9" fill="#5a687c" opacity=".55"/></pattern>
+    </defs>
+    <rect width="560" height="630" fill="#1a222d"/>
+    <!-- lane -->
+    <rect x="0" y="270" width="560" height="96" fill="#151c26"/>
+    <path d="M20 318 H540" stroke="#f2c94c" stroke-width="4" stroke-dasharray="26 18" opacity=".55"/>
+    <!-- bay lines: top row y 90..250, bottom row 386..546; bays 76 wide starting x 40 -->
+    <g stroke="#e9eef5" stroke-width="4" opacity=".8">
+      <path d="M40 90 V250 M116 90 V250 M192 90 V250 M268 90 V250 M344 90 V250 M420 90 V250 M496 90 V250"/>
+      <path d="M40 386 V546 M116 386 V546 M192 386 V546 M268 386 V546 M344 386 V546 M420 386 V546 M496 386 V546"/>
+    </g>
+    <!-- top row: occupied, free, EV, occupied, reserved, occupied -->
+    <use href="#car" transform="translate(78 170)"/>
+    <rect x="124" y="98" width="60" height="144" rx="8" fill="#4cc984" opacity=".14"/>
+    <rect x="200" y="98" width="60" height="144" rx="8" fill="#38c6d4" opacity=".16"/>
+    <use href="#bolt" transform="translate(230 170) scale(1.6)" style="color:#38c6d4"/>
+    <use href="#car" transform="translate(306 170)"/>
+    <rect x="352" y="98" width="60" height="144" rx="8" fill="none" stroke="#f2b13e" stroke-width="3" stroke-dasharray="8 6"/>
+    <use href="#car" transform="translate(458 170)"/>
+    <!-- bottom row: free, occupied, maintenance, free (target), EV, occupied -->
+    <rect x="48" y="394" width="60" height="144" rx="8" fill="#4cc984" opacity=".14"/>
+    <use href="#car" transform="translate(154 466)"/>
+    <rect x="200" y="394" width="60" height="144" rx="8" fill="url(#hatch)"/>
+    <rect x="276" y="394" width="60" height="144" rx="8" fill="#5e95f5" opacity=".18" stroke="#5e95f5" stroke-width="3"/>
+    <rect x="352" y="394" width="60" height="144" rx="8" fill="#38c6d4" opacity=".16"/>
+    <use href="#bolt" transform="translate(382 466) scale(1.6)" style="color:#38c6d4"/>
+    <use href="#car" transform="translate(458 466)"/>
+    <!-- route from the entrance into the target bay -->
+    <path d="M-10 334 H250 Q306 334 306 380 V430" fill="none" stroke="#f2c94c" stroke-width="6" stroke-linecap="round" stroke-dasharray="2 14"/>
+    <circle cx="306" cy="466" r="20" fill="#5e95f5"/>
+    <circle cx="306" cy="466" r="7" fill="#121821"/>
+  </svg>
+</body>
+</html>

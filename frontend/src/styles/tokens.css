@@ -1,0 +1,167 @@
+/*
+ * ParkSmart design tokens — "Wayfinding".
+ *
+ * Brand is parking-sign blue (the RAL 5017 traffic-blue family, deeper than a
+ * stock UI blue). Status uses traffic-light semantics and never the brand
+ * colour, so "available" always reads as available. Neutrals are cool,
+ * blue-tinted concrete greys. Road-paint yellow is for marks (lane dashes,
+ * highlights), never for text on light surfaces.
+ *
+ * Every text/background pair below meets WCAG 2.2 AA (4.5:1 for text, 3:1 for
+ * UI parts and focus rings) in both themes. Components use the semantic names
+ * through Tailwind (bg-surface-raised, text-slot-available, ...); no raw hex
+ * outside this file.
+ */
+
+:root {
+  /* Surfaces */
+  --surface: #f3f5f8;
+  --surface-raised: #ffffff;
+  --surface-sunken: #e8ecf1;
+  --border: #d3dae3;
+  --border-strong: #7d8899;
+
+  /* Text */
+  --text: #0d1828;
+  --text-muted: #4b586a;
+
+  /* Brand: parking-sign blue */
+  --brand: #0b55c2;
+  --brand-strong: #08439c;
+  --brand-soft: #e2ebfa;
+  --brand-foreground: #ffffff;
+
+  /* The logomark is a road sign: the same in both themes. */
+  --logo-tile: #0b55c2;
+  --logo-glyph: #ffffff;
+
+  /* Road paint and asphalt (hero and CTA backdrops in both themes) */
+  --road-yellow: #f0be2c;
+  --asphalt: #121821;
+  --asphalt-raised: #1a222d;
+  --lane-paint: #e9eef5;
+
+  /* The Live Lot is an asphalt surface in both themes, so its palette is
+     fixed: painted lines, glowing status lamps, generic car bodies. */
+  --lot-asphalt: #141a23;
+  --lot-aisle: #1b222d;
+  --lot-line: #dbe3ee;
+  --lot-dash: #f2c94c;
+  --lot-text: #e6ebf2;
+  --lot-text-muted: #9aa7b8;
+  --lot-available: #4cc984;
+  --lot-reserved: #f2b13e;
+  --lot-ev: #38c6d4;
+  --lot-selected: #6ea0ff;
+  --lot-car-1: #56657c;
+  --lot-car-2: #6b7a90;
+  --lot-car-3: #45536a;
+  --lot-glass: #1f2835;
+
+  /* Feedback */
+  --danger: #c0362c;
+  --danger-soft: #fbe6e3;
+
+  /* Slot states: text colour on its soft fill, plus the soft fill itself.
+     Selected is a brand ring, not a status colour. */
+  --slot-available: #0e7a42;
+  --slot-available-soft: #e1f3e8;
+  --slot-reserved: #9e5600;
+  --slot-reserved-soft: #fcefd6;
+  --slot-reserved-solid: #b97400;
+  --slot-occupied: #bf3329;
+  --slot-occupied-soft: #fbe6e3;
+  --slot-ev: #06707d;
+  --slot-ev-soft: #dcf2f4;
+  --slot-maintenance: #4f5d70;
+  --slot-maintenance-soft: #e7ebf0;
+  --slot-unavailable: #5f6b7b;
+  --slot-unavailable-soft: #edf0f4;
+  --slot-selected: var(--brand);
+
+  /* Charts: colour-blind-safe order; always paired with text labels. */
+  --chart-1: #0b55c2;
+  --chart-2: #c77700;
+  --chart-3: #06707d;
+  --chart-4: #7b4fc9;
+  --chart-5: #5f6b7b;
+
+  --shadow-color: 13 24 40;
+  --scrim: rgb(13 24 40 / 0.45);
+  --focus: var(--brand);
+
+  /* shadcn/ui names, mapped onto the tokens above */
+  --background: var(--surface);
+  --foreground: var(--text);
+  --card: var(--surface-raised);
+  --card-foreground: var(--text);
+  --popover: var(--surface-raised);
+  --popover-foreground: var(--text);
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-foreground);
+  --secondary: var(--surface-sunken);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface-sunken);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--brand-soft);
+  --accent-foreground: var(--brand-strong);
+  --destructive: var(--danger);
+  --input: var(--border-strong);
+  --ring: var(--focus);
+  --radius: 0.75rem;
+  --sidebar: var(--surface-raised);
+  --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--brand-foreground);
+  --sidebar-accent: var(--brand-soft);
+  --sidebar-accent-foreground: var(--brand-strong);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--focus);
+}
+
+/* Asphalt night: blue-black asphalt, status lights that glow. */
+.dark {
+  --surface: #0e131a;
+  --surface-raised: #151c26;
+  --surface-sunken: #0a0e14;
+  --border: #253041;
+  --border-strong: #5a687c;
+
+  --text: #e6ebf2;
+  --text-muted: #9aa7b8;
+
+  --brand: #5e95f5;
+  --brand-strong: #8db5fa;
+  --brand-soft: #16284a;
+  --brand-foreground: #06142e;
+
+  --road-yellow: #f2c94c;
+  --asphalt: #0a0e14;
+  --asphalt-raised: #121821;
+
+  --danger: #ff7b6e;
+  --danger-soft: #33171a;
+
+  --slot-available: #4cc984;
+  --slot-available-soft: #0f2a1d;
+  --slot-reserved: #f2b13e;
+  --slot-reserved-soft: #2e2210;
+  --slot-reserved-solid: #f2b13e;
+  --slot-occupied: #ff7b6e;
+  --slot-occupied-soft: #33171a;
+  --slot-ev: #38c6d4;
+  --slot-ev-soft: #0d2a30;
+  --slot-maintenance: #a2afc0;
+  --slot-maintenance-soft: #1c2430;
+  --slot-unavailable: #8794a6;
+  --slot-unavailable-soft: #171e28;
+
+  --chart-1: #5e95f5;
+  --chart-2: #f2a93b;
+  --chart-3: #38c6d4;
+  --chart-4: #b08cf0;
+  --chart-5: #8794a6;
+
+  --shadow-color: 0 0 0;
+  --scrim: rgb(0 0 0 / 0.62);
+}

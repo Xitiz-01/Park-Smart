@@ -12,6 +12,7 @@ const {
   suspendVendor,
 } = require('../controllers/adminController');
 const { protect, requirePermission } = require('../middleware/authMiddleware');
+const verification = require('../controllers/adminVerificationController');
 
 router.use(protect);
 
@@ -24,5 +25,9 @@ router.get('/vendors/:id', requirePermission('vendor:approve'), getVendorById);
 router.patch('/vendors/:id/approve', requirePermission('vendor:approve'), approveVendor);
 router.patch('/vendors/:id/reject', requirePermission('vendor:approve'), rejectVendor);
 router.patch('/vendors/:id/suspend', requirePermission('vendor:approve'), suspendVendor);
+router.get('/vendor-verifications', requirePermission('verification:review'), verification.listVerificationCases);
+router.get('/vendor-verifications/:vendorId', requirePermission('verification:review'), verification.getVerificationCase);
+router.patch('/vendor-verifications/:type/:id/:action', requirePermission('verification:review'), verification.reviewEvidence);
+router.get('/vendor-verifications/:type/:id/content', requirePermission('verification:review'), verification.readEvidence);
 
 module.exports = router;

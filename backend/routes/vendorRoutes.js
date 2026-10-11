@@ -22,6 +22,7 @@ router.get('/parking-locations', parking.getParkingLocations);
 router.post('/parking-locations', parking.createParkingLocation);
 router.get('/parking-locations/:id', parking.getParkingLocation);
 router.patch('/parking-locations/:id', parking.updateParkingLocation);
+router.post('/parking-locations/:id/publish', parking.publishParkingLocation);
 router.delete('/parking-locations/:id', parking.deactivateParkingLocation);
 router.get('/parking-locations/:id/slots', parking.getLocationSlots);
 router.post('/parking-locations/:id/slots', parking.createSlot);

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ParkSmart – Find and reserve parking</title>
+    <meta name="description" content="See live parking availability near you, reserve a space or an EV charging bay, and drive straight in." />
+    <meta name="theme-color" content="#f3f5f8" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ParkSmart" />
+    <meta property="og:title" content="ParkSmart – Find and reserve parking" />
+    <meta property="og:description" content="See live parking availability near you, reserve a space or an EV charging bay, and drive straight in." />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="ParkSmart logo over a top-down parking lot with free, reserved and EV bays." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <!-- Sets theme and surface before first paint. Mirrors src/lib/theme.js (kept in sync by theme.test.js). -->
+    <script>
+      (function () {
+        var redesigned = {"exact":["/","/login","/register"],"prefixes":["/_design"]};
+        var path = location.pathname;
+        var onRedesignedPath = redesigned.exact.indexOf(path) !== -1 || redesigned.prefixes.some(function (p) { return path === p || path.indexOf(p + '/') === 0; });
+        var root = document.documentElement;
+        root.setAttribute('data-surface', onRedesignedPath ? 'new' : 'legacy');
+        var preference = 'system';
+        try { preference = localStorage.getItem('parksmart-theme') || 'system'; } catch (e) {}
+        var dark = onRedesignedPath && (preference === 'dark' || (preference !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches));
+        if (dark) {
+          root.classList.add('dark');
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0e131a');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <script type="module" src="/src/index.jsx"></script>
+  </body>
+</html>

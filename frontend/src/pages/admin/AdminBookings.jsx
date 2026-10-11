@@ -1,0 +1,149 @@
+import React, { useEffect, useState } from 'react';
+import { bookingsAPI } from '../../services/api';
+import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { LogIn, LogOut, RefreshCw } from 'lucide-react';
+import { useConfirm } from '@/components/kit/ConfirmDialog';
+import StatusBadge from '../../components/ui/StatusBadge';
+
+const PAYMENT_METHOD_LABELS = {
+  card: 'Card',
+  upi: 'UPI',
+  netbanking: 'Net Banking',
+  wallet: 'Wallet',
+};
+
+export default function AdminBookings() {
+  const confirm = useConfirm();
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('');
+  const [acting, setActing] = useState(null);
+
+  const fetchBookings = () => {
+    setLoading(true);
+    const params = {};
+    if (filter) params.status = filter;
+    bookingsAPI.getAll(params)
+      .then(res => setBookings(res.data.bookings))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { fetchBookings(); }, [filter]);
+
+  const handleCheckIn = async (id) => {
+    setActing(id + 'in');
+    try {
+      await bookingsAPI.checkIn(id);
+      toast.success('Customer checked in');
+      fetchBookings();
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
+    finally { setActing(null); }
+  };
+
+  const handleCheckOut = async (id) => {
+    setActing(id + 'out');
+    try {
+      await bookingsAPI.checkOut(id);
+      toast.success('Customer checked out');
+      fetchBookings();
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
+    finally { setActing(null); }
+  };
+
+  const handleCancel = async (id) => {
+    if (!(await confirm({ title: 'Cancel this booking?', confirmLabel: 'Cancel booking', cancelLabel: 'Keep booking', tone: 'danger' }))) return;
+    try {
+      await bookingsAPI.cancel(id);
+      toast.success('Booking cancelled');
+      fetchBookings();
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
+  };
+
+  return (
+    <div className="fade-in">
+      <div className="page-header flex items-center justify-between" style={{ flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h1>Manage Bookings</h1>
+          <p>Check-in, check-out, and monitor all reservations</p>
+        </div>
+        <button onClick={fetchBookings} className="btn btn-outline"><RefreshCw size={15} /> Refresh</button>
+      </div>
+
+      {/* Filter tabs */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+        {['', 'upcoming', 'active', 'completed', 'cancelled'].map(s => (
+          <button className="filter-chip" key={s} onClick={() => setFilter(s)} style={{
+            padding: '7px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            background: filter === s ? 'var(--legacy-accent)' : 'var(--legacy-bg-card)',
+            color: filter === s ? '#fff' : 'var(--legacy-text-secondary)',
+            border: `1px solid ${filter === s ? 'var(--legacy-accent)' : 'var(--legacy-border)'}`,
+          }}>
+            {s === '' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="loading-spinner"><div className="spinner" /></div>
+      ) : (
+        <div className="card">
+          <div className="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Code</th><th>Customer</th><th>Slot</th><th>Vehicle</th><th>Start</th><th>Expected End</th><th>Amount</th><th>Payment</th><th>Status</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bookings.map(b => (
+                  <tr key={b._id}>
+                    <td style={{ fontFamily: 'var(--legacy-font-display)', fontSize: 12, color: 'var(--legacy-accent)' }}>#{b.bookingCode}</td>
+                    <td style={{ color: 'var(--legacy-text-primary)' }}>
+                      {b.user?.name}
+                      <br /><span style={{ fontSize: 12, color: 'var(--legacy-text-muted)' }}>{b.user?.phone}</span>
+                    </td>
+                    <td>{b.slot?.slotNumber || 'Capacity'}<br /><span style={{ fontSize: 12, color: 'var(--legacy-text-muted)' }}>{b.parkingLocation?.name || b.slot?.parkingLocation?.name || 'Legacy'}</span></td>
+                    <td style={{ fontFamily: 'var(--legacy-font-display)', fontSize: 13 }}>{b.vehicle?.licensePlate}</td>
+                    <td style={{ fontSize: 13 }}>{format(new Date(b.startTime), 'dd MMM, hh:mm a')}</td>
+                    <td style={{ fontSize: 13 }}>{format(new Date(b.expectedEndTime), 'dd MMM, hh:mm a')}</td>
+                    <td style={{ color: 'var(--legacy-accent)', fontWeight: 600 }}>₹{b.totalAmount}</td>
+                    <td>
+                      <StatusBadge status={b.paymentStatus || 'pending'} />
+                      <div style={{ marginTop: 6, fontSize: 12, color: 'var(--legacy-text-muted)' }}>
+                        {PAYMENT_METHOD_LABELS[b.paymentMethod] || 'N/A'}
+                      </div>
+                    </td>
+                    <td><StatusBadge status={b.status} /></td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {b.status === 'upcoming' && (
+                          <button onClick={() => handleCheckIn(b._id)} disabled={acting === b._id + 'in'}
+                            className="btn btn-primary btn-sm" title="Check In">
+                            <LogIn size={13} /> {acting === b._id + 'in' ? '...' : 'In'}
+                          </button>
+                        )}
+                        {b.status === 'active' && (
+                          <button onClick={() => handleCheckOut(b._id)} disabled={acting === b._id + 'out'}
+                            className="btn btn-outline btn-sm" title="Check Out">
+                            <LogOut size={13} /> {acting === b._id + 'out' ? '...' : 'Out'}
+                          </button>
+                        )}
+                        {(b.status === 'upcoming' || b.status === 'active') && (
+                          <button onClick={() => handleCancel(b._id)} className="btn btn-danger btn-sm">✕</button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {bookings.length === 0 && (
+              <div className="empty-state"><p>No bookings found.</p></div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

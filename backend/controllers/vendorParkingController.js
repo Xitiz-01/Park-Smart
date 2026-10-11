@@ -5,6 +5,7 @@ const Booking = require('../models/Booking');
 const { checkInRecord, checkOutRecord } = require('./bookingController');
 const { validateParkingLocation, VEHICLE_TYPES } = require('../validators/parkingLocationValidator');
 const { getAvailability, parseWindow } = require('../services/parkingAvailabilityService');
+const { canPublishLocation, audit } = require('../services/verificationService');
 
 const isId = (value) => mongoose.isValidObjectId(value);
 
@@ -100,6 +101,31 @@ const deactivateParkingLocation = async (req, res) => {
     res.json({ success: true, message: 'Parking location deactivated', location });
   } catch {
     res.status(500).json({ success: false, message: 'Unable to deactivate parking location' });
+  }
+};
+
+const publishParkingLocation = async (req, res) => {
+  try {
+    const location = await findOwnedLocation(req.params.id, req.vendorProfile._id);
+    if (!location) return res.status(404).json({ success: false, message: 'Parking location not found' });
+    const eligibility = await canPublishLocation(req.vendorProfile._id, location._id);
+    if (!eligibility.allowed) {
+      return res.status(409).json({
+        success: false,
+        code: 'VERIFICATION_REQUIRED',
+        message: eligibility.verificationStatus !== 'VERIFIED'
+          ? 'Complete vendor identity, business, and bank verification before publishing'
+          : 'This parking location needs an approved authorization document before publishing',
+        eligibility,
+      });
+    }
+    location.status = 'active';
+    location.publishedAt = new Date();
+    await location.save();
+    await audit({ vendor: req.vendorProfile._id, action: 'LOCATION_PUBLISHED', previousStatus: 'draft', newStatus: 'active', provider: 'MANUAL', note: `Parking location ${location._id} published` });
+    return res.json({ success: true, message: 'Parking location published', location });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Unable to publish parking location' });
   }
 };
 
@@ -282,5 +308,5 @@ const checkOutVendorBooking = async (req, res) => {
 module.exports = {
   getParkingLocations, getParkingLocation, createParkingLocation, updateParkingLocation,
   deactivateParkingLocation, getLocationSlots, createSlot, bulkCreateSlots, updateSlot, getVendorBookings,
-  checkInVendorBooking, checkOutVendorBooking,
+  checkInVendorBooking, checkOutVendorBooking, publishParkingLocation,
 };

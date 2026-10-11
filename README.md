@@ -37,10 +37,21 @@ Backend runs on: http://localhost:5000
 cd frontend
 cp .env.example .env        # create your .env file
 npm install
-npm start
+npm run dev                 # Vite dev server (npm start is an alias)
 ```
 
 Frontend runs on: http://localhost:3000
+
+The frontend is built with Vite and tested with Vitest. Requires Node 20.19 or newer.
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Dev server on port 3000. Proxies `/api` and `/socket.io` to `http://localhost:5001` (override with `DEV_PROXY_TARGET`). |
+| `npm run build` | Production build into `frontend/build/`. |
+| `npm run preview` | Serves the production build locally. |
+| `npm test` | Runs the test suite once (`npm run test:watch` for watch mode). |
+
+> **Port 5001 on macOS.** macOS 12+ uses port 5000 for AirPlay Receiver, so run the backend with `PORT=5001` in `backend/.env`. The frontend examples and the dev proxy assume 5001.
 
 ---
 
@@ -63,13 +74,27 @@ EXTERNAL_PARKING_CACHE_TTL_MS=120000
 GEOCODING_PROVIDER=geoapify
 GEOCODING_API_KEY=your_geoapify_api_key
 API_NINJAS_API_KEY=
+VERIFICATION_STORAGE_PROVIDER=local
+DIGILOCKER_ENABLED=false
+DIGILOCKER_CLIENT_ID=
+DIGILOCKER_CLIENT_SECRET=
+DIGILOCKER_REDIRECT_URI=https://api.parksmart.live/api/vendor-verification/digilocker/callback
+DIGILOCKER_AUTHORIZATION_URL=
+DIGILOCKER_TOKEN_URL=
+DIGILOCKER_DOCUMENTS_URL=
+CASHFREE_VERIFY_ENABLED=false
+CASHFREE_CLIENT_ID=
+CASHFREE_CLIENT_SECRET=
+CASHFREE_VERIFY_BASE_URL=https://sandbox.cashfree.com/verification
 ```
 
 **frontend/.env**
 ```
-REACT_APP_API_URL=http://localhost:5000/api
-REACT_APP_AUTH_URL=http://localhost:5000
+REACT_APP_API_URL=http://localhost:5001/api
+REACT_APP_AUTH_URL=http://localhost:5001
 ```
+
+The `REACT_APP_` prefix is kept after the move to Vite (`envPrefix` in `vite.config.js`), so existing Vercel settings keep working. All three backend URLs (API, auth, Socket.IO) are read in `frontend/src/lib/env.js`; an optional `REACT_APP_SOCKET_URL` overrides the socket origin.
 
 Generate independent backend secrets with `openssl rand -base64 32`. `BETTER_AUTH_SECRET` signs/encrypts authentication state. `ADDRESS_SELECTION_SECRET` signs Geoapify selections and is not an authentication token secret.
 
@@ -131,7 +156,7 @@ For local development, use the example values above and keep `BETTER_AUTH_CROSS_
 
 On Render, set `MONGODB_URI`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL=https://<render-service>`, `CLIENT_URL=https://<vercel-site>`, `BETTER_AUTH_TRUSTED_ORIGINS=https://<vercel-site>`, the optional bootstrap ID, `ADDRESS_SELECTION_SECRET`, and the Geoapify variables. Use `BETTER_AUTH_MONGO_TRANSACTIONS=true` only for a Mongo deployment that supports transactions. Never place backend secrets in Vercel or in `REACT_APP_*` variables.
 
-On Vercel, set `REACT_APP_API_URL=https://<render-service>/api` and `REACT_APP_AUTH_URL=https://<render-service>`, then redeploy because React embeds these values at build time. The frontend sends credentials for both Axios and Socket.IO.
+On Vercel, set `REACT_APP_API_URL=https://<render-service>/api` and `REACT_APP_AUTH_URL=https://<render-service>`, then redeploy because Vite embeds these values at build time. `frontend/vercel.json` sets the Vite framework preset, the `build` output directory and the SPA rewrite to `/index.html`. The frontend sends credentials for both Axios and Socket.IO.
 
 Raw `*.vercel.app` → `*.onrender.com` traffic is cross-site. If those hostnames are used directly, set `BETTER_AUTH_CROSS_SITE_COOKIES=true` on Render so cookies are `Secure; SameSite=None`; note that browser third-party-cookie policies, especially Safari, can still block this setup. The production-safe recommendation is to configure custom sibling domains such as `app.example.com` and `api.example.com` (and list the app origin as trusted), or proxy `/api` through the frontend domain. Keep the default same-site cookie mode when using sibling/proxied domains.
 
@@ -139,7 +164,7 @@ Raw `*.vercel.app` → `*.onrender.com` traffic is cross-site. If those hostname
 
 GitHub Actions is the quality gate for ParkSmart. The `CI` workflow runs whenever a pull request targets `main`, whenever `main` is pushed, and when it is started manually from the Actions tab.
 
-- `frontend-ci` installs the locked frontend dependencies, runs the React test command, and creates a production build.
+- `frontend-ci` installs the locked frontend dependencies, runs the Vitest suite, and creates a production build.
 - `backend-ci` installs the locked backend dependencies and runs the integration suite against an isolated MongoDB service. It never connects to the production database.
 - No GitHub Actions secrets are required by the current CI workflow. Tests use harmless local values, and Geoapify requests are mocked by the integration suite.
 - Vercel remains responsible for frontend preview and production deployments.
@@ -279,6 +304,20 @@ For broader production coverage, provision an API Ninjas plan permitted for the 
 API_NINJAS_API_KEY=your_backend_only_key
 ```
 
+## Vendor verification and trust onboarding (Phase 5A)
+
+Vendor application approval and vendor trust verification are separate. Once an application is approved, the vendor can submit identity, business, and payout-readiness evidence. `VendorVerification` holds normalized aggregate states, `VerificationDocument` holds evidence metadata, `ParkingAuthorization` holds evidence for one parking location, and `VerificationAudit` records status changes without document contents. States are `NOT_STARTED`, `PENDING`, `UNDER_REVIEW`, `VERIFIED`, `REJECTED`, and `RESUBMISSION_REQUIRED`.
+
+`VerificationService` is the provider-independent boundary. Manual review is always available. Cashfree Secure ID is optional and currently uses only its documented synchronous PAN and GSTIN verification APIs. DigiLocker is an optional Requester adapter with a short-lived, hashed, single-use OAuth state, an HttpOnly callback cookie, server-side code exchange, and normalized metadata retrieval. DigiLocker production verification works only when valid requester credentials have been approved and every DigiLocker endpoint variable has been configured. ParkSmart never simulates a successful provider response. The production callback is `https://api.parksmart.live/api/vendor-verification/digilocker/callback`; the result returns to `/vendor/verification`.
+
+Manual files accept signature-validated PDF, JPEG, or PNG content up to 5 MB. Files live behind `StorageService`, not in MongoDB or a public directory. MongoDB stores a random private key plus safe name, MIME, and size metadata. The local provider writes mode-0600 files and is suitable for local/single-instance development. Before horizontally scaling production, add a private S3-compatible adapter or mount durable private storage. Admin downloads are permission checked and sent with no-store, nosniff, sandbox, and attachment headers. Virus scanning is not currently available; the storage boundary is intentionally extensible so scanning/quarantine can be added before high-volume production use.
+
+The UI records explicit consent before every manual or external request. ParkSmart stores the provider, source, timestamp, purpose, and scope. Provider tokens, raw identifiers, banking secrets, and document bodies are never placed in browser storage or audit entries. Cashfree identifiers are sent directly from the backend and only a masked value plus useful provider reference/metadata is persisted. Aadhaar is not required or supported.
+
+New parking locations begin as drafts. A vendor can edit a draft, but publishing requires both overall vendor status `VERIFIED` and a `VERIFIED` authorization for that exact location. Existing records already marked `active` remain active and therefore do not disappear during deployment; the gate is enforced when a new draft is published. Payout readiness is exposed as `payoutEligible = overallStatus === VERIFIED && bankStatus === VERIFIED`; Phase 5A does not create payouts or settlements.
+
+Provider and storage settings belong only on the backend. Leave both provider feature flags `false` in CI and local environments without credentials; provider calls are mocked in tests. `VERIFICATION_STORAGE_LOCAL_PATH` is optional and defaults to the ignored `backend/private-verification-storage` directory. Cashfree production use must also change its base URL as required by the provisioned account. Never put any of these secrets in `REACT_APP_*` variables.
+
 Do not use a `REACT_APP_*` catalog key. Neither selected provider guarantees a complete worldwide or Indian catalog, so the supplement still needs reviewed maintenance and the UI must continue to tolerate empty year/body/fuel metadata.
 
 The customer EV booking page uses real `ParkingSlot` records in an accessible visual board. Effective states are `available`, `selected`, `reserved`, `occupied`, `maintenance`, and `unavailable`; every state has a textual label and is not communicated by color alone. The selected bay panel shows charger, connector, requested time, rate, and estimate. The backend rechecks location ownership, EV compatibility, operational state, interval conflicts, and the atomic reservation ledger when booking. A stale selection is rejected and the board refreshes.
@@ -302,13 +341,16 @@ parking-system/
 │   ├── server.js
 │   └── .env
 └── frontend/
-    ├── public/index.html
+    ├── index.html
+    ├── vite.config.js
+    ├── vercel.json
     ├── src/
     │   ├── components/
-    │   ├── context/AuthContext.js
+    │   ├── context/AuthContext.jsx
+    │   ├── lib/env.js
     │   ├── pages/
     │   ├── services/api.js
-    │   ├── App.js
+    │   ├── App.jsx
     │   └── index.css
     └── .env
 ```
