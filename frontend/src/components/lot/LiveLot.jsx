@@ -189,7 +189,7 @@ export default function LiveLot({ variant = 'hero', beat: controlledBeat, classN
   const description = `Illustration of a parking lot with ${lot.total} bays. A driver finds a free bay, follows the route to bay ${lot.target} and reserves it, then parks; elsewhere bay ${LEAVING_BAY} frees up. ${lot.free} of ${lot.total} bays are free.`;
 
   return (
-    <figure ref={rootRef} className={cn('relative isolate overflow-hidden rounded-2xl bg-lot-asphalt text-lot-text shadow-overlay ring-1 ring-black/5', className)}>
+    <figure ref={rootRef} className={cn('relative isolate overflow-hidden rounded-2xl bg-lot-asphalt text-lot-text shadow-overlay ring-1 ring-black/5 dark:ring-white/10', className)}>
       {variant !== 'mini' && (
         <div className="flex items-center justify-between gap-3 px-4 pt-4 sm:px-5">
           <p className="font-display text-lg font-semibold sm:text-xl">
