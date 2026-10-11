@@ -11,7 +11,8 @@ import { cn } from '@/lib/utils';
 //   </FormField>
 export default function FormField({ label, description, error, required = false, className, children }) {
   const id = useId();
-  const descriptionId = description ? `${id}-description` : undefined;
+  // The hint gives way to the error, so only reference what is on screen.
+  const descriptionId = description && !error ? `${id}-description` : undefined;
   const errorId = error ? `${id}-error` : undefined;
   const describedBy = [descriptionId, errorId].filter(Boolean).join(' ') || undefined;
 
@@ -23,7 +24,7 @@ export default function FormField({ label, description, error, required = false,
       <Slot.Root id={id} aria-describedby={describedBy} aria-invalid={Boolean(error) || undefined} required={required || undefined}>
         {children}
       </Slot.Root>
-      {description && !error && <p id={descriptionId} className="text-sm text-text-muted">{description}</p>}
+      {descriptionId && <p id={descriptionId} className="text-sm text-text-muted">{description}</p>}
       {error && <p id={errorId} className="text-sm text-danger">{error}</p>}
     </div>
   );

@@ -1,48 +1,61 @@
-import React, { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import AuthShell from '../../components/auth/AuthShell';
 import { useAuth } from '../../context/AuthContext';
 import { getDefaultRoute } from '../../utils/authRouting';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
+import FormField from '@/components/kit/FormField';
+import PasswordInput from '@/components/kit/PasswordInput';
 
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const errorRef = useRef(null);
   const handleChange = (event) => setForm({ ...form, [event.target.name]: event.target.value });
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setLoading(true);
+    setError('');
     try {
       const user = await login(form);
       toast.success(`Welcome back, ${user.name}!`);
       navigate(getDefaultRoute(user));
-    } catch (error) {
-      toast.error(error.message || 'Login failed');
+    } catch (err) {
+      setError(err.message || 'Sign-in failed. Check your email and password and try again.');
+      requestAnimationFrame(() => errorRef.current?.focus());
     } finally { setLoading(false); }
   };
 
   return (
     <AuthShell
-      eyebrow="Welcome back"
-      title="Sign in to ParkSmart"
-      description="Pick up where you left off and get moving."
-      footer={<p className="auth-switch">New to ParkSmart? <Link to="/register">Create an account</Link></p>}
+      title="Sign in"
+      description="Pick up where you left off."
+      footer={<p>New to ParkSmart? <Link to="/register" className="font-medium text-brand underline-offset-4 hover:underline">Create an account</Link></p>}
     >
-      <form onSubmit={handleSubmit} className="auth-form">
-        <div className="form-group">
-          <label className="form-label" htmlFor="email">Email address</label>
-          <div className="input-with-icon"><Mail size={17} /><input id="email" name="email" type="email" className="form-input" placeholder="you@example.com" value={form.email} onChange={handleChange} autoComplete="email" required /></div>
-        </div>
-        <div className="form-group">
-          <label className="form-label" htmlFor="password">Password</label>
-          <div className="input-with-icon input-with-action"><LockKeyhole size={17} /><input id="password" name="password" type={showPassword ? 'text' : 'password'} className="form-input" placeholder="Enter your password" value={form.password} onChange={handleChange} autoComplete="current-password" required /><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button></div>
-        </div>
-        <button type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading}>{loading ? <><span className="button-spinner" /> Signing in…</> : <>Sign in <span aria-hidden="true">→</span></>}</button>
+      <form onSubmit={handleSubmit} className="grid gap-5">
+        <FormField label="Email address">
+          <Input name="email" type="email" placeholder="you@example.com" value={form.email} onChange={handleChange} autoComplete="email" spellCheck={false} required />
+        </FormField>
+        <FormField label="Password">
+          <PasswordInput name="password" placeholder="Your password" value={form.password} onChange={handleChange} autoComplete="current-password" required />
+        </FormField>
+        {error && (
+          <div ref={errorRef} tabIndex={-1} role="alert" className="flex gap-2 rounded-lg border border-danger/30 bg-danger-soft px-3 py-2.5 text-sm text-danger outline-none">
+            <AlertCircle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+        <Button type="submit" size="lg" className="w-full" disabled={loading}>
+          {loading ? <><Spinner data-icon="inline-start" />Signing in…</> : 'Sign in'}
+        </Button>
       </form>
     </AuthShell>
   );

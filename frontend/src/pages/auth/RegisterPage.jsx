@@ -1,49 +1,91 @@
-import React, { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, LockKeyhole, Mail, Phone, UserRound } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import AuthShell from '../../components/auth/AuthShell';
 import { useAuth } from '../../context/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
+import FormField from '@/components/kit/FormField';
+import PasswordInput from '@/components/kit/PasswordInput';
+
+// Same rules as before (passwords match, at least 8 characters), now shown
+// next to the field instead of in a toast.
+export function validateRegistration(form) {
+  const errors = {};
+  if (form.password.length < 8) errors.password = 'Use at least 8 characters.';
+  if (form.confirmPassword !== form.password) errors.confirmPassword = 'Passwords don’t match. Re-enter the same password.';
+  return errors;
+}
 
 export default function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
+  const formRef = useRef(null);
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
-  const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
-  const handleChange = (event) => setForm({ ...form, [event.target.name]: event.target.value });
+  const handleChange = (event) => {
+    setForm({ ...form, [event.target.name]: event.target.value });
+    if (errors[event.target.name]) setErrors({ ...errors, [event.target.name]: undefined });
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (form.password !== form.confirmPassword) return toast.error('Passwords do not match');
-    if (form.password.length < 8) return toast.error('Password must be at least 8 characters');
+    setServerError('');
+    const found = validateRegistration(form);
+    setErrors(found);
+    const firstInvalid = ['password', 'confirmPassword'].find((name) => found[name]);
+    if (firstInvalid) {
+      requestAnimationFrame(() => formRef.current?.elements.namedItem(firstInvalid)?.focus());
+      return;
+    }
     setLoading(true);
     try {
       const { confirmPassword, ...data } = form;
       await register(data);
-      toast.success('Account created! Welcome to ParkSmart.');
+      toast.success('Account created. Welcome to ParkSmart.');
       navigate('/dashboard');
     } catch (error) {
-      toast.error(error.message || 'Registration failed');
+      setServerError(error.message || 'Your account wasn’t created. Check your details and try again.');
     } finally { setLoading(false); }
   };
 
   return (
     <AuthShell
-      eyebrow="Get started"
       title="Create your account"
-      description="Your simpler parking routine starts here."
-      footer={<p className="auth-switch">Already have an account? <Link to="/login">Sign in</Link></p>}
+      description="Free to sign up. Find and reserve parking in a few taps."
+      footer={<p>Already have an account? <Link to="/login" className="font-medium text-brand underline-offset-4 hover:underline">Sign in</Link></p>}
     >
-      <form onSubmit={handleSubmit} className="auth-form">
-        <div className="form-group"><label className="form-label" htmlFor="name">Full name</label><div className="input-with-icon"><UserRound size={17} /><input id="name" name="name" className="form-input" placeholder="Your full name" value={form.name} onChange={handleChange} autoComplete="name" required /></div></div>
-        <div className="auth-field-row">
-          <div className="form-group"><label className="form-label" htmlFor="email">Email address</label><div className="input-with-icon"><Mail size={17} /><input id="email" name="email" type="email" className="form-input" placeholder="you@example.com" value={form.email} onChange={handleChange} autoComplete="email" required /></div></div>
-          <div className="form-group"><label className="form-label" htmlFor="phone">Phone number</label><div className="input-with-icon"><Phone size={17} /><input id="phone" name="phone" type="tel" className="form-input" placeholder="+91 98765 43210" value={form.phone} onChange={handleChange} autoComplete="tel" required /></div></div>
+      <form ref={formRef} onSubmit={handleSubmit} className="grid gap-5">
+        <FormField label="Full name">
+          <Input name="name" placeholder="Your full name" value={form.name} onChange={handleChange} autoComplete="name" required />
+        </FormField>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <FormField label="Email address">
+            <Input name="email" type="email" placeholder="you@example.com" value={form.email} onChange={handleChange} autoComplete="email" spellCheck={false} required />
+          </FormField>
+          <FormField label="Phone number">
+            <Input name="phone" type="tel" inputMode="tel" placeholder="+91 98765 43210" value={form.phone} onChange={handleChange} autoComplete="tel" required />
+          </FormField>
         </div>
-        <div className="form-group"><label className="form-label" htmlFor="password">Password</label><div className="input-with-icon input-with-action"><LockKeyhole size={17} /><input id="password" name="password" type={showPassword ? 'text' : 'password'} className="form-input" placeholder="At least 8 characters" value={form.password} onChange={handleChange} autoComplete="new-password" minLength="8" required /><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button></div></div>
-        <div className="form-group"><label className="form-label" htmlFor="confirmPassword">Confirm password</label><div className="input-with-icon"><LockKeyhole size={17} /><input id="confirmPassword" name="confirmPassword" type="password" className="form-input" placeholder="Re-enter your password" value={form.confirmPassword} onChange={handleChange} autoComplete="new-password" required /></div></div>
-        <button type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading}>{loading ? <><span className="button-spinner" /> Creating account…</> : <>Create account <span aria-hidden="true">→</span></>}</button>
+        <FormField label="Password" description="At least 8 characters." error={errors.password}>
+          <PasswordInput name="password" value={form.password} onChange={handleChange} autoComplete="new-password" required />
+        </FormField>
+        <FormField label="Confirm password" error={errors.confirmPassword}>
+          <PasswordInput name="confirmPassword" value={form.confirmPassword} onChange={handleChange} autoComplete="new-password" required />
+        </FormField>
+        {serverError && (
+          <div role="alert" className="flex gap-2 rounded-lg border border-danger/30 bg-danger-soft px-3 py-2.5 text-sm text-danger">
+            <AlertCircle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+            <span>{serverError}</span>
+          </div>
+        )}
+        <Button type="submit" size="lg" className="w-full" disabled={loading}>
+          {loading ? <><Spinner data-icon="inline-start" />Creating account…</> : 'Create account'}
+        </Button>
       </form>
     </AuthShell>
   );

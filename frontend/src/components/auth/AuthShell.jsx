@@ -1,48 +1,39 @@
-import React from 'react';
-import { ArrowLeft, CheckCircle2, MapPinned, ShieldCheck, Sparkles } from 'lucide-react';
+import { Suspense, lazy } from 'react';
 import { Link } from 'react-router-dom';
-import Brand from '../ui/Brand';
+import Brand from '@/components/kit/Brand';
+import ThemeToggle from '@/components/kit/ThemeToggle';
 
-const benefits = [
-  'Live availability before you arrive',
-  'Fast, secure parking reservations',
-  'One place for vehicles and bookings',
-];
+const LiveLot = lazy(() => import('@/components/lot/LiveLot'));
 
-export default function AuthShell({ eyebrow, title, description, children, footer }) {
+// Sign-in and sign-up frame: the form on concrete, and on large screens an
+// asphalt panel with the mini Live Lot showing what the account is for.
+export default function AuthShell({ title, description, children, footer }) {
   return (
-    <main className="auth-page">
-      <section className="auth-story" aria-label="ParkSmart overview">
-        <Link to="/" className="auth-brand"><Brand /></Link>
-        <div className="auth-story-copy">
-          <span className="eyebrow"><Sparkles size={14} /> Smarter city parking</span>
-          <h1>Spend less time circling.<br /><span>Start moving.</span></h1>
-          <p>ParkSmart connects drivers with live parking inventory and gives operators one calm place to manage it.</p>
-          <ul>
-            {benefits.map((benefit) => <li key={benefit}><CheckCircle2 size={17} />{benefit}</li>)}
-          </ul>
+    <div className="grid min-h-screen bg-background text-foreground lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+      <main className="flex flex-col px-4 py-6 sm:px-10 lg:px-16">
+        <div className="flex items-center justify-between">
+          <Link to="/" aria-label="ParkSmart home" className="rounded-md"><Brand /></Link>
+          <ThemeToggle />
         </div>
-        <div className="auth-route-art" aria-hidden="true">
-          <div className="auth-route-line" />
-          <span className="auth-pin auth-pin-start"><MapPinned size={18} /></span>
-          <span className="auth-pin auth-pin-end"><ShieldCheck size={18} /></span>
+        <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-12">
+          <h1 className="font-display text-display-lg font-semibold text-balance">{title}</h1>
+          {description && <p className="mt-2 text-text-muted">{description}</p>}
+          <div className="mt-8">{children}</div>
+          {footer && <div className="mt-8 text-sm text-text-muted">{footer}</div>}
         </div>
-        <p className="auth-trust"><ShieldCheck size={15} /> Your account is protected with secure authentication.</p>
-      </section>
+      </main>
 
-      <section className="auth-form-panel">
-        <div className="auth-mobile-brand"><Link to="/"><Brand /></Link></div>
-        <div className="auth-card fade-in">
-          <Link to="/" className="auth-back"><ArrowLeft size={15} /> Back to home</Link>
-          <header>
-            <span className="page-eyebrow">{eyebrow}</span>
-            <h2>{title}</h2>
-            <p>{description}</p>
-          </header>
-          {children}
-          {footer}
+      <aside aria-label="What ParkSmart does" className="relative hidden overflow-hidden bg-lot-asphalt text-lot-text lg:flex lg:flex-col lg:justify-center lg:px-14">
+        <p className="max-w-md font-display text-display-md font-semibold text-balance">
+          See the free bays before you arrive, and drive straight into yours.
+        </p>
+        <div className="mt-10 w-full max-w-xl">
+          <Suspense fallback={<div className="aspect-[512/468] rounded-2xl bg-lot-aisle" />}>
+            <LiveLot variant="mini" className="shadow-none ring-white/10" />
+          </Suspense>
+          <p className="mt-3 text-xs text-lot-text-muted">Illustrative</p>
         </div>
-      </section>
-    </main>
+      </aside>
+    </div>
   );
 }

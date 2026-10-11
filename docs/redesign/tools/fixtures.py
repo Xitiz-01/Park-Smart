@@ -449,7 +449,7 @@ def cmd_smoke(args):
             cdp('Page.navigate', url=APP + '/login'); time.sleep(args.settle)
             # Typed through CDP so React sees real input events; the password never reaches stdout.
             for field, value in (('email', email_for(role)), ('password', runtime_secrets()['password'])):
-                js(f'document.getElementById({json.dumps(field)}).focus()')
+                js(f'document.querySelector(\'input[name={json.dumps(field)}]\').focus()')
                 cdp('Input.insertText', text=value)
             js("document.querySelector('form button[type=submit]').click()")
             deadline = time.time() + 15

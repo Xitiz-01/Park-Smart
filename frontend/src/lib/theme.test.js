@@ -47,7 +47,8 @@ test('only redesigned routes get the new surface and dark mode', () => {
   expect(isRedesignedPath('/_designer')).toBe(false);
   expect(isRedesignedPath('/dashboard')).toBe(false);
   expect(isRedesignedPath('/')).toBe(true);
-  expect(isRedesignedPath('/login')).toBe(false);
+  expect(isRedesignedPath('/login')).toBe(true);
+  expect(isRedesignedPath('/register')).toBe(true);
 });
 
 test('the pre-paint script in index.html mirrors src/lib/theme.js', () => {
