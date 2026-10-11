@@ -22,7 +22,7 @@
     <!-- Sets theme and surface before first paint. Mirrors src/lib/theme.js (kept in sync by theme.test.js). -->
     <script>
       (function () {
-        var redesigned = {"exact":["/","/login","/register"],"prefixes":["/_design"],"excluded":[]};
+        var redesigned = {"exact":["/","/login","/register","/dashboard","/dashboard/profile"],"prefixes":["/_design"],"excluded":[]};
         var path = location.pathname;
         var under = function (p) { return path === p || path.indexOf(p + '/') === 0; };
         var onRedesignedPath = !redesigned.excluded.some(under) && (redesigned.exact.indexOf(path) !== -1 || redesigned.prefixes.some(under));
