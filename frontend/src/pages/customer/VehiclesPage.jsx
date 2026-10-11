@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { vehicleCatalogAPI, vehiclesAPI } from '../../services/api';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { Truck, Plus, Trash2, Star, Pencil } from 'lucide-react';
 import SearchableSelect from '../../components/shared/SearchableSelect';
 import {
@@ -10,6 +10,7 @@ import {
   vehicleClassificationLabel,
   vehicleFormPayload,
 } from '../../utils/hybridParking';
+import { useConfirm } from '@/components/kit/ConfirmDialog';
 
 const VEHICLE_TYPES = ['car', 'motorcycle'];
 const BODY_STYLES = ['hatchback', 'sedan', 'suv', 'crossover', 'coupe', 'wagon', 'convertible', 'pickup', 'van', 'mpv', 'other'];
@@ -23,6 +24,7 @@ const emptyForm = {
 const titleCase = (value) => value.replace(/(^|\s)\S/g, (letter) => letter.toUpperCase());
 
 export default function VehiclesPage() {
+  const confirm = useConfirm();
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -146,7 +148,7 @@ export default function VehiclesPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Remove this vehicle?')) return;
+    if (!(await confirm({ title: 'Remove this vehicle?', confirmLabel: 'Remove vehicle', cancelLabel: 'Keep vehicle', tone: 'danger' }))) return;
     try {
       await vehiclesAPI.delete(id); toast.success('Vehicle removed'); fetchVehicles();
     } catch (error) { toast.error(error.response?.data?.message || 'Failed to remove'); }

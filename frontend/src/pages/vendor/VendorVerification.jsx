@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FileCheck2, Landmark, ShieldCheck, Upload, WalletCards } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { verificationAPI, vendorsAPI } from '../../services/api';
 

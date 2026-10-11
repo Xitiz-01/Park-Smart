@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { authAPI } from '../../services/api';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { User, Lock } from 'lucide-react';
 import { authClient } from '../../lib/authClient';
 

@@ -1,7 +1,6 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { LazyMotion, MotionConfig } from 'motion/react';
-import { Toaster as LegacyToaster } from 'react-hot-toast';
 import { Toaster } from './components/ui/sonner';
 import { ConfirmProvider } from './components/kit/ConfirmDialog';
 import { TooltipProvider } from './components/ui/tooltip';
@@ -125,22 +124,6 @@ function App() {
                 <AuthProvider>
                   <AppRoutes />
                   <Toaster position="top-right" />
-                  {/* Existing screens still call react-hot-toast until they move to Sonner. */}
-                  <LegacyToaster
-                    position="top-right"
-                    toastOptions={{
-                      style: {
-                        background: '#fffefb',
-                        color: '#262a2e',
-                        border: '1px solid #ddd8ce',
-                        borderRadius: '10px',
-                        boxShadow: '0 12px 30px rgba(50, 45, 35, 0.12)',
-                        fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-                      },
-                      success: { iconTheme: { primary: '#147d6f', secondary: '#fff' } },
-                      error:   { iconTheme: { primary: '#c94a4a', secondary: '#fff' } },
-                    }}
-                  />
                 </AuthProvider>
               </ConfirmProvider>
             </TooltipProvider>

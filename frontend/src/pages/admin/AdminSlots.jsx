@@ -1,16 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { slotsAPI } from '../../services/api';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { Plus, Trash2, Edit2, RefreshCw, Database } from 'lucide-react';
+import { useConfirm } from '@/components/kit/ConfirmDialog';
+import StatusBadge from '../../components/ui/StatusBadge';
 
 const emptyForm = { slotNumber: '', floor: 'G', zone: 'A', type: 'standard', status: 'available', pricePerHour: 30, features: { hasCCTV: true, hasCover: false, hasEVCharger: false } };
 
-const StatusBadge = ({ status }) => {
-  const map = { available: 'badge-green', occupied: 'badge-red', reserved: 'badge-yellow', maintenance: 'badge-yellow' };
-  return <span className={`badge ${map[status] || 'badge-info'}`}>{status}</span>;
-};
 
 export default function AdminSlots() {
+  const confirm = useConfirm();
   const [slots, setSlots] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
@@ -58,7 +57,7 @@ export default function AdminSlots() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this slot?')) return;
+    if (!(await confirm({ title: 'Delete this slot?', confirmLabel: 'Delete slot', cancelLabel: 'Keep slot', tone: 'danger' }))) return;
     try {
       await slotsAPI.delete(id);
       toast.success('Slot deleted');
@@ -67,7 +66,7 @@ export default function AdminSlots() {
   };
 
   const handleSeed = async () => {
-    if (!window.confirm('This will replace legacy admin-managed slots with 60 seeded slots. Vendor-owned slots are preserved. Continue?')) return;
+    if (!(await confirm({ title: 'Replace legacy slots with 60 seeded slots?', description: 'This will replace legacy admin-managed slots with 60 seeded slots. Vendor-owned slots are preserved.', confirmLabel: 'Seed 60 slots', cancelLabel: 'Cancel', tone: 'danger' }))) return;
     setSeeding(true);
     try {
       const res = await slotsAPI.seed();

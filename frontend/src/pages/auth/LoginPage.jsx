@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import AuthShell from '../../components/auth/AuthShell';
 import { useAuth } from '../../context/AuthContext';
 import { getDefaultRoute } from '../../utils/authRouting';

@@ -2,16 +2,14 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { addHours, format } from 'date-fns';
 import { CircleMarker, MapContainer, TileLayer } from 'react-leaflet';
-import { io } from 'socket.io-client';
 import { BatteryCharging, Car, CheckCircle2, Clock, MapPin } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { bookingsAPI, parkingLocationsAPI, slotsAPI, vehiclesAPI } from '../../services/api';
-import { SOCKET_URL } from '../../lib/env';
+import useAvailabilitySocket from '../../hooks/useAvailabilitySocket';
 import EVSlotBoard from '../../components/parking/EVSlotBoard';
 import {
   bookingPayloadForVehicle,
   isElectricVehicle,
-  isAvailabilityEventForLocation,
   physicalVehicleType,
   shouldShowEVSlotBoard,
   vehicleClassificationLabel,
@@ -75,18 +73,12 @@ export default function BookingPage({ legacy = false }) {
     return () => clearTimeout(timer);
   }, [legacy, locationId, vehicle, startTime, endTime, refreshAvailability]);
 
-  useEffect(() => {
-    if (!shouldShowEVSlotBoard(vehicle, legacy) || !locationId) return undefined;
-    const socket = io(SOCKET_URL, { transports: ['websocket'], withCredentials: true });
-    let timer;
-    const refreshIfRelevant = ({ locationId: changedLocation } = {}) => {
-      if (!isAvailabilityEventForLocation({ locationId: changedLocation }, locationId)) return;
-      clearTimeout(timer);
-      timer = setTimeout(() => refreshAvailability().catch(() => {}), 180);
-    };
-    socket.on('availability:changed', refreshIfRelevant);
-    return () => { clearTimeout(timer); socket.disconnect(); };
-  }, [legacy, locationId, refreshAvailability, vehicle]);
+  useAvailabilitySocket({
+    enabled: shouldShowEVSlotBoard(vehicle, legacy) && Boolean(locationId),
+    locationId,
+    debounceMs: 180,
+    onChange: () => refreshAvailability().catch(() => {}),
+  });
 
   const hours = useMemo(() => Math.max(0, Math.ceil((new Date(endTime) - new Date(startTime)) / 3600000)), [startTime, endTime]);
   const rate = legacySlot?.pricePerHour ?? location?.pricePerHour ?? 0;

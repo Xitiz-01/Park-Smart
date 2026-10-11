@@ -3,11 +3,10 @@ import { Link } from 'react-router-dom';
 import { Circle, MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { addHours, format } from 'date-fns';
-import { io } from 'socket.io-client';
 import { LocateFixed, MapPin, Search, Zap } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { parkingLocationsAPI, vehiclesAPI } from '../../services/api';
-import { SOCKET_URL } from '../../lib/env';
+import useAvailabilitySocket from '../../hooks/useAvailabilitySocket';
 import {
   isElectricVehicle,
   parkingDetailsPath,
@@ -105,15 +104,7 @@ export default function NearbyMapPage() {
       else setLoading(false);
     }).catch(() => { setLoading(false); toast.error('Unable to load your vehicles'); });
   }, []);
-  useEffect(() => {
-    const socket = io(SOCKET_URL, { transports: ['websocket'], withCredentials: true });
-    let timer;
-    socket.on('availability:changed', () => {
-      clearTimeout(timer);
-      timer = setTimeout(() => fetchLocations(), 300);
-    });
-    return () => { clearTimeout(timer); socket.disconnect(); };
-  }, [fetchLocations]);
+  useAvailabilitySocket({ debounceMs: 300, onChange: () => fetchLocations() });
 
   const queryFor = useCallback((location) => parkingDetailsPath(location._id, {
     ...filters,

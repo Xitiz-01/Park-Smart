@@ -1,28 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { bookingsAPI } from '../../services/api';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { CalendarDays, MapPin, Car, XCircle } from 'lucide-react';
-
-const StatusBadge = ({ status }) => {
-  const map = {
-    upcoming:  { cls: 'badge-info',   label: 'Upcoming' },
-    active:    { cls: 'badge-green',  label: 'Active' },
-    completed: { cls: 'badge-coral', label: 'Completed' },
-    cancelled: { cls: 'badge-red',    label: 'Cancelled' },
-  };
-  const s = map[status] || { cls: 'badge-info', label: status };
-  return <span className={`badge ${s.cls}`}>{s.label}</span>;
-};
-const PaymentBadge = ({ status }) => {
-  const map = {
-    paid: { cls: 'badge-green', label: 'Paid' },
-    pending: { cls: 'badge-yellow', label: 'Pending' },
-    refunded: { cls: 'badge-coral', label: 'Refunded' },
-  };
-  const s = map[status] || { cls: 'badge-yellow', label: status || 'pending' };
-  return <span className={`badge ${s.cls}`}>{s.label}</span>;
-};
+import { useConfirm } from '@/components/kit/ConfirmDialog';
+import StatusBadge from '../../components/ui/StatusBadge';
 
 const PAYMENT_METHOD_LABELS = {
   card: 'Card',
@@ -32,6 +14,7 @@ const PAYMENT_METHOD_LABELS = {
 };
 
 export default function MyBookings() {
+  const confirm = useConfirm();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
@@ -46,7 +29,7 @@ export default function MyBookings() {
   useEffect(() => { fetchBookings(); }, []);
 
   const handleCancel = async (id) => {
-    if (!window.confirm('Cancel this booking?')) return;
+    if (!(await confirm({ title: 'Cancel this booking?', confirmLabel: 'Cancel booking', cancelLabel: 'Keep booking', tone: 'danger' }))) return;
     setCancelling(id);
     try {
       await bookingsAPI.cancel(id);
@@ -127,7 +110,7 @@ export default function MyBookings() {
                     ₹{b.totalAmount}
                   </div>
                   <div style={{ marginBottom: 8 }}>
-                    <PaymentBadge status={b.paymentStatus} />
+                    <StatusBadge status={b.paymentStatus || 'pending'} />
                   </div>
                   <div style={{ marginBottom: 8, fontSize: 12, color: 'var(--legacy-text-muted)' }}>
                     {PAYMENT_METHOD_LABELS[b.paymentMethod] || 'Payment not collected'}

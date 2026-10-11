@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { ChevronRight, LogOut, Menu, X } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import Brand from '../ui/Brand';
 import { useAuth } from '../../context/AuthContext';
 

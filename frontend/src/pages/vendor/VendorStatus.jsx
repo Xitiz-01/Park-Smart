@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { Clock, RefreshCw, Store } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
 
 const statusCopy = {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { Store } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { vendorsAPI } from '../../services/api';

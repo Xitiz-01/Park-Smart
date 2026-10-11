@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, BadgeCheck, CalendarDays, CircleParking, IndianRupee, MapPin, ParkingSquare, Plus } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { vendorsAPI } from '../../services/api';
 import LoadingState from '../../components/ui/LoadingState';
 import MetricCard from '../../components/ui/MetricCard';

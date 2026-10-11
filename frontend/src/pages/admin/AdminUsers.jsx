@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { adminAPI } from '../../services/api';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Users, RefreshCw, ShieldCheck, ShieldOff, UserCheck, UserX } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useConfirm } from '@/components/kit/ConfirmDialog';
 
 export default function AdminUsers() {
+  const confirm = useConfirm();
   const { user: currentUser, isSuperAdmin } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,7 +24,7 @@ export default function AdminUsers() {
 
   const handleRole = async (user, role) => {
     const action = role === 'admin' ? 'promote to Admin' : 'demote to Customer';
-    if (!window.confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} ${user.name}?`)) return;
+    if (!(await confirm({ title: `${action.charAt(0).toUpperCase() + action.slice(1)} ${user.name}?`, confirmLabel: action.charAt(0).toUpperCase() + action.slice(1), cancelLabel: 'Cancel' }))) return;
     setChangingRole(user._id);
     try {
       await adminAPI.setUserRole(user._id, role);
@@ -36,7 +38,7 @@ export default function AdminUsers() {
 
   const handleToggle = async (id, name, isActive) => {
     const action = isActive ? 'deactivate' : 'activate';
-    if (!window.confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} ${name}?`)) return;
+    if (!(await confirm({ title: `${action.charAt(0).toUpperCase() + action.slice(1)} ${name}?`, confirmLabel: action.charAt(0).toUpperCase() + action.slice(1), cancelLabel: 'Cancel', tone: isActive ? 'danger' : 'default' }))) return;
     setToggling(id);
     try {
       await adminAPI.toggleUser(id);

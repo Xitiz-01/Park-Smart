@@ -1,12 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { io } from 'socket.io-client';
 import { ParkingSquare, Plus, RefreshCw, Zap } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { vendorsAPI } from '../../services/api';
-import { SOCKET_URL } from '../../lib/env';
+import useAvailabilitySocket from '../../hooks/useAvailabilitySocket';
 import EVSlotBoard, { slotDisplayStatus } from '../../components/parking/EVSlotBoard';
-import { isAvailabilityEventForLocation } from '../../utils/hybridParking';
 
 const emptyForm = { slotNumber: '', prefix: 'EV', count: 4, vehicleType: 'ev', evCompatible: true, chargerType: 'CCS2', connectorType: 'CCS2', chargerPowerKw: 22 };
 
@@ -35,18 +33,7 @@ export default function VendorSlots() {
     finally { setLoading(false); }
   }, [locationId]);
   useEffect(() => { if (locationId) loadSlots(locationId); }, [locationId, loadSlots]);
-  useEffect(() => {
-    if (!locationId) return undefined;
-    const socket = io(SOCKET_URL, { transports: ['websocket'], withCredentials: true });
-    let timer;
-    const refreshIfRelevant = ({ locationId: changedLocation } = {}) => {
-      if (!isAvailabilityEventForLocation({ locationId: changedLocation }, locationId)) return;
-      clearTimeout(timer);
-      timer = setTimeout(() => loadSlots(locationId), 180);
-    };
-    socket.on('availability:changed', refreshIfRelevant);
-    return () => { clearTimeout(timer); socket.disconnect(); };
-  }, [loadSlots, locationId]);
+  useAvailabilitySocket({ enabled: Boolean(locationId), locationId, debounceMs: 180, onChange: () => loadSlots(locationId) });
   const current = locations.find((location) => location._id === locationId);
 
   const submit = async (event) => {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Plus, Send, Settings } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { vendorsAPI } from '../../services/api';
 
 export default function ParkingLocations() {

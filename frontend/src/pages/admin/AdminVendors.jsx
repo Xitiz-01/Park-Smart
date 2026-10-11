@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { Eye, RefreshCw, Store } from 'lucide-react';
 import { adminAPI } from '../../services/api';
+import { useConfirm } from '@/components/kit/ConfirmDialog';
 
 const badgeFor = (status) => ({ active: 'badge-green', pending: 'badge-yellow', rejected: 'badge-red', suspended: 'badge-red' }[status] || 'badge-info');
 
 export default function AdminVendors() {
+  const confirm = useConfirm();
   const [vendors, setVendors] = useState([]);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -22,7 +24,7 @@ export default function AdminVendors() {
   useEffect(load, []);
 
   const act = async (vendor, action) => {
-    if (!window.confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} ${vendor.businessName}?`)) return;
+    if (!(await confirm({ title: `${action.charAt(0).toUpperCase() + action.slice(1)} ${vendor.businessName}?`, confirmLabel: action.charAt(0).toUpperCase() + action.slice(1), cancelLabel: 'Cancel', tone: action === 'approve' ? 'default' : 'danger' }))) return;
     setActing(`${vendor._id}:${action}`);
     try {
       const response = await ({

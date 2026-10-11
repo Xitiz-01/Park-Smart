@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Download, Search, ShieldCheck } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { adminAPI } from '../../services/api';
 

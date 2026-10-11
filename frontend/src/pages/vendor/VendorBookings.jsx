@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CalendarDays, LogIn, LogOut, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { vendorsAPI } from '../../services/api';
 
 export default function VendorBookings() {

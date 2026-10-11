@@ -1,17 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { bookingsAPI } from '../../services/api';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { LogIn, LogOut, RefreshCw } from 'lucide-react';
-
-const StatusBadge = ({ status }) => {
-  const map = { upcoming: 'badge-info', active: 'badge-green', completed: 'badge-coral', cancelled: 'badge-red' };
-  return <span className={`badge ${map[status] || 'badge-info'}`}>{status}</span>;
-};
-const PaymentBadge = ({ status }) => {
-  const map = { paid: 'badge-green', pending: 'badge-yellow', refunded: 'badge-coral' };
-  return <span className={`badge ${map[status] || 'badge-yellow'}`}>{status || 'pending'}</span>;
-};
+import { useConfirm } from '@/components/kit/ConfirmDialog';
+import StatusBadge from '../../components/ui/StatusBadge';
 
 const PAYMENT_METHOD_LABELS = {
   card: 'Card',
@@ -21,6 +14,7 @@ const PAYMENT_METHOD_LABELS = {
 };
 
 export default function AdminBookings() {
+  const confirm = useConfirm();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
@@ -58,7 +52,7 @@ export default function AdminBookings() {
   };
 
   const handleCancel = async (id) => {
-    if (!window.confirm('Cancel this booking?')) return;
+    if (!(await confirm({ title: 'Cancel this booking?', confirmLabel: 'Cancel booking', cancelLabel: 'Keep booking', tone: 'danger' }))) return;
     try {
       await bookingsAPI.cancel(id);
       toast.success('Booking cancelled');
@@ -115,7 +109,7 @@ export default function AdminBookings() {
                     <td style={{ fontSize: 13 }}>{format(new Date(b.expectedEndTime), 'dd MMM, hh:mm a')}</td>
                     <td style={{ color: 'var(--legacy-accent)', fontWeight: 600 }}>₹{b.totalAmount}</td>
                     <td>
-                      <PaymentBadge status={b.paymentStatus} />
+                      <StatusBadge status={b.paymentStatus || 'pending'} />
                       <div style={{ marginTop: 6, fontSize: 12, color: 'var(--legacy-text-muted)' }}>
                         {PAYMENT_METHOD_LABELS[b.paymentMethod] || 'N/A'}
                       </div>
