@@ -3,3 +3,4 @@
 baseline/*.png
 screens/**/*.png
 tools/__pycache__/
+screens/**/*.gif
