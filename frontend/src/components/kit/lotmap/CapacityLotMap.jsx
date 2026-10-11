@@ -117,3 +117,13 @@ export function EvBayMini({ bayId, className }) {
     </div>
   );
 }
+
+// Booking tickets for capacity bookings: one space in a pool, never a bay.
+export function CapacityStub({ capacity, className }) {
+  return (
+    <div className={cn('flex h-full flex-col items-center justify-center gap-1 rounded-lg bg-lot-asphalt px-2 py-2 text-center text-lot-text', className)}>
+      <span className="grid h-12 w-12 place-items-center rounded-md border-2 border-dashed border-lot-line/40"><TopDownCar className="h-9 max-h-9" /></span>
+      <span className="text-xs leading-tight">{capacity ? <>1 of <span className="font-mono">{capacity}</span> spaces</> : '1 space'}</span>
+    </div>
+  );
+}

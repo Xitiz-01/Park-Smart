@@ -4,6 +4,6 @@
 //   CapacityTimeline + useCapacityTimeline  free spaces over the next hours
 //   CapacityMini / EvBayMini  small versions for map popups and tickets
 export { default as EvLotMap, EV_LEGEND } from './EvLotMap';
-export { default as CapacityLotMap, CapacityMini, EvBayMini, capacityCells } from './CapacityLotMap';
+export { default as CapacityLotMap, CapacityMini, CapacityStub, EvBayMini, capacityCells } from './CapacityLotMap';
 export { default as CapacityTimeline } from './CapacityTimeline';
 export { default as useCapacityTimeline, timelineStarts } from './useCapacityTimeline';

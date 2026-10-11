@@ -20,3 +20,10 @@ test('timeline uses only recorded milestones', () => {
 test('rupees are formatted with Intl', () => {
   expect(formatRupees(1200)).toBe('₹1,200');
 });
+
+test('capacity for a booking counts legacy buckets', async () => {
+  const { capacityForBooking } = await import('./bookings');
+  expect(capacityForBooking({ vehicleType: 'car', parkingLocation: { capacity: { car: 30, suv: 10, motorcycle: 30 } } })).toBe(40);
+  expect(capacityForBooking({ vehicleType: 'bike', parkingLocation: { capacity: { motorcycle: 30 } } })).toBe(30);
+  expect(capacityForBooking({ vehicleType: 'car' })).toBeNull();
+});

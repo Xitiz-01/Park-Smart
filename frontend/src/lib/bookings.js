@@ -38,3 +38,14 @@ export const bookingTimeline = (booking) => {
   steps.push({ id: 'out', label: 'Checked out', at: booking.checkOutTime, done: Boolean(booking.checkOutTime) || booking.status === 'completed' });
   return steps;
 };
+
+// Real capacity of the booked vehicle type at the location (legacy suv/bike
+// buckets count towards car/motorcycle, as the backend does).
+const CAPACITY_ALIASES = { car: ['car', 'suv'], motorcycle: ['motorcycle', 'bike'], suv: ['car', 'suv'], bike: ['motorcycle', 'bike'] };
+export const capacityForBooking = (booking) => {
+  const capacity = booking?.parkingLocation?.capacity;
+  if (!capacity) return null;
+  const types = CAPACITY_ALIASES[booking.vehicleType] || [booking.vehicleType];
+  const total = types.reduce((sum, type) => sum + Number(capacity[type] || 0), 0);
+  return total || null;
+};
