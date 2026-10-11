@@ -1,0 +1,5 @@
+# Screenshots are large (the baseline is ~14 MB) and can be regenerated with
+# `python3 docs/redesign/tools/fixtures.py shoot`. Each run's report.json stays tracked.
+baseline/*.png
+screens/**/*.png
+tools/__pycache__/
