@@ -103,7 +103,7 @@ export default function MyBookings() {
       ) : (
         <>
           <Tabs value={filter} onValueChange={setFilter}>
-            <TabsList aria-label="Filter bookings by status" className="h-auto max-w-full flex-wrap justify-start">
+            <TabsList aria-label="Filter bookings by status" className="h-auto w-full justify-start overflow-x-auto sm:w-fit">
               {FILTERS.map(([value, label]) => (
                 <TabsTrigger key={value} value={value} className="gap-1.5 px-3">
                   {label}<span className="font-mono text-xs text-text-muted">{counts[value]}</span>
