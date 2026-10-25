@@ -3,6 +3,7 @@ import { optionLabel, vehicleLabel } from './vehicles';
 test('acronyms stay upper case, other words get a capital', () => {
   expect(optionLabel('suv')).toBe('SUV');
   expect(optionLabel('cng')).toBe('CNG');
+  expect(optionLabel('ev')).toBe('EV');
   expect(optionLabel('hatchback')).toBe('Hatchback');
 });
 

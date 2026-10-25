@@ -25,7 +25,7 @@ import StatusBadge from '@/components/kit/StatusBadge';
 import TicketStub from '@/components/kit/TicketStub';
 import { formatRupees } from '@/lib/bookings';
 import { cn } from '@/lib/utils';
-import { vehicleLabel } from '@/lib/vehicles';
+import { optionLabel, vehicleLabel } from '@/lib/vehicles';
 
 const inputDate = (value) => format(new Date(value), "yyyy-MM-dd'T'HH:mm");
 const windowLabel = (start, end) => {
@@ -315,7 +315,7 @@ export default function BookingPage({ legacy = false }) {
             <Panel id="details-title" title="Location details">
               <div className="grid gap-5 md:grid-cols-2">
                 <div className="grid content-start gap-3 text-sm">
-                  <p><span className="text-text-muted">Vehicles: </span>{location.vehicleTypes.map((type) => type.charAt(0).toUpperCase() + type.slice(1)).join(', ')}</p>
+                  <p><span className="text-text-muted">Vehicles: </span>{location.vehicleTypes.map(optionLabel).join(', ')}</p>
                   {(location.amenities || []).length > 0 && (
                     <ul className="flex list-none flex-wrap gap-1.5 p-0" aria-label="Amenities">
                       {location.amenities.map((item) => <li key={item} className="rounded-md bg-surface-sunken px-2 py-0.5 text-xs">{item.replaceAll('_', ' ')}</li>)}

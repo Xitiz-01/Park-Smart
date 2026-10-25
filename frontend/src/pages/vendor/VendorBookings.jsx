@@ -11,6 +11,7 @@ import EmptyState, { ErrorState } from '@/components/kit/EmptyState';
 import PageHeader from '@/components/kit/PageHeader';
 import StatusBadge from '@/components/kit/StatusBadge';
 import { bookingAssignment, bookingLocationName, bookingWindow } from '@/lib/bookings';
+import { optionLabel } from '@/lib/vehicles';
 
 const FILTERS = [['all', 'All'], ['upcoming', 'Upcoming'], ['active', 'Checked in'], ['completed', 'Completed'], ['cancelled', 'Cancelled']];
 
@@ -58,7 +59,7 @@ export default function VendorBookings() {
       cell: ({ row }) => (
         <span>
           <span className="block font-mono font-semibold uppercase">{row.original.vehicle?.licensePlate || '—'}</span>
-          <span className="block text-xs text-text-muted capitalize">{row.original.vehicleType}</span>
+          <span className="block text-xs text-text-muted">{optionLabel(row.original.vehicleType)}</span>
         </span>
       ),
     },
