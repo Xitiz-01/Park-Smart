@@ -88,8 +88,8 @@ const hoursText = (hours) => (!hours.open ? 'Closed' : hours.allDay ? 'Open 24 h
 
 function StepNav({ step, reachable, onGo }) {
   return (
-    <nav aria-label="Location editor steps" className="mb-6 overflow-x-auto">
-      <ol className="m-0 flex min-w-max list-none items-center gap-x-2 p-0 text-sm">
+    <nav aria-label="Location editor steps" className="mb-6">
+      <ol className="m-0 flex list-none flex-wrap items-center gap-x-1 gap-y-2 p-0 text-sm sm:gap-x-2">
         {STEPS.map(({ id, label }, index) => {
           const state = index < step ? 'done' : index === step ? 'current' : 'todo';
           return (
@@ -109,11 +109,11 @@ function StepNav({ step, reachable, onGo }) {
                 )}>
                   {state === 'done' ? <Check aria-hidden="true" className="size-4" /> : index + 1}
                 </span>
-                <span className={cn(state === 'todo' ? 'text-text-muted' : 'text-foreground', state === 'current' && 'font-medium')}>
+                <span className={cn(state === 'todo' ? 'text-text-muted' : 'text-foreground', state === 'current' ? 'font-medium' : 'max-sm:sr-only')}>
                   {label}<span className="sr-only">{state === 'done' ? ' (done)' : state === 'current' ? ' (current step)' : ''}</span>
                 </span>
               </button>
-              {index < STEPS.length - 1 && <span aria-hidden="true" className="h-0.5 w-4 rounded-full bg-border" />}
+              {index < STEPS.length - 1 && <span aria-hidden="true" className="h-0.5 w-4 rounded-full bg-border max-sm:hidden" />}
             </li>
           );
         })}
@@ -269,7 +269,7 @@ export default function ParkingLocationForm({ initialLocation, onSubmit, saving 
                   const hours = form.operatingHours[day] || defaultHours[day];
                   const timesDisabled = !hours.open || hours.allDay;
                   return (
-                    <li key={day} className="grid grid-cols-[6.5rem_1fr] items-center gap-x-3 gap-y-2 rounded-lg bg-surface-sunken px-3 py-2 sm:grid-cols-[6.5rem_7rem_7.5rem_minmax(0,1fr)]">
+                    <li key={day} className="grid grid-cols-[6.5rem_1fr] items-center gap-x-3 gap-y-2 rounded-lg bg-surface-sunken px-3 py-2 sm:grid-cols-[6.5rem_7rem_7.5rem_minmax(0,18rem)]">
                       <span className="text-sm font-medium">{dayLabel(day)}</span>
                       <label className="flex items-center gap-2 text-sm">
                         <Switch checked={hours.open} onCheckedChange={(checked) => updateDay(day, { open: checked })} aria-label={`Open on ${dayLabel(day)}`} />

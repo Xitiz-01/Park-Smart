@@ -35,7 +35,7 @@ function LocationCard({ location, publishing, publishError, onPublish }) {
         </div>
         <div className="rounded-lg bg-surface-sunken p-3">
           <dt className="flex items-center gap-1.5 text-text-muted"><Zap aria-hidden="true" className="size-3.5" />EV bays</dt>
-          <dd className="m-0 mt-1 font-mono text-lg font-semibold tabular-nums">{evBays}<span className="ml-1 font-sans text-sm font-normal text-text-muted">{evBays ? `${location.slotStats.available} available` : 'set up'}</span></dd>
+          <dd className="m-0 mt-1 font-mono text-lg font-semibold tabular-nums">{evBays}<span className="ml-1 font-sans text-sm font-normal text-text-muted">{evBays ? `in total, ${location.slotStats.available} in service` : 'none yet'}</span></dd>
         </div>
       </dl>
 
