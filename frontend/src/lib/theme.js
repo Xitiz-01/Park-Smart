@@ -11,7 +11,7 @@ export const THEME_PREFERENCES = ['system', 'light', 'dark'];
 // (legacy screens are light-only). Grows phase by phase; goes away once every
 // screen is redesigned.
 // `excluded` carves legacy screens out of a redesigned prefix.
-export const REDESIGNED_PATHS = { exact: ['/', '/login', '/register'], prefixes: ['/_design', '/dashboard', '/vendor'], excluded: ['/vendor/apply',  '/vendor/status',  '/vendor/slots',  '/vendor/bookings',  '/vendor/profile',  '/vendor/verification',  '/vendor/transactions',  '/vendor/earnings',  '/vendor/settings'] };
+export const REDESIGNED_PATHS = { exact: ['/', '/login', '/register'], prefixes: ['/_design', '/dashboard', '/vendor'], excluded: ['/vendor/apply',  '/vendor/status',   '/vendor/bookings',  '/vendor/profile',  '/vendor/verification',  '/vendor/transactions',  '/vendor/earnings',  '/vendor/settings'] };
 
 const underPrefix = (pathname, prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`);
 
