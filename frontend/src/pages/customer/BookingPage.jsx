@@ -11,7 +11,6 @@ import {
   isElectricVehicle,
   physicalVehicleType,
   shouldShowEVSlotBoard,
-  vehicleClassificationLabel,
 } from '../../utils/hybridParking';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +25,7 @@ import StatusBadge from '@/components/kit/StatusBadge';
 import TicketStub from '@/components/kit/TicketStub';
 import { formatRupees } from '@/lib/bookings';
 import { cn } from '@/lib/utils';
+import { vehicleLabel } from '@/lib/vehicles';
 
 const inputDate = (value) => format(new Date(value), "yyyy-MM-dd'T'HH:mm");
 const windowLabel = (start, end) => {
@@ -241,7 +241,7 @@ export default function BookingPage({ legacy = false }) {
               </EmptyState>
             ) : (
               <div className="grid gap-5">
-                <FormField label="Your vehicle" description={vehicle ? vehicleClassificationLabel(vehicle) : undefined}>
+                <FormField label="Your vehicle" description={vehicle ? vehicleLabel(vehicle) : undefined}>
                   <NativeSelect name="vehicleId" value={vehicleId} onChange={(e) => { setVehicleId(e.target.value); setNotice(''); }} required className="w-full">
                     <NativeSelectOption value="">Choose a vehicle</NativeSelectOption>
                     {vehicles.map((item) => <NativeSelectOption key={item._id} value={item._id}>{item.licensePlate} — {item.brand} {item.model}</NativeSelectOption>)}

@@ -11,7 +11,6 @@ import {
   isElectricVehicle,
   parkingDetailsPath,
   physicalVehicleType,
-  vehicleClassificationLabel,
 } from '../../utils/hybridParking';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +27,7 @@ import PageHeader from '@/components/kit/PageHeader';
 import { formatRupees } from '@/lib/bookings';
 import { readDiscoveryCache, writeDiscoveryCache } from '@/lib/discoveryCache';
 import { cn } from '@/lib/utils';
+import { vehicleLabel } from '@/lib/vehicles';
 
 const DEFAULT_CENTER = { lat: 18.5204, lng: 73.8567 };
 const RADII = [2, 5, 10, 25, 50];
@@ -247,7 +247,7 @@ export default function NearbyMapPage() {
           <label htmlFor="nearby-vehicle" className="sr-only">Vehicle</label>
           <NativeSelect id="nearby-vehicle" value={vehicleId} onChange={(e) => chooseVehicle(e.target.value)} required className="w-full min-w-0">
             <NativeSelectOption value="">Choose a vehicle</NativeSelectOption>
-            {vehicles.map((vehicle) => <NativeSelectOption key={vehicle._id} value={vehicle._id}>{vehicle.licensePlate} — {vehicleClassificationLabel(vehicle)}</NativeSelectOption>)}
+            {vehicles.map((vehicle) => <NativeSelectOption key={vehicle._id} value={vehicle._id}>{vehicle.licensePlate} — {vehicleLabel(vehicle)}</NativeSelectOption>)}
           </NativeSelect>
         </div>
         <div className="flex flex-wrap items-center gap-2">

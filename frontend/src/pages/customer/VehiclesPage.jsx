@@ -25,26 +25,18 @@ import PageHeader from '@/components/kit/PageHeader';
 import SearchableSelect from '@/components/kit/SearchableSelect';
 import StatusBadge from '@/components/kit/StatusBadge';
 import VehicleBrandLogo from '@/components/kit/VehicleBrandLogo';
+import { optionLabel, vehicleLabel } from '@/lib/vehicles';
 
 const VEHICLE_TYPES = ['car', 'motorcycle'];
 const BODY_STYLES = ['hatchback', 'sedan', 'suv', 'crossover', 'coupe', 'wagon', 'convertible', 'pickup', 'van', 'mpv', 'other'];
 const FUEL_TYPES = ['petrol', 'diesel', 'cng', 'hybrid', 'electric'];
-const ACRONYMS = new Set(['suv', 'mpv', 'cng']);
 
 const emptyForm = {
   licensePlate: '', make: '', brand: '', model: '', modelYear: '',
   vehicleType: '', bodyStyle: '', fuelType: '', color: '', isDefault: false,
 };
 
-const optionLabel = (value) => (ACRONYMS.has(value) ? value.toUpperCase() : value[0].toUpperCase() + value.slice(1));
 
-// Same parts as utils/hybridParking's vehicleClassificationLabel, with SUV,
-// MPV and CNG spelt as acronyms.
-const classification = (vehicle) => [
-  physicalVehicleType(vehicle),
-  vehicle?.bodyStyle,
-  vehicle?.fuelType || (String(vehicle?.vehicleType).toLowerCase() === 'ev' ? 'electric' : null),
-].filter(Boolean).map((value) => optionLabel(String(value).toLowerCase())).join(' · ');
 
 function VehicleCard({ vehicle, onEdit, onRemove }) {
   const electric = isElectricVehicle(vehicle);
@@ -60,7 +52,7 @@ function VehicleCard({ vehicle, onEdit, onRemove }) {
         <VehicleBrandLogo make={make} vehicleType={physicalVehicleType(vehicle)} electric={electric} />
         <div className="min-w-0">
           <h2 className="truncate font-display text-base font-semibold">{name || 'Vehicle details not set'}</h2>
-          <p className="text-sm text-text-muted">{classification(vehicle)}</p>
+          <p className="text-sm text-text-muted">{vehicleLabel(vehicle)}</p>
         </div>
       </div>
       <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
