@@ -5,7 +5,7 @@ import { INDIAN_STATES } from '../../data/indianStates';
 export default function StateSelect({ value, onChange, required = true, ...props }) {
   return (
     <NativeSelect className="w-full" value={value || ''} onChange={(event) => onChange(event.target.value)} required={required} {...props}>
-      <NativeSelectOption value="">Select state or union territory</NativeSelectOption>
+      <NativeSelectOption value="">Select state or UT</NativeSelectOption>
       {INDIAN_STATES.map((state) => <NativeSelectOption key={state} value={state}>{state}</NativeSelectOption>)}
     </NativeSelect>
   );
