@@ -1,6 +1,7 @@
 import React from 'react';
 import { CalendarDays, LayoutDashboard, MapPin, ShieldCheck, Store, Users } from 'lucide-react';
 import AppShell from '../layout/AppShell';
+import '@/styles/legacy.css';
 import { useAuth } from '../../context/AuthContext';
 
 const navItems = [

@@ -3,6 +3,7 @@ import { FileCheck2, Landmark, ShieldCheck, Upload, WalletCards } from 'lucide-r
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import StatusBadge from '../../components/ui/StatusBadge';
+import '@/styles/legacy.css';
 import { verificationAPI, vendorsAPI } from '../../services/api';
 
 const steps = [

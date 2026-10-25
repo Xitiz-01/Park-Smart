@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Circle, MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
+import '@/styles/leaflet.css';
 import L from 'leaflet';
 import { addHours, addMinutes, format } from 'date-fns';
 import { Bike, Car, List, LocateFixed, Map as MapIcon, MapPin, Search, SlidersHorizontal, Zap } from 'lucide-react';

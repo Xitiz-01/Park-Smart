@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { MapContainer, Marker, TileLayer, useMap } from 'react-leaflet';
+import '@/styles/leaflet.css';
 import L from 'leaflet';
 
 const markerIcon = L.divIcon({

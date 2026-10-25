@@ -18,8 +18,8 @@
    and stay calm around 20px. */
 @import "@fontsource-variable/bricolage-grotesque/opsz.css";
 @import "./tokens.css";
-@import "../index.css" layer(legacy);
-@import "leaflet/dist/leaflet.css" layer(vendor);
+/* index.css (layer legacy) and Leaflet (layer vendor) are imported by the
+   screens that need them: see styles/legacy.css and styles/leaflet.css. */
 
 @custom-variant dark (&:is(.dark *));
 

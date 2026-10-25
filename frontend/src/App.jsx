@@ -58,7 +58,7 @@ const loadMotionFeatures = () => import('./lib/motionFeatures').then((mod) => mo
 // Protected Route
 const ProtectedRoute = ({ children, roles, approvedVendor = false }) => {
   const { user, loading } = useAuth();
-  if (loading) return <div className="loading-spinner"><div className="spinner" /></div>;
+  if (loading) return <div className="grid min-h-screen place-items-center"><BayLoader /></div>;
   if (!user) return <Navigate to="/login" replace />;
   if (roles && !roles.includes(user.role)) return <Navigate to={getDefaultRoute(user)} replace />;
   if (approvedVendor && user.vendorProfile?.vendorStatus !== 'active') {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { addHours, format } from 'date-fns';
 import { CircleMarker, MapContainer, TileLayer } from 'react-leaflet';
+import '@/styles/leaflet.css';
 import { ArrowLeft, Car, CheckCircle2, Clock, MapPin, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { bookingsAPI, parkingLocationsAPI, slotsAPI, vehiclesAPI } from '../../services/api';

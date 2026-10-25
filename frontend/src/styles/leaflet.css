@@ -1,0 +1,3 @@
+/* Leaflet's stylesheet, loaded with the map components rather than on every
+   page. Its layer's position is fixed by the @layer statement in globals.css. */
+@import "leaflet/dist/leaflet.css" layer(vendor);
