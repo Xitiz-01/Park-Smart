@@ -22,7 +22,7 @@ const emptyForm = { slotNumber: '', prefix: 'EV', count: 4, vehicleType: 'ev', e
 const STATUS_LABELS = { active: 'live', draft: 'draft', inactive: 'inactive' };
 
 export default function VendorSlots() {
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const [locations, setLocations] = useState([]);
   const [locationId, setLocationId] = useState(params.get('location') || '');
   const [slots, setSlots] = useState([]);
@@ -127,7 +127,7 @@ export default function VendorSlots() {
       {header}
       <div className="mb-6 max-w-sm">
         <FormField label="Location">
-          <NativeSelect className="w-full" value={locationId} onChange={(e) => setLocationId(e.target.value)}>
+          <NativeSelect className="w-full" value={locationId} onChange={(e) => { setLocationId(e.target.value); setParams({ location: e.target.value }, { replace: true }); }}>
             {locations.map((location) => <NativeSelectOption key={location._id} value={location._id}>{location.name} ({STATUS_LABELS[location.status] || location.status})</NativeSelectOption>)}
           </NativeSelect>
         </FormField>

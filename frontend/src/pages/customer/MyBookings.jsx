@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Car, Clock, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -54,7 +54,14 @@ export default function MyBookings() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
-  const [filter, setFilter] = useState('all');
+  // The status tab lives in the URL (?status=…) so it survives reloads and can be shared.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filter = FILTERS.some(([value]) => value === searchParams.get('status')) ? searchParams.get('status') : 'all';
+  const setFilter = (value) => setSearchParams((params) => {
+    const next = new URLSearchParams(params);
+    if (value === 'all') next.delete('status'); else next.set('status', value);
+    return next;
+  }, { replace: true });
   const [cancelling, setCancelling] = useState(null);
 
   const fetchBookings = useCallback(() => {

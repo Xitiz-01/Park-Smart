@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { LogIn, LogOut, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { vendorsAPI } from '../../services/api';
@@ -21,7 +22,14 @@ export default function VendorBookings() {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [acting, setActing] = useState('');
-  const [filter, setFilter] = useState('all');
+  // The status tab lives in the URL (?status=…) so it survives reloads and can be shared.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filter = FILTERS.some(([value]) => value === searchParams.get('status')) ? searchParams.get('status') : 'all';
+  const setFilter = (value) => setSearchParams((params) => {
+    const next = new URLSearchParams(params);
+    if (value === 'all') next.delete('status'); else next.set('status', value);
+    return next;
+  }, { replace: true });
 
   const load = useCallback(() => {
     setLoading(true);

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -163,6 +163,17 @@ export default function ParkingLocationForm({ initialLocation, onSubmit, saving 
   const formRef = useRef(null);
   const headingRef = useRef(null);
 
+  // Five steps is a lot to lose: warn before the tab closes or reloads with
+  // unsaved edits. (In-app links can't be guarded without a data router.)
+  const submitted = useRef(false);
+  const dirty = JSON.stringify(form) !== JSON.stringify(initial);
+  useEffect(() => {
+    if (!dirty) return undefined;
+    const warn = (event) => { if (!submitted.current) { event.preventDefault(); event.returnValue = ''; } };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty]);
+
   const toggleVehicle = (type) => {
     const exists = form.vehicleTypes.includes(type);
     const vehicleTypes = exists ? form.vehicleTypes.filter((item) => item !== type) : [...form.vehicleTypes, type];
@@ -205,6 +216,7 @@ export default function ParkingLocationForm({ initialLocation, onSubmit, saving 
     event.preventDefault();
     if (STEPS[step].id !== 'review') { goTo(step + 1); return; }
     if (!form.address.verified) return;
+    submitted.current = true;
     onSubmit(locationPayload(form));
   };
 
