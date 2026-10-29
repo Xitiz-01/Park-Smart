@@ -68,7 +68,10 @@ function NavList({ workspace, collapsed = false, onNavigate, layoutGroup }) {
               <>
                 {isActive && (
                   <m.span
-                    layoutId={layoutGroup}
+                    // Separate ids per sidebar width: the marker slides between
+                    // pages, but must not animate across a collapse (the links
+                    // remount while the width transitions and it stuck huge).
+                    layoutId={`${layoutGroup}-${collapsed ? 'collapsed' : 'expanded'}`}
                     aria-hidden="true"
                     className="absolute inset-0 rounded-lg bg-brand-soft"
                     transition={{ type: 'spring', stiffness: 500, damping: 40 }}
@@ -86,7 +89,10 @@ function NavList({ workspace, collapsed = false, onNavigate, layoutGroup }) {
           <li key={to}>
             {collapsed ? (
               <Tooltip>
-                <TooltipTrigger asChild>{link}</TooltipTrigger>
+                {/* A wrapper, not asChild on the link: Slot can't merge NavLink's
+                    function className, so the link lost its classes (and the
+                    active marker grew to cover the whole collapsed sidebar). */}
+                <TooltipTrigger asChild><span className="block">{link}</span></TooltipTrigger>
                 <TooltipContent side="right">{label}</TooltipContent>
               </Tooltip>
             ) : link}
