@@ -193,7 +193,7 @@ export default function AdminVerifications() {
           ) : cases.length === 0 ? (
             <EmptyState title="No matching cases" description="Try other filters." />
           ) : (
-            <ul className="m-0 grid list-none gap-2 p-0">
+            <ul className="m-0 grid list-none grid-cols-[minmax(0,1fr)] gap-2 p-0">
               {cases.map((item) => {
                 const active = selected?._id === item._id;
                 return (

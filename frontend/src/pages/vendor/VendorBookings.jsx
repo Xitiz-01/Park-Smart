@@ -74,7 +74,7 @@ export default function VendorBookings() {
     },
     { id: 'location', accessorFn: bookingLocationName, header: 'Location' },
     { id: 'assignment', accessorFn: assignment, header: 'Space', meta: { label: 'Space' } },
-    { id: 'when', accessorFn: (b) => new Date(b.startTime).getTime(), header: 'When', cell: ({ row }) => <span className="whitespace-nowrap">{bookingWindow(row.original)}</span> },
+    { id: 'when', accessorFn: (b) => new Date(b.startTime).getTime(), header: 'When', cell: ({ row }) => <span className="md:whitespace-nowrap">{bookingWindow(row.original)}</span> },
     { id: 'code', accessorKey: 'bookingCode', header: 'Code', cell: ({ getValue }) => <span className="font-mono text-xs">{getValue()}</span> },
     { id: 'status', accessorKey: 'status', header: 'Status', cell: ({ getValue }) => <StatusBadge status={getValue()}>{getValue() === 'active' ? 'Checked in' : undefined}</StatusBadge> },
     {

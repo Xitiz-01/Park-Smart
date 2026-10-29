@@ -74,7 +74,7 @@ export default function AdminBookings() {
       id: 'space', accessorFn: (b) => `${bookingLocationName(b)} ${bookingAssignment(b)}`, header: 'Where',
       cell: ({ row }) => <span><span className="block">{bookingLocationName(row.original)}</span><span className="block text-xs text-text-muted">{row.original.bookingType === 'regular' ? 'Capacity space' : bookingAssignment(row.original)}</span></span>,
     },
-    { id: 'when', accessorFn: (b) => new Date(b.startTime).getTime(), header: 'When', cell: ({ row }) => <span className="whitespace-nowrap">{bookingWindow(row.original)}</span> },
+    { id: 'when', accessorFn: (b) => new Date(b.startTime).getTime(), header: 'When', cell: ({ row }) => <span className="md:whitespace-nowrap">{bookingWindow(row.original)}</span> },
     { id: 'amount', accessorFn: (b) => Number(b.totalAmount) || 0, header: 'Amount', cell: ({ getValue }) => <span className="font-mono">{formatRupees(getValue())}</span> },
     {
       id: 'payment', accessorFn: (b) => b.paymentStatus || 'pending', header: 'Payment',
