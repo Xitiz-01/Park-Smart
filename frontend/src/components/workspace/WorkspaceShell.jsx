@@ -32,8 +32,8 @@ const readCollapsed = () => { try { return window.localStorage.getItem(COLLAPSE_
 const writeCollapsed = (value) => { try { window.localStorage.setItem(COLLAPSE_KEY, value ? '1' : '0'); } catch { /* storage unavailable */ } };
 
 // A thin signage stripe in the role's colour: blue for drivers, road-paint
-// yellow for operators. Deliberately not a status colour.
-const roleStripe = { driver: 'bg-brand', operator: 'bg-road-yellow' };
+// yellow for operators, graphite for admins. Deliberately not a status colour.
+const roleStripe = { driver: 'bg-brand', operator: 'bg-road-yellow', admin: 'bg-slot-maintenance' };
 
 function useSignOut() {
   const { logout } = useAuth();
@@ -181,7 +181,6 @@ function CommandMenu({ workspace, open, onOpenChange }) {
 
 function UserMenu({ workspace, identity }) {
   const signOut = useSignOut();
-  const profilePath = workspace.id === 'driver' ? '/dashboard/profile' : '/vendor/profile';
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -197,7 +196,7 @@ function UserMenu({ workspace, identity }) {
           <span className="block truncate text-xs text-text-muted">{identity.subtitle}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild><Link to={profilePath}><UserRound aria-hidden="true" />Profile</Link></DropdownMenuItem>
+        {workspace.profile && <DropdownMenuItem asChild><Link to={workspace.profile}><UserRound aria-hidden="true" />Profile</Link></DropdownMenuItem>}
         <DropdownMenuItem onSelect={signOut}><LogOut aria-hidden="true" />Sign out</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -1,6 +1,6 @@
 import {
   CalendarDays, CarFront, IndianRupee, LayoutDashboard, MapPin, Navigation, ParkingSquare, Plus,
-  Receipt, Settings, ShieldCheck, Store, UserRound,
+  Receipt, Settings, ShieldCheck, Store, UserRound, Users,
 } from 'lucide-react';
 
 // One navigation source for the sidebar, the mobile tab bar, breadcrumbs and
@@ -19,6 +19,7 @@ export function customerWorkspace(user) {
     id: 'driver',
     label: 'Driver',
     home: '/dashboard',
+    profile: '/dashboard/profile',
     nav: [
       { to: '/dashboard', icon: LayoutDashboard, label: 'Overview', end: true, tab: true },
       { to: '/dashboard/nearby', icon: Navigation, label: 'Find parking', tab: true },
@@ -45,6 +46,7 @@ export function vendorWorkspace() {
     id: 'operator',
     label: 'Operator',
     home: '/vendor',
+    profile: '/vendor/profile',
     nav: [
       { to: '/vendor', icon: LayoutDashboard, label: 'Overview', end: true },
       { to: '/vendor/locations', icon: MapPin, label: 'Parking locations' },
@@ -65,6 +67,29 @@ export function vendorWorkspace() {
       { to: '/vendor/locations', icon: MapPin, label: 'Parking locations' },
       { to: '/vendor/bookings', icon: CalendarDays, label: 'Incoming bookings' },
       { to: '/vendor/slots', icon: ParkingSquare, label: 'EV bay inventory' },
+    ],
+  };
+}
+
+// Admins have no profile page of their own (the account menu just signs out).
+export function adminWorkspace({ isSuperAdmin = false } = {}) {
+  return {
+    id: 'admin',
+    label: isSuperAdmin ? 'Super admin' : 'Admin',
+    home: '/admin',
+    nav: [
+      { to: '/admin', icon: LayoutDashboard, label: 'Overview', end: true },
+      { to: '/admin/bookings', icon: CalendarDays, label: 'Bookings' },
+      { to: '/admin/users', icon: Users, label: 'Users' },
+      { to: '/admin/vendors', icon: Store, label: 'Vendors' },
+      { to: '/admin/verifications', icon: ShieldCheck, label: 'Verification review' },
+      { to: '/admin/slots', icon: ParkingSquare, label: 'Tracked bays' },
+    ],
+    crumbs: [],
+    actions: [
+      { to: '/admin/vendors?status=pending', icon: Store, label: 'Review vendor applications' },
+      { to: '/admin/verifications', icon: ShieldCheck, label: 'Open verification cases' },
+      { to: '/admin/bookings?status=upcoming', icon: CalendarDays, label: 'Upcoming bookings' },
     ],
   };
 }

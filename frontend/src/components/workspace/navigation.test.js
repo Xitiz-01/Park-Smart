@@ -1,4 +1,4 @@
-import { breadcrumbsFor, customerWorkspace, vendorWorkspace } from './navigation';
+import { adminWorkspace, breadcrumbsFor, customerWorkspace, vendorWorkspace } from './navigation';
 
 const labels = (trail) => trail.map((crumb) => crumb.label);
 
@@ -21,4 +21,11 @@ test('the driver tab bar keeps four destinations and the vendor link adapts to s
   expect(customerWorkspace({ role: 'customer' }).nav.at(-1).to).toBe('/vendor/apply');
   expect(customerWorkspace({ role: 'customer', vendorProfile: { vendorStatus: 'pending' } }).nav.at(-1).to).toBe('/vendor/status');
   expect(customerWorkspace({ role: 'vendor', vendorProfile: { vendorStatus: 'active' } }).nav.at(-1).to).toBe('/vendor');
+});
+
+test('admin workspace names the role and has no profile page', () => {
+  expect(adminWorkspace().label).toBe('Admin');
+  expect(adminWorkspace({ isSuperAdmin: true }).label).toBe('Super admin');
+  expect(adminWorkspace().profile).toBeUndefined();
+  expect(labels(breadcrumbsFor(adminWorkspace(), '/admin/verifications'))).toEqual(['Overview', 'Verification review']);
 });
