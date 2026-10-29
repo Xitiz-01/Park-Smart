@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { MapContainer, Marker, TileLayer, useMap } from 'react-leaflet';
+import '@/styles/leaflet.css';
 import L from 'leaflet';
 
 const markerIcon = L.divIcon({
   className: '',
-  html: '<div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:#147d6f;border:3px solid white;transform:rotate(-45deg);box-shadow:0 4px 12px rgba(37,37,37,.24)"></div>',
+  html: '<span class="ps-drop-pin"></span>',
   iconSize: [28, 28], iconAnchor: [14, 28],
 });
 
@@ -25,16 +26,19 @@ function DraggableMarker({ position, onMove }) {
       }
     },
   }), [onMove]);
-  return <Marker draggable position={position} icon={markerIcon} eventHandlers={handlers} ref={markerRef} />;
+  return <Marker draggable position={position} icon={markerIcon} eventHandlers={handlers} ref={markerRef} title="Entrance pin. Drag to move it." alt="Entrance pin" />;
 }
 
 export default function LocationMapSelector({ latitude, longitude, onMove }) {
   const position = useMemo(() => [Number(latitude), Number(longitude)], [latitude, longitude]);
   if (!Number.isFinite(position[0]) || !Number.isFinite(position[1])) return null;
   return (
-    <div style={{ height: 310, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--legacy-border)', marginTop: 12 }}>
-      <MapContainer center={position} zoom={16} style={{ height: '100%', width: '100%' }} scrollWheelZoom>
-        <TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+    <div className="ps-map mt-3 h-72 overflow-hidden rounded-xl border sm:h-80">
+      <MapContainer center={position} zoom={16} className="size-full" scrollWheelZoom>
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
         <Recenter position={position} />
         <DraggableMarker position={position} onMove={onMove} />
       </MapContainer>

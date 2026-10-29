@@ -34,6 +34,7 @@ import { SlotBoard, SlotLegend, SlotTile } from '@/components/kit/SlotBoard';
 import StatusBadge from '@/components/kit/StatusBadge';
 import ThemeToggle from '@/components/kit/ThemeToggle';
 import LiveLot from '@/components/lot/LiveLot';
+import { CapacityLotMap, CapacityMini, EvBayMini, EvLotMap } from '@/components/kit/lotmap';
 import { STATUS_TONES } from '@/lib/status';
 
 // Dev-only style guide (/_design). Not routed in production builds.
@@ -114,6 +115,24 @@ export default function DesignPage() {
           <div className="grid items-start gap-6 lg:grid-cols-[1.4fr_1fr]">
             <LiveLot />
             <LiveLot variant="mini" />
+          </div>
+        </Section>
+
+        <Section title="Lot Map">
+          <p className="text-sm text-text-muted">Illustrative data. On product pages the Lot Map only ever draws real availability.</p>
+          <EvLotMap
+            slots={bays.map((b) => ({ _id: b.value, slotNumber: b.id, chargerPowerKw: b.powerKw, connectorType: b.meta, availabilityStatus: b.state, available: b.state === 'available' }))}
+            selectedId={bay}
+            onSelect={setBay}
+            rate={60}
+          />
+          <div className="grid gap-4 lg:grid-cols-2">
+            <CapacityLotMap total={70} reserved={52} available={18} windowLabel="Today, 10:00–12:00" vehicleLabel="car spaces" />
+            <CapacityLotMap total={12} reserved={12} available={0} windowLabel="Today, 18:00–20:00" vehicleLabel="car spaces" />
+          </div>
+          <div className="flex flex-wrap items-stretch gap-4">
+            <CapacityMini available={18} total={70} className="w-48" />
+            <EvBayMini bayId="EV02" />
           </div>
         </Section>
 

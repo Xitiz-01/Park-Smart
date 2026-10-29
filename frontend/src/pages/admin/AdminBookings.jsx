@@ -1,149 +1,137 @@
-import React, { useEffect, useState } from 'react';
-import { bookingsAPI } from '../../services/api';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { LogIn, LogOut, RefreshCw, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { LogIn, LogOut, RefreshCw } from 'lucide-react';
+import { bookingsAPI } from '../../services/api';
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useConfirm } from '@/components/kit/ConfirmDialog';
-import StatusBadge from '../../components/ui/StatusBadge';
+import DataTable from '@/components/kit/DataTable';
+import EmptyState, { ErrorState } from '@/components/kit/EmptyState';
+import PageHeader from '@/components/kit/PageHeader';
+import StatusBadge from '@/components/kit/StatusBadge';
+import { bookingAssignment, bookingLocationName, bookingWindow, formatRupees } from '@/lib/bookings';
 
-const PAYMENT_METHOD_LABELS = {
-  card: 'Card',
-  upi: 'UPI',
-  netbanking: 'Net Banking',
-  wallet: 'Wallet',
-};
+const PAYMENT_METHOD_LABELS = { card: 'Card', upi: 'UPI', netbanking: 'Net banking', wallet: 'Wallet' };
+const FILTERS = [['all', 'All'], ['upcoming', 'Upcoming'], ['active', 'Checked in'], ['completed', 'Completed'], ['cancelled', 'Cancelled']];
 
 export default function AdminBookings() {
   const confirm = useConfirm();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('');
-  const [acting, setActing] = useState(null);
+  const [failed, setFailed] = useState(false);
+  const [acting, setActing] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filter = FILTERS.some(([value]) => value === searchParams.get('status')) ? searchParams.get('status') : 'all';
+  const setFilter = (value) => setSearchParams((params) => {
+    const next = new URLSearchParams(params);
+    if (value === 'all') next.delete('status'); else next.set('status', value);
+    return next;
+  }, { replace: true });
 
-  const fetchBookings = () => {
+  // The status filter is applied by the API, as before.
+  const fetchBookings = useCallback(() => {
     setLoading(true);
-    const params = {};
-    if (filter) params.status = filter;
-    bookingsAPI.getAll(params)
-      .then(res => setBookings(res.data.bookings))
+    setFailed(false);
+    bookingsAPI.getAll(filter !== 'all' ? { status: filter } : {})
+      .then((res) => setBookings(res.data.bookings))
+      .catch(() => setFailed(true))
       .finally(() => setLoading(false));
-  };
+  }, [filter]);
+  useEffect(fetchBookings, [fetchBookings]);
 
-  useEffect(() => { fetchBookings(); }, [filter]);
-
-  const handleCheckIn = async (id) => {
-    setActing(id + 'in');
+  const run = useCallback(async (booking, kind) => {
+    const plate = booking.vehicle?.licensePlate || 'this booking';
+    if (kind === 'cancel' && !(await confirm({
+      title: `Cancel ${booking.bookingCode}?`,
+      description: `${plate}, ${bookingWindow(booking)}. The driver’s space is released.`,
+      confirmLabel: 'Cancel booking',
+      cancelLabel: 'Keep booking',
+      tone: 'danger',
+    }))) return;
+    setActing(`${booking._id}:${kind}`);
     try {
-      await bookingsAPI.checkIn(id);
-      toast.success('Customer checked in');
+      if (kind === 'in') await bookingsAPI.checkIn(booking._id);
+      else if (kind === 'out') await bookingsAPI.checkOut(booking._id);
+      else await bookingsAPI.cancel(booking._id);
+      toast.success({ in: `${plate} checked in`, out: `${plate} checked out`, cancel: 'Booking cancelled' }[kind]);
       fetchBookings();
     } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
-    finally { setActing(null); }
-  };
+    finally { setActing(''); }
+  }, [confirm, fetchBookings]);
 
-  const handleCheckOut = async (id) => {
-    setActing(id + 'out');
-    try {
-      await bookingsAPI.checkOut(id);
-      toast.success('Customer checked out');
-      fetchBookings();
-    } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
-    finally { setActing(null); }
-  };
-
-  const handleCancel = async (id) => {
-    if (!(await confirm({ title: 'Cancel this booking?', confirmLabel: 'Cancel booking', cancelLabel: 'Keep booking', tone: 'danger' }))) return;
-    try {
-      await bookingsAPI.cancel(id);
-      toast.success('Booking cancelled');
-      fetchBookings();
-    } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
-  };
+  const columns = useMemo(() => [
+    {
+      id: 'vehicle', accessorFn: (b) => `${b.vehicle?.licensePlate || ''} ${b.bookingCode}`, header: 'Vehicle', meta: { mobile: 'title' },
+      cell: ({ row }) => <span><span className="block font-mono font-semibold">{row.original.vehicle?.licensePlate || '—'}</span><span className="block font-mono text-xs text-text-muted">{row.original.bookingCode}</span></span>,
+    },
+    {
+      id: 'driver', accessorFn: (b) => `${b.user?.name || ''} ${b.user?.phone || ''}`, header: 'Driver', meta: { mobile: 'subtitle' },
+      cell: ({ row }) => <span><span className="block">{row.original.user?.name || 'Unknown driver'}</span><span className="block font-mono text-xs text-text-muted">{row.original.user?.phone}</span></span>,
+    },
+    {
+      id: 'space', accessorFn: (b) => `${bookingLocationName(b)} ${bookingAssignment(b)}`, header: 'Where',
+      cell: ({ row }) => <span><span className="block">{bookingLocationName(row.original)}</span><span className="block text-xs text-text-muted">{row.original.bookingType === 'regular' ? 'Capacity space' : bookingAssignment(row.original)}</span></span>,
+    },
+    { id: 'when', accessorFn: (b) => new Date(b.startTime).getTime(), header: 'When', cell: ({ row }) => <span className="md:whitespace-nowrap">{bookingWindow(row.original)}</span> },
+    { id: 'amount', accessorFn: (b) => Number(b.totalAmount) || 0, header: 'Amount', cell: ({ getValue }) => <span className="font-mono">{formatRupees(getValue())}</span> },
+    {
+      id: 'payment', accessorFn: (b) => b.paymentStatus || 'pending', header: 'Payment',
+      cell: ({ row }) => <span className="grid justify-items-start gap-1"><StatusBadge status={row.original.paymentStatus || 'pending'} /><span className="text-xs text-text-muted">{PAYMENT_METHOD_LABELS[row.original.paymentMethod] || 'No method'}</span></span>,
+    },
+    { id: 'status', accessorKey: 'status', header: 'Status', cell: ({ getValue }) => <StatusBadge status={getValue()}>{getValue() === 'active' ? 'Checked in' : undefined}</StatusBadge> },
+    {
+      id: 'actions', header: <span className="sr-only">Actions</span>, enableSorting: false, meta: { mobile: 'actions' },
+      cell: ({ row }) => {
+        const b = row.original;
+        if (!['upcoming', 'active'].includes(b.status)) return null;
+        const plate = b.vehicle?.licensePlate || b.bookingCode;
+        const busy = (kind) => acting === `${b._id}:${kind}`;
+        return (
+          <div className="flex flex-wrap gap-2">
+            {b.status === 'upcoming' && (
+              <Button size="sm" disabled={Boolean(acting)} onClick={() => run(b, 'in')}>{busy('in') ? <Spinner data-icon="inline-start" /> : <LogIn data-icon="inline-start" />}Check in<span className="sr-only"> {plate}</span></Button>
+            )}
+            {b.status === 'active' && (
+              <Button size="sm" variant="outline" disabled={Boolean(acting)} onClick={() => run(b, 'out')}>{busy('out') ? <Spinner data-icon="inline-start" /> : <LogOut data-icon="inline-start" />}Check out<span className="sr-only"> {plate}</span></Button>
+            )}
+            {/* Was a bare "✕" read aloud as "multiplication x" (audit F). */}
+            <Button size="sm" variant="ghost" className="text-danger hover:text-danger" disabled={Boolean(acting)} onClick={() => run(b, 'cancel')}>
+              {busy('cancel') ? <Spinner data-icon="inline-start" /> : <XCircle data-icon="inline-start" />}Cancel<span className="sr-only"> booking {plate}</span>
+            </Button>
+          </div>
+        );
+      },
+    },
+  ], [acting, run]);
 
   return (
-    <div className="fade-in">
-      <div className="page-header flex items-center justify-between" style={{ flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h1>Manage Bookings</h1>
-          <p>Check-in, check-out, and monitor all reservations</p>
-        </div>
-        <button onClick={fetchBookings} className="btn btn-outline"><RefreshCw size={15} /> Refresh</button>
-      </div>
-
-      {/* Filter tabs */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-        {['', 'upcoming', 'active', 'completed', 'cancelled'].map(s => (
-          <button className="filter-chip" key={s} onClick={() => setFilter(s)} style={{
-            padding: '7px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            background: filter === s ? 'var(--legacy-accent)' : 'var(--legacy-bg-card)',
-            color: filter === s ? '#fff' : 'var(--legacy-text-secondary)',
-            border: `1px solid ${filter === s ? 'var(--legacy-accent)' : 'var(--legacy-border)'}`,
-          }}>
-            {s === '' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <div className="loading-spinner"><div className="spinner" /></div>
+    <>
+      <PageHeader
+        eyebrow="Admin"
+        title="Bookings"
+        description="Every booking on ParkSmart. Check drivers in and out, or cancel on their behalf."
+        actions={<Button variant="outline" onClick={fetchBookings} disabled={loading}><RefreshCw data-icon="inline-start" />Refresh</Button>}
+      />
+      <Tabs value={filter} onValueChange={setFilter} className="mb-4">
+        <TabsList aria-label="Filter bookings by status" className="h-auto w-full justify-start overflow-x-auto sm:w-fit">
+          {FILTERS.map(([value, label]) => <TabsTrigger key={value} value={value} className="px-3">{label}</TabsTrigger>)}
+        </TabsList>
+      </Tabs>
+      {failed ? (
+        <ErrorState description="Bookings didn’t load. Check your connection and try again." onRetry={fetchBookings} />
       ) : (
-        <div className="card">
-          <div className="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>Code</th><th>Customer</th><th>Slot</th><th>Vehicle</th><th>Start</th><th>Expected End</th><th>Amount</th><th>Payment</th><th>Status</th><th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bookings.map(b => (
-                  <tr key={b._id}>
-                    <td style={{ fontFamily: 'var(--legacy-font-display)', fontSize: 12, color: 'var(--legacy-accent)' }}>#{b.bookingCode}</td>
-                    <td style={{ color: 'var(--legacy-text-primary)' }}>
-                      {b.user?.name}
-                      <br /><span style={{ fontSize: 12, color: 'var(--legacy-text-muted)' }}>{b.user?.phone}</span>
-                    </td>
-                    <td>{b.slot?.slotNumber || 'Capacity'}<br /><span style={{ fontSize: 12, color: 'var(--legacy-text-muted)' }}>{b.parkingLocation?.name || b.slot?.parkingLocation?.name || 'Legacy'}</span></td>
-                    <td style={{ fontFamily: 'var(--legacy-font-display)', fontSize: 13 }}>{b.vehicle?.licensePlate}</td>
-                    <td style={{ fontSize: 13 }}>{format(new Date(b.startTime), 'dd MMM, hh:mm a')}</td>
-                    <td style={{ fontSize: 13 }}>{format(new Date(b.expectedEndTime), 'dd MMM, hh:mm a')}</td>
-                    <td style={{ color: 'var(--legacy-accent)', fontWeight: 600 }}>₹{b.totalAmount}</td>
-                    <td>
-                      <StatusBadge status={b.paymentStatus || 'pending'} />
-                      <div style={{ marginTop: 6, fontSize: 12, color: 'var(--legacy-text-muted)' }}>
-                        {PAYMENT_METHOD_LABELS[b.paymentMethod] || 'N/A'}
-                      </div>
-                    </td>
-                    <td><StatusBadge status={b.status} /></td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        {b.status === 'upcoming' && (
-                          <button onClick={() => handleCheckIn(b._id)} disabled={acting === b._id + 'in'}
-                            className="btn btn-primary btn-sm" title="Check In">
-                            <LogIn size={13} /> {acting === b._id + 'in' ? '...' : 'In'}
-                          </button>
-                        )}
-                        {b.status === 'active' && (
-                          <button onClick={() => handleCheckOut(b._id)} disabled={acting === b._id + 'out'}
-                            className="btn btn-outline btn-sm" title="Check Out">
-                            <LogOut size={13} /> {acting === b._id + 'out' ? '...' : 'Out'}
-                          </button>
-                        )}
-                        {(b.status === 'upcoming' || b.status === 'active') && (
-                          <button onClick={() => handleCancel(b._id)} className="btn btn-danger btn-sm">✕</button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {bookings.length === 0 && (
-              <div className="empty-state"><p>No bookings found.</p></div>
-            )}
-          </div>
-        </div>
+        <DataTable
+          columns={columns}
+          data={bookings}
+          getRowId={(b) => b._id}
+          loading={loading}
+          searchLabel="Search bookings"
+          searchPlaceholder="Plate, code or driver…"
+          empty={bookings.length ? undefined : <EmptyState title={filter === 'all' ? 'No bookings yet' : 'Nothing with this status'} description={filter === 'all' ? 'Bookings appear here as drivers make them.' : 'Try another status.'} />}
+        />
       )}
-    </div>
+    </>
   );
 }

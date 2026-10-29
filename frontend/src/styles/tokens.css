@@ -58,6 +58,13 @@
   --lot-car-3: #45536a;
   --lot-glass: #1f2835;
 
+  /* Number plates look the same in both themes: white plate, black
+     characters, a blue IND strip (green for electric vehicles). */
+  --plate-bg: #ffffff;
+  --plate-text: #111418;
+  --plate-ind: #0b3d91;
+  --plate-ev: #12753a;
+
   /* Feedback */
   --danger: #c0362c;
   --danger-soft: #fbe6e3;

@@ -18,8 +18,8 @@
    and stay calm around 20px. */
 @import "@fontsource-variable/bricolage-grotesque/opsz.css";
 @import "./tokens.css";
-@import "../index.css" layer(legacy);
-@import "leaflet/dist/leaflet.css" layer(vendor);
+/* index.css (layer legacy) and Leaflet (layer vendor) are imported by the
+   screens that need them: see styles/legacy.css and styles/leaflet.css. */
 
 @custom-variant dark (&:is(.dark *));
 
@@ -64,6 +64,10 @@
   --color-lane-paint: var(--lane-paint);
   --color-scrim: var(--scrim);
   --color-danger: var(--danger);
+  --color-plate-bg: var(--plate-bg);
+  --color-plate-text: var(--plate-text);
+  --color-plate-ind: var(--plate-ind);
+  --color-plate-ev: var(--plate-ev);
   --color-lot-asphalt: var(--lot-asphalt);
   --color-lot-aisle: var(--lot-aisle);
   --color-lot-line: var(--lot-line);
@@ -193,4 +197,76 @@
     color-mix(in oklab, currentColor 22%, transparent) 0 2px,
     transparent 2px 7px
   );
+}
+
+/* Leaflet maps on redesigned pages: token-coloured markers, and the same
+   OpenStreetMap tiles tuned to the dark theme (attribution stays visible). */
+.ps-map-marker {
+  fill: var(--brand);
+  fill-opacity: 1;
+  stroke: var(--surface-raised);
+  stroke-width: 3;
+}
+.dark .ps-map .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6);
+}
+.ps-map .leaflet-container {
+  min-height: 0;
+  background: var(--surface-sunken);
+  font-family: var(--font-sans);
+}
+.ps-map .leaflet-control-attribution {
+  background: color-mix(in oklab, var(--surface-raised) 85%, transparent);
+  color: var(--text-muted);
+}
+.ps-map .leaflet-control-attribution a {
+  color: var(--brand-strong);
+}
+
+/* Find Parking markers: price pills coloured by availability (the count is
+   always in the card and popup too), the search origin and radius. */
+.ps-pin {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--surface-raised);
+  font: 600 0.75rem/1.4 var(--font-mono);
+  white-space: nowrap;
+  box-shadow: var(--shadow-raised);
+  transform-origin: center bottom;
+  transition: transform 150ms var(--ease-standard);
+}
+.ps-pin-free { background: var(--slot-available-soft); color: var(--slot-available); border-color: var(--slot-available); }
+.ps-pin-low { background: var(--slot-reserved-soft); color: var(--slot-reserved); border-color: var(--slot-reserved); }
+.ps-pin-full, .ps-pin-closed { background: var(--surface-raised); color: var(--text-muted); border-color: var(--border-strong); }
+.ps-pin-active { transform: scale(1.18); z-index: 1000; box-shadow: 0 0 0 3px var(--focus); }
+@media (prefers-reduced-motion: reduce) { .ps-pin { transition: none; } }
+.ps-origin {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--brand);
+  border: 3px solid var(--surface-raised);
+  box-shadow: 0 0 0 6px color-mix(in oklab, var(--brand) 25%, transparent);
+}
+.ps-map-radius { stroke: var(--brand); stroke-width: 1.5; fill: var(--brand); fill-opacity: 0.05; }
+.ps-map .leaflet-popup-content-wrapper, .ps-map .leaflet-popup-tip {
+  background: var(--surface-raised);
+  color: var(--text);
+  box-shadow: var(--shadow-overlay);
+}
+.ps-map .leaflet-popup-content { margin: 0.75rem 0.875rem; font-family: var(--font-sans); }
+
+/* Location editor: the draggable pin that marks the entrance. */
+.ps-drop-pin {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: 50% 50% 50% 0;
+  background: var(--brand);
+  border: 3px solid var(--surface-raised);
+  transform: rotate(-45deg);
+  box-shadow: var(--shadow-raised);
+  cursor: grab;
 }

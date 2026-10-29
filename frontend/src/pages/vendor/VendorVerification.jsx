@@ -1,29 +1,147 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FileCheck2, Landmark, ShieldCheck, Upload, WalletCards } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Check, ExternalLink, FileCheck2, Landmark, ShieldCheck, Upload, WalletCards } from 'lucide-react';
 import { toast } from 'sonner';
-import StatusBadge from '../../components/ui/StatusBadge';
 import { verificationAPI, vendorsAPI } from '../../services/api';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Spinner } from '@/components/ui/spinner';
+import { ErrorState } from '@/components/kit/EmptyState';
+import FormField from '@/components/kit/FormField';
+import { ListSkeleton } from '@/components/kit/Loaders';
+import PageHeader from '@/components/kit/PageHeader';
+import StatusBadge from '@/components/kit/StatusBadge';
+import { cn } from '@/lib/utils';
+import {
+  AUTHORIZATION_TYPES, DOCUMENT_TYPES, VENDOR_CHECKS, VERIFICATION_PROVIDERS, verificationLabel,
+} from '@/lib/verification';
 
-const steps = [
-  { key: 'identityStatus', label: 'Identity', icon: ShieldCheck, copy: 'PAN, driving licence, or another supported identity proof.' },
-  { key: 'businessStatus', label: 'Business', icon: FileCheck2, copy: 'GSTIN, CIN, or business registration evidence.' },
-  { key: 'bankStatus', label: 'Bank readiness', icon: WalletCards, copy: 'Bank proof or a cancelled cheque for future payouts.' },
-];
+const CHECK_ICONS = { identityStatus: ShieldCheck, businessStatus: FileCheck2, bankStatus: WalletCards };
+const FILE_TYPES = 'application/pdf,image/jpeg,image/png';
+// Start calls for redirect providers, by provider id (the API layer stays the
+// only place that knows the endpoints).
+const REDIRECT_STARTERS = { digilocker: verificationAPI.startDigiLocker };
 
-const typesByCategory = {
-  IDENTITY: ['PAN', 'DRIVING_LICENCE', 'OTHER_IDENTITY'],
-  BUSINESS: ['GSTIN', 'CIN', 'BUSINESS_REGISTRATION'],
-  BANK: ['BANK_PROOF', 'CANCELLED_CHEQUE'],
-};
+// One consent row, the same size everywhere (the two used to differ: audit M2).
+function ConsentRow({ checked, onChange, disabled, children }) {
+  return (
+    <label className={cn('flex items-start gap-3 rounded-lg bg-surface-sunken p-3 text-sm', disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer')}>
+      <Checkbox className="mt-0.5" checked={checked} disabled={disabled} onCheckedChange={(value) => onChange(value === true)} />
+      <span>{children}</span>
+    </label>
+  );
+}
 
-const label = (value) => String(value || '').replaceAll('_', ' ').toLowerCase().replace(/^./, (c) => c.toUpperCase());
+// A file input that says what is picked, and that it stays private.
+function FilePicker({ label, file, onChange }) {
+  const id = useId();
+  return (
+    <div className="grid gap-2">
+      <label htmlFor={id} className="text-sm font-medium">{label}<span aria-hidden="true" className="text-text-muted"> *</span></label>
+      <input
+        id={id}
+        type="file"
+        accept={FILE_TYPES}
+        required
+        aria-describedby={`${id}-hint`}
+        onChange={(event) => onChange(event.target.files[0] || null)}
+        className="block w-full cursor-pointer rounded-lg border border-input bg-surface-raised text-sm text-text-muted file:mr-3 file:cursor-pointer file:border-0 file:border-r file:bg-surface-sunken file:px-3 file:py-2.5 file:text-sm file:font-medium file:text-foreground focus-visible:outline-2 focus-visible:outline-focus"
+      />
+      <p id={`${id}-hint`} className="text-sm text-text-muted">
+        {file ? <>Selected: <span className="font-medium text-foreground">{file.name}</span></> : 'PDF, JPEG or PNG, up to 5 MB. Stored privately; only reviewers can open it.'}
+      </p>
+    </div>
+  );
+}
+
+function Panel({ id, title, description, children, className }) {
+  return (
+    <section aria-labelledby={id} className={cn('min-w-0 rounded-2xl border bg-card p-5 shadow-hairline sm:p-6', className)}>
+      <h2 id={id} className="font-display text-lg font-semibold">{title}</h2>
+      {description && <p className="mt-1 text-sm text-text-muted">{description}</p>}
+      <div className="mt-5">{children}</div>
+    </section>
+  );
+}
+
+function EvidenceList({ items, empty, describe }) {
+  if (!items?.length) return <p className="text-sm text-text-muted">{empty}</p>;
+  return (
+    <ul className="m-0 grid list-none gap-2 p-0">
+      {items.map((item) => {
+        const reason = item.rejectionReason || item.resubmissionReason;
+        return (
+          <li key={item._id} className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 rounded-lg bg-surface-sunken p-3 text-sm">
+            <span className="min-w-0">
+              <span className="block font-medium">{describe(item)}</span>
+              {reason && <span className="mt-1 block text-slot-reserved">Action needed: {reason}</span>}
+            </span>
+            <StatusBadge status={item.status} />
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+// Provider cards come from VERIFICATION_PROVIDERS, so removing one (DigiLocker
+// is due to go) is a one-line change in lib/verification.js.
+function ProviderCard({ provider, available, busy, onRedirect, onCheck }) {
+  const [consent, setConsent] = useState(false);
+  const [form, setForm] = useState({ kind: provider.checks?.[0] || '', identifier: '', name: '' });
+
+  const submit = async (event) => {
+    event.preventDefault();
+    if (provider.kind === 'redirect') { onRedirect(provider, consent); return; }
+    const ok = await onCheck(form.kind, { identifier: form.identifier, name: form.name, businessName: form.name, consent });
+    if (ok) { setForm((value) => ({ ...value, identifier: '' })); setConsent(false); }
+  };
+
+  return (
+    <article className="rounded-xl border bg-surface-raised p-4">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <h3 className="font-medium">{provider.name}</h3>
+        <StatusBadge tone={available ? 'success' : 'neutral'}>{available ? 'Available' : 'Not available yet'}</StatusBadge>
+      </div>
+      <p className="mt-1 text-sm text-text-muted">{available ? provider.summary : provider.unavailable}</p>
+      {available && (
+        <form onSubmit={submit} className="mt-4 grid gap-4">
+          {provider.kind === 'checks' && (
+            <div className="grid gap-4 sm:grid-cols-[8rem_minmax(0,1fr)]">
+              <FormField label="Check">
+                <NativeSelect className="w-full" value={form.kind} onChange={(event) => setForm({ ...form, kind: event.target.value })}>
+                  {provider.checks.map((check) => <NativeSelectOption key={check} value={check}>{verificationLabel(check)}</NativeSelectOption>)}
+                </NativeSelect>
+              </FormField>
+              <FormField label={`${verificationLabel(form.kind)} number`} required>
+                <Input className="font-mono uppercase" autoComplete="off" spellCheck={false} value={form.identifier} onChange={(event) => setForm({ ...form, identifier: event.target.value })} />
+              </FormField>
+              <FormField label="Name or business name" required className="sm:col-span-2">
+                <Input autoComplete="organization" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
+              </FormField>
+            </div>
+          )}
+          <ConsentRow checked={consent} onChange={setConsent}>{provider.consent}</ConsentRow>
+          <div>
+            <Button type="submit" variant="outline" disabled={busy || !consent}>
+              {busy ? <Spinner data-icon="inline-start" /> : provider.kind === 'redirect' && <ExternalLink data-icon="inline-start" />}
+              {provider.action}
+            </Button>
+          </div>
+        </form>
+      )}
+    </article>
+  );
+}
 
 export default function VendorVerification() {
   const [data, setData] = useState(null);
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [busy, setBusy] = useState('');
   const [category, setCategory] = useState('IDENTITY');
   const [documentType, setDocumentType] = useState('PAN');
   const [file, setFile] = useState(null);
@@ -32,17 +150,17 @@ export default function VendorVerification() {
   const [authType, setAuthType] = useState('OWNERSHIP_PROOF');
   const [authFile, setAuthFile] = useState(null);
   const [authConsent, setAuthConsent] = useState(false);
-  const [digiConsent, setDigiConsent] = useState(false);
-  const [providerForm, setProviderForm] = useState({ kind: 'PAN', identifier: '', name: '', consent: false });
+  const [formKeys, setFormKeys] = useState({ document: 0, authorization: 0 });
   const [searchParams] = useSearchParams();
 
   const load = useCallback(async () => {
+    setFailed(false);
     try {
       const [verification, parking] = await Promise.all([verificationAPI.getMine(), vendorsAPI.getLocations()]);
       setData(verification.data);
       setLocations(parking.data.locations || []);
       setAuthLocation((value) => value || parking.data.locations?.[0]?._id || '');
-    } catch (error) { toast.error(error.response?.data?.message || 'Unable to load verification'); }
+    } catch { setFailed(true); }
     finally { setLoading(false); }
   }, []);
 
@@ -51,17 +169,23 @@ export default function VendorVerification() {
     if (searchParams.get('digilocker') === 'success') toast.success('DigiLocker documents received');
   }, [searchParams]);
 
-  const progress = useMemo(() => data ? steps.filter((step) => data.verification?.[step.key] === 'VERIFIED').length : 0, [data]);
+  const verification = data?.verification || {};
+  const progress = useMemo(() => VENDOR_CHECKS.filter((check) => verification[check.key] === 'VERIFIED').length, [verification]);
+  const authorizationStatus = data?.parkingAuthorizations?.some((item) => item.status === 'VERIFIED') ? 'VERIFIED' : 'NOT_STARTED';
 
   const submitDocument = async (event) => {
     event.preventDefault();
     if (!file) return toast.error('Select a document');
     const body = new FormData();
     body.append('category', category); body.append('documentType', documentType); body.append('consent', String(consent)); body.append('document', file);
-    setBusy(true);
-    try { await verificationAPI.submitDocument(body); toast.success('Document sent for review'); setFile(null); setConsent(false); await load(); }
-    catch (error) { toast.error(error.response?.data?.message || 'Upload failed'); }
-    finally { setBusy(false); }
+    setBusy('document');
+    try {
+      await verificationAPI.submitDocument(body);
+      toast.success('Document sent for review');
+      setFile(null); setConsent(false); setFormKeys((keys) => ({ ...keys, document: keys.document + 1 }));
+      await load();
+    } catch (error) { toast.error(error.response?.data?.message || 'Upload failed'); }
+    finally { setBusy(''); }
   };
 
   const submitAuthorization = async (event) => {
@@ -69,78 +193,165 @@ export default function VendorVerification() {
     if (!authLocation || !authFile) return toast.error('Choose a location and document');
     const body = new FormData();
     body.append('documentType', authType); body.append('consent', String(authConsent)); body.append('document', authFile);
-    setBusy(true);
-    try { await verificationAPI.submitParkingAuthorization(authLocation, body); toast.success('Authorization sent for review'); setAuthFile(null); setAuthConsent(false); await load(); }
-    catch (error) { toast.error(error.response?.data?.message || 'Upload failed'); }
-    finally { setBusy(false); }
-  };
-
-  const startDigiLocker = async () => {
-    setBusy(true);
-    try { const { data: result } = await verificationAPI.startDigiLocker(digiConsent); window.location.assign(result.authorizationUrl); }
-    catch (error) { toast.error(error.response?.data?.message || 'DigiLocker is unavailable'); setBusy(false); }
-  };
-
-  const runExternal = async (event) => {
-    event.preventDefault(); setBusy(true);
+    setBusy('authorization');
     try {
-      await verificationAPI.verifyExternal(providerForm.kind, { identifier: providerForm.identifier, name: providerForm.name, businessName: providerForm.name, consent: providerForm.consent });
-      toast.success(`${providerForm.kind} verification completed`); setProviderForm((value) => ({ ...value, identifier: '', consent: false })); await load();
-    } catch (error) { toast.error(error.response?.data?.message || 'Provider verification failed'); }
-    finally { setBusy(false); }
+      await verificationAPI.submitParkingAuthorization(authLocation, body);
+      toast.success('Authorization sent for review');
+      setAuthFile(null); setAuthConsent(false); setFormKeys((keys) => ({ ...keys, authorization: keys.authorization + 1 }));
+      await load();
+    } catch (error) { toast.error(error.response?.data?.message || 'Upload failed'); }
+    finally { setBusy(''); }
   };
 
-  if (loading) return <div className="loading-spinner"><div className="spinner" /></div>;
-  const verification = data?.verification || {};
-  return <main className="fade-in verification-page">
-    <header className="page-header"><div><span className="page-eyebrow">Trust onboarding</span><h1>Vendor Verification</h1><p>Complete business checks before publishing new parking locations.</p></div></header>
+  const startRedirect = async (provider, providerConsent) => {
+    setBusy(provider.id);
+    try {
+      const { data: result } = await REDIRECT_STARTERS[provider.id](providerConsent);
+      window.location.assign(result.authorizationUrl);
+    } catch (error) { toast.error(error.response?.data?.message || `${provider.name} is unavailable`); setBusy(''); }
+  };
 
-    <section className="card verification-hero" aria-labelledby="overall-status">
-      <div><p className="page-eyebrow">Overall status</p><h2 id="overall-status"><StatusBadge status={verification.overallStatus} /></h2><p>{progress} of 3 vendor checks verified</p></div>
-      <div className="verification-progress" role="progressbar" aria-valuemin="0" aria-valuemax="3" aria-valuenow={progress} aria-label={`${progress} of 3 checks verified`}><span style={{ width: `${(progress / 3) * 100}%` }} /></div>
-      <p><strong>Payout readiness:</strong> {verification.payoutEligible ? 'Eligible' : 'Not eligible yet'} — requires overall and bank verification.</p>
-    </section>
+  const runCheck = async (kind, payload) => {
+    setBusy('checks');
+    try {
+      await verificationAPI.verifyExternal(kind, payload);
+      toast.success(`${kind} verification completed`);
+      await load();
+      return true;
+    } catch (error) { toast.error(error.response?.data?.message || 'Provider verification failed'); return false; }
+    finally { setBusy(''); }
+  };
 
-    <section className="verification-step-grid" aria-label="Verification progress">
-      {steps.map(({ key, label: title, icon: Icon, copy }) => <article className="card verification-step" key={key}><Icon size={22} aria-hidden="true" /><div><h2>{title}</h2><p>{copy}</p><StatusBadge status={verification[key]} /></div></article>)}
-      <article className="card verification-step"><Landmark size={22} aria-hidden="true" /><div><h2>Parking authorization</h2><p>Each location needs its own ownership, lease, NOC, or authorization proof.</p><StatusBadge status={data?.parkingAuthorizations?.some((item) => item.status === 'VERIFIED') ? 'VERIFIED' : 'NOT_STARTED'} /></div></article>
-    </section>
+  const header = <PageHeader eyebrow="Operator" title="Verification" description="Checks ParkSmart needs before your locations can go live. Documents stay private to reviewers." />;
+  if (loading) return <>{header}<ListSkeleton rows={3} /></>;
+  if (failed) return <>{header}<ErrorState description="Your verification details didn’t load. Check your connection and try again." onRetry={load} /></>;
 
-    <div className="verification-columns">
-      <section className="card"><h2>Manual document upload</h2><p className="section-copy">Manual review is always available. PDF, JPEG, or PNG; maximum 5 MB.</p>
-        <form onSubmit={submitDocument} className="verification-form">
-          <label>Verification area<select className="form-input" value={category} onChange={(event) => { const value = event.target.value; setCategory(value); setDocumentType(typesByCategory[value][0]); }}>{Object.keys(typesByCategory).map((value) => <option key={value}>{value}</option>)}</select></label>
-          <label>Document type<select className="form-input" value={documentType} onChange={(event) => setDocumentType(event.target.value)}>{typesByCategory[category].map((value) => <option value={value} key={value}>{label(value)}</option>)}</select></label>
-          <label>Private document<input className="form-input" type="file" accept="application/pdf,image/jpeg,image/png" onChange={(event) => setFile(event.target.files[0])} /></label>
-          <label className="consent-row"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /> I consent to ParkSmart storing this document privately for vendor verification.</label>
-          <button className="btn btn-primary" disabled={busy || !consent}><Upload size={16} /> Submit for review</button>
-        </form>
+  const steps = [
+    ...VENDOR_CHECKS.map((check) => ({ ...check, icon: CHECK_ICONS[check.key], status: verification[check.key] })),
+    { key: 'authorization', label: 'Location authorisation', copy: 'Ownership, lease, NOC or authorisation proof for each location.', icon: Landmark, status: authorizationStatus },
+  ];
+
+  return (
+    <>
+      {header}
+
+      <section aria-labelledby="overall-title" className="rounded-2xl border bg-card p-5 shadow-hairline sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 id="overall-title" className="font-display text-lg font-semibold">Overall status</h2>
+            <p className="mt-1 text-sm text-text-muted"><span className="font-mono font-semibold text-foreground">{progress}</span> of {VENDOR_CHECKS.length} vendor checks verified</p>
+          </div>
+          <StatusBadge status={verification.overallStatus} />
+        </div>
+        <div role="progressbar" aria-valuemin={0} aria-valuemax={VENDOR_CHECKS.length} aria-valuenow={progress} aria-label={`${progress} of ${VENDOR_CHECKS.length} checks verified`} className="mt-4 h-2 overflow-hidden rounded-full bg-surface-sunken">
+          <span className="block h-full origin-left rounded-full bg-slot-available" style={{ transform: `scaleX(${progress / VENDOR_CHECKS.length})` }} />
+        </div>
+        <p className="mt-4 text-sm">
+          <span className="font-medium">Payouts: </span>
+          {verification.payoutEligible ? 'eligible.' : 'not eligible yet. Needs overall and bank verification.'}
+        </p>
+
+        <ol aria-label="Verification steps" className="m-0 mt-6 grid list-none gap-3 p-0 sm:grid-cols-2 xl:grid-cols-4">
+          {steps.map(({ key, label, copy, icon: Icon, status }, index) => {
+            const done = status === 'VERIFIED';
+            return (
+              <li key={key} className="flex gap-3 rounded-xl bg-surface-sunken p-4">
+                <span aria-hidden="true" className={cn('grid size-9 shrink-0 place-items-center rounded-lg', done ? 'bg-slot-available-soft text-slot-available' : 'bg-card text-text-muted')}>
+                  {done ? <Check className="size-4" /> : <Icon className="size-4" />}
+                </span>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-medium"><span className="sr-only">Step {index + 1}: </span>{label}</h3>
+                  <p className="mt-0.5 text-sm text-text-muted">{copy}</p>
+                  <div className="mt-2"><StatusBadge status={status} /></div>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
       </section>
 
-      <section className="card"><h2>Verified provider options</h2><p className="section-copy">Only configured providers are actionable. Provider secrets never reach this browser.</p>
-        <div className="provider-option"><div><strong>DigiLocker Requester</strong><p>{data?.providerAvailability?.digilocker ? 'Available for consent-based verified document retrieval.' : 'Unavailable — requester credentials are pending setup.'}</p></div><label className="consent-row"><input type="checkbox" checked={digiConsent} onChange={(event) => setDigiConsent(event.target.checked)} disabled={!data?.providerAvailability?.digilocker} /> I consent to ParkSmart requesting only permitted identity and business document metadata from DigiLocker for vendor verification.</label><button className="btn btn-outline" disabled={busy || !data?.providerAvailability?.digilocker || !digiConsent} onClick={startDigiLocker}>Verify with DigiLocker</button></div>
-        {data?.providerAvailability?.cashfree ? <form onSubmit={runExternal} className="verification-form provider-option">
-          <strong>Cashfree Secure ID</strong>
-          <label>Check<select className="form-input" value={providerForm.kind} onChange={(event) => setProviderForm({ ...providerForm, kind: event.target.value })}><option>PAN</option><option>GSTIN</option></select></label>
-          <label>Identifier<input className="form-input" autoComplete="off" value={providerForm.identifier} onChange={(event) => setProviderForm({ ...providerForm, identifier: event.target.value })} required /></label>
-          <label>Name / business name<input className="form-input" value={providerForm.name} onChange={(event) => setProviderForm({ ...providerForm, name: event.target.value })} required /></label>
-          <label className="consent-row"><input type="checkbox" checked={providerForm.consent} onChange={(event) => setProviderForm({ ...providerForm, consent: event.target.checked })} /> I consent to this verification request.</label>
-          <button className="btn btn-outline" disabled={busy || !providerForm.consent}>Run verification</button>
-        </form> : <div className="provider-option"><strong>Cashfree Secure ID</strong><p>Unavailable — credentials are not configured. PAN and GSTIN checks will appear here when enabled.</p></div>}
-      </section>
-    </div>
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Panel id="upload-title" title="Upload a document" description="Manual review is always available.">
+          <form key={formKeys.document} onSubmit={submitDocument} className="grid gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField label="Check">
+                <NativeSelect className="w-full" value={category} onChange={(event) => { const value = event.target.value; setCategory(value); setDocumentType(DOCUMENT_TYPES[value][0]); }}>
+                  {Object.keys(DOCUMENT_TYPES).map((value) => <NativeSelectOption key={value} value={value}>{verificationLabel(value)}</NativeSelectOption>)}
+                </NativeSelect>
+              </FormField>
+              <FormField label="Document">
+                <NativeSelect className="w-full" value={documentType} onChange={(event) => setDocumentType(event.target.value)}>
+                  {DOCUMENT_TYPES[category].map((value) => <NativeSelectOption value={value} key={value}>{verificationLabel(value)}</NativeSelectOption>)}
+                </NativeSelect>
+              </FormField>
+            </div>
+            <FilePicker label="File" file={file} onChange={setFile} />
+            <ConsentRow checked={consent} onChange={setConsent}>I consent to ParkSmart storing this document privately for vendor verification.</ConsentRow>
+            <div>
+              <Button type="submit" disabled={busy === 'document' || !consent}>
+                {busy === 'document' ? <Spinner data-icon="inline-start" /> : <Upload data-icon="inline-start" />}
+                {busy === 'document' ? 'Uploading…' : 'Submit for review'}
+              </Button>
+            </div>
+          </form>
+        </Panel>
 
-    <section className="card"><h2>Parking location authorization</h2><p className="section-copy">Submit separate authority evidence for the location you want to publish.</p>
-      {locations.length ? <form onSubmit={submitAuthorization} className="verification-form verification-form-inline">
-        <label>Location<select className="form-input" value={authLocation} onChange={(event) => setAuthLocation(event.target.value)}>{locations.map((item) => <option value={item._id} key={item._id}>{item.name}</option>)}</select></label>
-        <label>Evidence type<select className="form-input" value={authType} onChange={(event) => setAuthType(event.target.value)}>{['OWNERSHIP_PROOF', 'LEASE', 'NOC', 'AUTHORIZATION_LETTER', 'OTHER'].map((value) => <option value={value} key={value}>{label(value)}</option>)}</select></label>
-        <label>Private document<input className="form-input" type="file" accept="application/pdf,image/jpeg,image/png" onChange={(event) => setAuthFile(event.target.files[0])} /></label>
-        <label className="consent-row"><input type="checkbox" checked={authConsent} onChange={(event) => setAuthConsent(event.target.checked)} /> I consent to authorization review.</label>
-        <button className="btn btn-primary" disabled={busy || !authConsent}>Submit authorization</button>
-      </form> : <p>Create a draft parking location first.</p>}
-      <div className="verification-list">{data?.parkingAuthorizations?.map((item) => <div key={item._id}><span>{item.parkingLocation?.name || 'Parking location'} · {label(item.documentType)}{(item.rejectionReason || item.resubmissionReason) && <small className="verification-reason">Action needed: {item.rejectionReason || item.resubmissionReason}</small>}</span><StatusBadge status={item.status} /></div>)}</div>
-    </section>
+        <Panel id="providers-title" title="Verify with a provider" description="Faster where available. Provider keys never reach this browser.">
+          <div className="grid gap-3">
+            {VERIFICATION_PROVIDERS.map((provider) => (
+              <ProviderCard
+                key={provider.id}
+                provider={provider}
+                available={Boolean(data?.providerAvailability?.[provider.availability])}
+                busy={busy === provider.id || (provider.kind === 'checks' && busy === 'checks')}
+                onRedirect={startRedirect}
+                onCheck={runCheck}
+              />
+            ))}
+          </div>
+        </Panel>
+      </div>
 
-    <section className="card"><h2>Submitted evidence</h2><div className="verification-list">{data?.documents?.length ? data.documents.map((item) => <div key={item._id}><span><strong>{label(item.documentType)}</strong> · {label(item.provider)} · submitted {new Date(item.submittedAt).toLocaleDateString()}{(item.rejectionReason || item.resubmissionReason) && <small className="verification-reason">Action needed: {item.rejectionReason || item.resubmissionReason}</small>}</span><StatusBadge status={item.status} /></div>) : <p>No documents submitted yet.</p>}</div></section>
-  </main>;
+      <Panel id="authorization-title" title="Location authorisation" description="Each location needs its own proof that you may run parking there." className="mt-6">
+        {locations.length ? (
+          <form key={formKeys.authorization} onSubmit={submitAuthorization} className="grid gap-4 lg:grid-cols-2">
+            <FormField label="Location">
+              <NativeSelect className="w-full" value={authLocation} onChange={(event) => setAuthLocation(event.target.value)}>
+                {locations.map((item) => <NativeSelectOption value={item._id} key={item._id}>{item.name}</NativeSelectOption>)}
+              </NativeSelect>
+            </FormField>
+            <FormField label="Evidence">
+              <NativeSelect className="w-full" value={authType} onChange={(event) => setAuthType(event.target.value)}>
+                {AUTHORIZATION_TYPES.map((value) => <NativeSelectOption value={value} key={value}>{verificationLabel(value)}</NativeSelectOption>)}
+              </NativeSelect>
+            </FormField>
+            <div className="lg:col-span-2"><FilePicker label="File" file={authFile} onChange={setAuthFile} /></div>
+            <div className="lg:col-span-2"><ConsentRow checked={authConsent} onChange={setAuthConsent}>I consent to ParkSmart reviewing this authorisation document for this location.</ConsentRow></div>
+            <div className="lg:col-span-2">
+              <Button type="submit" disabled={busy === 'authorization' || !authConsent}>
+                {busy === 'authorization' ? <Spinner data-icon="inline-start" /> : <Upload data-icon="inline-start" />}
+                {busy === 'authorization' ? 'Uploading…' : 'Submit authorisation'}
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <p className="text-sm text-text-muted">Add a draft location first, then upload its authorisation here. <Link to="/vendor/locations/new" className="font-medium text-brand hover:underline">Add a location</Link></p>
+        )}
+        <h3 className="mt-6 mb-3 text-sm font-medium">Submitted for locations</h3>
+        <EvidenceList
+          items={data?.parkingAuthorizations}
+          empty="Nothing submitted yet."
+          describe={(item) => `${item.parkingLocation?.name || 'Parking location'} · ${verificationLabel(item.documentType)}`}
+        />
+      </Panel>
+
+      <Panel id="evidence-title" title="Submitted documents" className="mt-6">
+        <EvidenceList
+          items={data?.documents}
+          empty="No documents submitted yet."
+          describe={(item) => `${verificationLabel(item.documentType)} · ${verificationLabel(item.provider)} · submitted ${new Date(item.submittedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+        />
+      </Panel>
+    </>
+  );
 }
