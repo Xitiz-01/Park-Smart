@@ -1,6 +1,6 @@
 # Redesign progress
 
-Branch `feature/frontend-redesign`. Nothing is pushed; `main` is untouched at `d032c2e`.
+Branch `feature/frontend-redesign`. Pushed through Phase 5 (`1f7d42a`); Phase 6 is local only. Local `main` is untouched at `d032c2e` (GitHub’s `main` has moved on to `e81ae17`).
 Plan, audit findings (numbered 1–14 and lettered A–U) and risks are in [AUDIT.md](AUDIT.md).
 
 | Phase | Scope | Status |
@@ -9,9 +9,9 @@ Plan, audit findings (numbered 1–14 and lettered A–U) and risks are in [AUDI
 | 1 | Vite, Tailwind v4, shadcn, tokens, fonts, theming | Done, approved |
 | 2 | Component kit, `/_design` style guide | Done, approved |
 | 3 | Landing (Live Lot), sign-in, sign-up | Done, approved |
-| 4 | Driver workspace | **Done, waiting for review** |
-| 5 (5A/5B) | Operator workspace, except Verification | **Done, waiting for review** |
-| 6 | Admin workspace and Verification | Not started |
+| 4 | Driver workspace | Done, pushed |
+| 5 (5A/5B) | Operator workspace, except Verification | Done, pushed |
+| 6 | Admin workspace and Verification | **Done, waiting for review** |
 | 7 | Clean-up and performance pass | Not started |
 
 ## Decisions on record
@@ -52,6 +52,42 @@ Plus `0b674d1`, `b4e5389`, `ff55cf6` (fixes shared with Phase 5, below).
 | `ddb7a05` | Address combobox tests |
 
 Every `/dashboard` and `/vendor` route is on the new surface (dark mode, `data-surface="new"`) except `/vendor/verification` (Phase 6). `REDESIGNED_PATHS` in `src/lib/theme.js` and the pre-paint script in `index.html` match; a test keeps them in sync.
+
+## Phase 6: admin workspace and Verification
+
+| Commit | What |
+|---|---|
+| `1435c66` | Admin workspace shell and overview |
+| `be012ca` | Users, vendors, bookings and tracked bays as tables that become cards |
+| `54ce254` | Verification review console |
+| `bddf339` | Vendor Verification with data-driven providers; every route on the new surface |
+| `dbf5569` | Booking times and verification cases fit 320 px |
+
+Also after Phase 5: `1f7d42a` fixed the collapsed sidebar (the active highlight covered the rail and hid the expand button) and made the theme button a one-click light/dark switch.
+
+**Every route now uses the new design, and nothing loads the legacy stylesheet.** `index.css`, `styles/legacy.css`, `components/layout/AppShell.jsx` and the old `components/ui/{Brand,LoadingState,MetricCard,PageHeader}` are now unused; deleting them is Phase 7 (`ui/StatusBadge` still has a test).
+
+Decisions taken in this phase:
+- **Provider-agnostic review console**, as agreed: it doesn’t wait for the DigiLocker correction. On the vendor side, providers are one list (`VERIFICATION_PROVIDERS` in `src/lib/verification.js`) plus a start call for redirect providers, so removing DigiLocker is deleting its entry and its starter.
+- **Honest admin figures.** "Bookings marked paid", since payments aren’t collected in the app, and "Tracked bays", since the API counts individually tracked bays (EV and legacy), not capacity. Data sources unchanged (audit Q).
+- **Detail sheets** for vendors (address, contact, decisions) and the bay editor. Users and bookings show everything in the row, so they have no separate sheet.
+- **Booking status filter** stays server-side (`?status=` to the API) and is now kept in the URL; vendor status tabs filter in the page.
+
+Audit findings fixed: E (bay filter labels), F (named cancel, edit and delete buttons), G (a real modal for review decisions: focus trap, Escape, focus returned), H (no nested `main`), I (no emoji icons), M2 (PAN, GSTIN, CIN, NOC stay acronyms; one consent-row size), R (retry on every admin load failure), and #5 (the last duplicate badges).
+
+Clicked through on the fixture stack:
+- **Vendor uploads a PAN document.** Submit stays locked until consent is ticked.
+- **Admin asks for a resubmission.** An empty reason is refused, Escape closes the dialog, focus stays inside it.
+- **Vendor sees the reason.** "Action needed: …" appears on their Verification page.
+- **Admin approves.** Identity turns Verified, and the history shows all three transitions with the reason.
+- **Users:** deactivate, then reactivate.
+- **Vendors:** status tab restored from the URL, details sheet, suspend, re-approve.
+- **Tracked bays:** add, edit the rate, delete.
+- **Admin bookings:** cancel one, with the confirm naming the booking code.
+
+Gate: 129 tests, build and smoke pass. Screenshots of the 7 pages, light and dark, at 1440 / 1024 / 768 / 390 → `screens/phase-6/` (56 PNGs, gitignored; reports tracked). No overflow and no console errors; 320 px checked separately.
+
+Not verified in Phase 6: the DigiLocker and Cashfree flows (both providers are off in the fixtures; their "not available yet" states were checked), and opening a downloaded private file (the download request succeeds; the fixture PDF is a stub).
 
 ## The Lot Map: where every number comes from
 
@@ -138,6 +174,6 @@ Route-level code splitting is kept; every page is its own chunk.
 - Map tiles still come from `tile.openstreetmap.org` (audit S). Pick a provider whose terms fit production (MapTiler, Stadia or Carto). Attribution is now correct, with a licence link.
 - A keyboard way to fine-tune the entrance pin (e.g. nudge buttons).
 - A single backend endpoint for the capacity timeline (it now makes 8 calls).
-- Dead code: `pages/customer/SlotsPage.jsx` (not routed) still uses legacy classes.
+- Phase 7 deletions: `index.css`, `styles/legacy.css`, `AppShell`, the old `components/ui` widgets, and the unrouted `pages/customer/SlotsPage.jsx`.
 - Simulated Lighthouse score (see Performance).
 - Vercel preview check (yours).
