@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Strips AI attribution trailers (Co-authored-by naming an AI assistant,
+# assistant tool trailers and links) from the commit message before the commit
+# is created. Patterns: scripts/commit-hygiene-patterns.txt. Other
+# Co-authored-by lines (real people) are kept.
+#
+# Enable once per clone:  git config core.hooksPath .githooks
+set -euo pipefail
+
+msg_file="$1"
+root="$(git rev-parse --show-toplevel)"
+patterns="$root/scripts/commit-hygiene-patterns.txt"
+
+if grep -qiE -f "$patterns" "$msg_file"; then
+  tmp="$(mktemp)"
+  grep -viE -f "$patterns" "$msg_file" > "$tmp" || true
+  # Drop trailing blank lines left behind by the removed trailers.
+  sed -e ':a' -e '/^\n*$/{$d;N;ba' -e '}' "$tmp" > "$msg_file"
+  rm -f "$tmp"
+  echo "commit-msg: removed AI attribution line(s) from the commit message" >&2
+fi
+
+# Belt and braces: refuse if anything slipped through.
+"$root/scripts/check-commit-clean.sh" --message-file "$msg_file" > /dev/null
