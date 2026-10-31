@@ -3,13 +3,12 @@ const VerificationDocument = require('../models/VerificationDocument');
 const ParkingAuthorization = require('../models/ParkingAuthorization');
 const ParkingLocation = require('../models/ParkingLocation');
 const VendorVerification = require('../models/VendorVerification');
-const VerificationOAuthState = require('../models/VerificationOAuthState');
 const { DOCUMENT_CATEGORIES, DOCUMENT_TYPES, AUTHORIZATION_DOCUMENT_TYPES } = require('../constants/verification');
 const { createStorageService } = require('../services/storageService');
 const {
   getVerificationSummary, getOrCreateVerification, recomputeVerification, audit,
 } = require('../services/verificationService');
-const { CashfreeVerificationProvider, DigiLockerProvider } = require('../services/verificationProviders');
+const { CashfreeVerificationProvider } = require('../services/verificationProviders');
 
 const storage = createStorageService();
 const extensionFor = (mime) => ({ 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png' }[mime] || 'bin');
@@ -21,7 +20,6 @@ const categoryForType = (type) => {
   return null;
 };
 const providers = () => ({
-  digilocker: new DigiLockerProvider(),
   cashfree: new CashfreeVerificationProvider(),
 });
 
@@ -34,7 +32,6 @@ const getMyVerification = async (req, res, next) => {
       ...summary,
       providerAvailability: {
         manual: true,
-        digilocker: configured.digilocker.isConfigured(),
         cashfree: configured.cashfree.isConfigured(),
         cashfreeCapabilities: configured.cashfree.isConfigured() ? ['PAN', 'GSTIN'] : [],
       },
@@ -84,49 +81,6 @@ const submitParkingAuthorization = async (req, res, next) => {
   } catch (error) { return next(error); }
 };
 
-const startDigiLocker = async (req, res, next) => {
-  try {
-    if (req.body.consent !== true) return res.status(400).json({ success: false, message: 'Explicit DigiLocker consent is required' });
-    const provider = providers().digilocker;
-    if (!provider.isConfigured()) return res.status(503).json({ success: false, code: 'PROVIDER_NOT_CONFIGURED', message: 'DigiLocker requester access is not configured' });
-    const state = DigiLockerProvider.generateState();
-    await VerificationOAuthState.create({ vendor: req.vendorProfile._id, provider: 'DIGILOCKER', stateHash: DigiLockerProvider.hashState(state), expiresAt: new Date(Date.now() + 10 * 60 * 1000) });
-    const verification = await getOrCreateVerification(req.vendorProfile._id);
-    verification.consents.push({ provider: 'DIGILOCKER', source: 'DIGILOCKER_OAUTH', purpose: 'Retrieve permitted verified vendor documents', scopes: ['IDENTITY', 'BUSINESS'] });
-    await verification.save();
-    await audit({ vendor: req.vendorProfile._id, action: 'VERIFICATION_STARTED', previousStatus: verification.overallStatus, newStatus: 'PENDING', provider: 'DIGILOCKER' });
-    res.cookie('parksmart_digilocker_state', DigiLockerProvider.hashState(state), { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: 10 * 60 * 1000, path: '/api/vendor-verification/digilocker/callback' });
-    return res.json({ success: true, authorizationUrl: provider.createAuthorizationUrl(state) });
-  } catch (error) { return next(error); }
-};
-
-const parseCookies = (header = '') => Object.fromEntries(header.split(';').map((part) => part.trim().split('=')).filter(([key, value]) => key && value).map(([key, value]) => [key, decodeURIComponent(value)]));
-
-const handleDigiLockerCallback = async (req, res, next) => {
-  try {
-    const stateHash = DigiLockerProvider.hashState(req.query.state || '');
-    const cookieHash = parseCookies(req.headers.cookie).parksmart_digilocker_state;
-    if (!req.query.state || !cookieHash || cookieHash !== stateHash) return res.status(400).json({ success: false, message: 'Invalid DigiLocker callback state' });
-    const oauthState = await VerificationOAuthState.findOneAndUpdate(
-      { stateHash, provider: 'DIGILOCKER', usedAt: null, expiresAt: { $gt: new Date() } },
-      { $set: { usedAt: new Date() } },
-      { new: true }
-    );
-    if (!oauthState) return res.status(400).json({ success: false, message: 'DigiLocker callback state is invalid, expired, or already used' });
-    if (!req.query.code) return res.status(400).json({ success: false, message: 'DigiLocker did not return an authorization code' });
-    const provider = providers().digilocker;
-    const accessToken = await provider.exchangeCode(String(req.query.code));
-    const normalizedDocuments = await provider.fetchDocuments(accessToken);
-    for (const result of normalizedDocuments) {
-      const document = await VerificationDocument.create({ vendor: oauthState.vendor, ...result, submittedAt: new Date(), verifiedAt: new Date() });
-      await audit({ vendor: oauthState.vendor, action: 'PROVIDER_VERIFIED', previousStatus: 'PENDING', newStatus: 'VERIFIED', provider: 'DIGILOCKER', document: document._id });
-    }
-    await recomputeVerification(oauthState.vendor);
-    res.clearCookie('parksmart_digilocker_state', { path: '/api/vendor-verification/digilocker/callback' });
-    return res.redirect(`${process.env.CLIENT_URL || 'https://parksmart.live'}/vendor/verification?digilocker=success`);
-  } catch (error) { return next(error); }
-};
-
 const verifyWithCashfree = async (req, res, next) => {
   try {
     const kind = String(req.params.kind || '').toUpperCase();
@@ -157,7 +111,5 @@ module.exports = {
   getMyVerification,
   submitManualDocument,
   submitParkingAuthorization,
-  startDigiLocker,
-  handleDigiLockerCallback,
   verifyWithCashfree,
 };

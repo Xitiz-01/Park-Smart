@@ -7,7 +7,7 @@ const VERIFICATION_STATUSES = Object.freeze([
   'RESUBMISSION_REQUIRED',
 ]);
 
-const VERIFICATION_PROVIDERS = Object.freeze(['MANUAL', 'DIGILOCKER', 'CASHFREE']);
+const VERIFICATION_PROVIDERS = Object.freeze(['MANUAL', 'CASHFREE']);
 const DOCUMENT_CATEGORIES = Object.freeze(['IDENTITY', 'BUSINESS', 'BANK']);
 const DOCUMENT_TYPES = Object.freeze([
   'PAN',

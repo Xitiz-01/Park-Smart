@@ -15,11 +15,12 @@ test('unknown values fall back to sentence case with acronyms kept', () => {
   expect(verificationLabel('')).toBe('');
 });
 
-test('providers are plain data with unique ids', () => {
+test('providers are plain data with unique ids, and DigiLocker is gone', () => {
+  expect(VERIFICATION_PROVIDERS.map((provider) => provider.id)).toEqual(['cashfree']);
   const ids = VERIFICATION_PROVIDERS.map((provider) => provider.id);
   expect(new Set(ids).size).toBe(ids.length);
   for (const provider of VERIFICATION_PROVIDERS) {
-    expect(['redirect', 'checks']).toContain(provider.kind);
+    expect(provider.checks.length).toBeGreaterThan(0);
     expect(provider.consent).toBeTruthy();
   }
 });

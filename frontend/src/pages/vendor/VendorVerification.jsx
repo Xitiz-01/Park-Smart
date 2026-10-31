@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { Check, ExternalLink, FileCheck2, Landmark, ShieldCheck, Upload, WalletCards } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Check, FileCheck2, Landmark, ShieldCheck, Upload, WalletCards } from 'lucide-react';
 import { toast } from 'sonner';
 import { verificationAPI, vendorsAPI } from '../../services/api';
 import { Button } from '@/components/ui/button';
@@ -20,9 +20,6 @@ import {
 
 const CHECK_ICONS = { identityStatus: ShieldCheck, businessStatus: FileCheck2, bankStatus: WalletCards };
 const FILE_TYPES = 'application/pdf,image/jpeg,image/png';
-// Start calls for redirect providers, by provider id (the API layer stays the
-// only place that knows the endpoints).
-const REDIRECT_STARTERS = { digilocker: verificationAPI.startDigiLocker };
 
 // One consent row, the same size everywhere (the two used to differ: audit M2).
 function ConsentRow({ checked, onChange, disabled, children }) {
@@ -86,15 +83,13 @@ function EvidenceList({ items, empty, describe }) {
   );
 }
 
-// Provider cards come from VERIFICATION_PROVIDERS, so removing one (DigiLocker
-// is due to go) is a one-line change in lib/verification.js.
-function ProviderCard({ provider, available, busy, onRedirect, onCheck }) {
+// Provider cards come from VERIFICATION_PROVIDERS in lib/verification.js.
+function ProviderCard({ provider, available, busy, onCheck }) {
   const [consent, setConsent] = useState(false);
   const [form, setForm] = useState({ kind: provider.checks?.[0] || '', identifier: '', name: '' });
 
   const submit = async (event) => {
     event.preventDefault();
-    if (provider.kind === 'redirect') { onRedirect(provider, consent); return; }
     const ok = await onCheck(form.kind, { identifier: form.identifier, name: form.name, businessName: form.name, consent });
     if (ok) { setForm((value) => ({ ...value, identifier: '' })); setConsent(false); }
   };
@@ -108,25 +103,23 @@ function ProviderCard({ provider, available, busy, onRedirect, onCheck }) {
       <p className="mt-1 text-sm text-text-muted">{available ? provider.summary : provider.unavailable}</p>
       {available && (
         <form onSubmit={submit} className="mt-4 grid gap-4">
-          {provider.kind === 'checks' && (
-            <div className="grid gap-4 sm:grid-cols-[8rem_minmax(0,1fr)]">
-              <FormField label="Check">
-                <NativeSelect className="w-full" value={form.kind} onChange={(event) => setForm({ ...form, kind: event.target.value })}>
-                  {provider.checks.map((check) => <NativeSelectOption key={check} value={check}>{verificationLabel(check)}</NativeSelectOption>)}
-                </NativeSelect>
-              </FormField>
-              <FormField label={`${verificationLabel(form.kind)} number`} required>
-                <Input className="font-mono uppercase" autoComplete="off" spellCheck={false} value={form.identifier} onChange={(event) => setForm({ ...form, identifier: event.target.value })} />
-              </FormField>
-              <FormField label="Name or business name" required className="sm:col-span-2">
-                <Input autoComplete="organization" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
-              </FormField>
-            </div>
-          )}
+          <div className="grid gap-4 sm:grid-cols-[8rem_minmax(0,1fr)]">
+            <FormField label="Check">
+              <NativeSelect className="w-full" value={form.kind} onChange={(event) => setForm({ ...form, kind: event.target.value })}>
+                {provider.checks.map((check) => <NativeSelectOption key={check} value={check}>{verificationLabel(check)}</NativeSelectOption>)}
+              </NativeSelect>
+            </FormField>
+            <FormField label={`${verificationLabel(form.kind)} number`} required>
+              <Input className="font-mono uppercase" autoComplete="off" spellCheck={false} value={form.identifier} onChange={(event) => setForm({ ...form, identifier: event.target.value })} />
+            </FormField>
+            <FormField label="Name or business name" required className="sm:col-span-2">
+              <Input autoComplete="organization" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
+            </FormField>
+          </div>
           <ConsentRow checked={consent} onChange={setConsent}>{provider.consent}</ConsentRow>
           <div>
             <Button type="submit" variant="outline" disabled={busy || !consent}>
-              {busy ? <Spinner data-icon="inline-start" /> : provider.kind === 'redirect' && <ExternalLink data-icon="inline-start" />}
+              {busy && <Spinner data-icon="inline-start" />}
               {provider.action}
             </Button>
           </div>
@@ -151,7 +144,6 @@ export default function VendorVerification() {
   const [authFile, setAuthFile] = useState(null);
   const [authConsent, setAuthConsent] = useState(false);
   const [formKeys, setFormKeys] = useState({ document: 0, authorization: 0 });
-  const [searchParams] = useSearchParams();
 
   const load = useCallback(async () => {
     setFailed(false);
@@ -165,9 +157,6 @@ export default function VendorVerification() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
-  useEffect(() => {
-    if (searchParams.get('digilocker') === 'success') toast.success('DigiLocker documents received');
-  }, [searchParams]);
 
   const verification = data?.verification || {};
   const progress = useMemo(() => VENDOR_CHECKS.filter((check) => verification[check.key] === 'VERIFIED').length, [verification]);
@@ -203,16 +192,8 @@ export default function VendorVerification() {
     finally { setBusy(''); }
   };
 
-  const startRedirect = async (provider, providerConsent) => {
-    setBusy(provider.id);
-    try {
-      const { data: result } = await REDIRECT_STARTERS[provider.id](providerConsent);
-      window.location.assign(result.authorizationUrl);
-    } catch (error) { toast.error(error.response?.data?.message || `${provider.name} is unavailable`); setBusy(''); }
-  };
-
   const runCheck = async (kind, payload) => {
-    setBusy('checks');
+    setBusy('cashfree');
     try {
       await verificationAPI.verifyExternal(kind, payload);
       toast.success(`${kind} verification completed`);
@@ -303,8 +284,7 @@ export default function VendorVerification() {
                 key={provider.id}
                 provider={provider}
                 available={Boolean(data?.providerAvailability?.[provider.availability])}
-                busy={busy === provider.id || (provider.kind === 'checks' && busy === 'checks')}
-                onRedirect={startRedirect}
+                busy={busy === provider.id}
                 onCheck={runCheck}
               />
             ))}

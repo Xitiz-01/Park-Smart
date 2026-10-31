@@ -12,7 +12,7 @@ const NAMES = {
   OWNERSHIP_PROOF: 'Ownership proof', LEASE: 'Lease', NOC: 'NOC',
   AUTHORIZATION_LETTER: 'Authorisation letter', OTHER: 'Other',
   // providers
-  MANUAL: 'Manual upload', DIGILOCKER: 'DigiLocker', CASHFREE: 'Cashfree',
+  MANUAL: 'Manual upload', CASHFREE: 'Cashfree',
   // evidence kinds
   document: 'Vendor document', authorization: 'Parking authorisation',
   // file metadata
@@ -64,27 +64,14 @@ export const VENDOR_CHECKS = [
   { key: 'bankStatus', label: 'Bank', copy: 'Bank proof or a cancelled cheque, for future payouts.' },
 ];
 
-// Verified-provider options shown to vendors. Each entry is self-contained, so
-// adding or removing a provider is one edit here: `availability` is the key in
-// the API's providerAvailability, `kind` picks how the card works.
-//   redirect: consent, then a start call that returns a URL to leave for
-//   checks:   consent, then a form that runs one of `checks` in place
+// Verified-provider options shown to vendors, as data: adding or removing a
+// provider is one edit here. `availability` is the key in the API's
+// providerAvailability; `checks` are the identifiers it can verify in place.
 export const VERIFICATION_PROVIDERS = [
-  {
-    id: 'digilocker',
-    name: 'DigiLocker',
-    availability: 'digilocker',
-    kind: 'redirect',
-    summary: 'Fetch verified identity and business documents from your DigiLocker account.',
-    consent: 'I consent to ParkSmart requesting only permitted identity and business document metadata from DigiLocker for vendor verification.',
-    unavailable: 'Not available yet: ParkSmart’s DigiLocker access is still being set up.',
-    action: 'Continue to DigiLocker',
-  },
   {
     id: 'cashfree',
     name: 'Cashfree Secure ID',
     availability: 'cashfree',
-    kind: 'checks',
     checks: ['PAN', 'GSTIN'],
     summary: 'Check a PAN or GSTIN against official records straight away.',
     consent: 'I consent to this verification request.',

@@ -59,7 +59,9 @@ const request = async (path, { method = 'GET', client, body } = {}) => {
     body: body ? (isForm ? body : JSON.stringify(body)) : undefined,
   });
   client?.update(response);
-  return { status: response.status, payload: await response.json() };
+  // Unknown routes get Express's default HTML 404, which has no JSON payload.
+  const isJson = (response.headers.get('content-type') || '').includes('application/json');
+  return { status: response.status, payload: isJson ? await response.json() : null };
 };
 
 const verificationUpload = (fields, content = Buffer.from('%PDF-1.4\n%%EOF'), options = {}) => {
@@ -192,9 +194,11 @@ test('Better Auth, RBAC, migration, and ParkSmart domain flows work end-to-end',
   const ignoredVendorOverride = await request(`/vendor-verification?vendorId=${applicationB.payload.vendorProfile._id}`, { client: vendorAClient });
   assert.equal(ignoredVendorOverride.payload.verification.vendor, applicationA.payload.vendorProfile._id, 'vendor ID query cannot expose another vendor verification');
   assert.equal((await request('/vendor-verification', { client: customerClient })).status, 403, 'customer cannot access vendor verification');
-  assert.equal(ownVerification.payload.providerAvailability.digilocker, false, 'DigiLocker is disabled without credentials');
-  assert.equal((await request('/vendor-verification/digilocker/start', { method: 'POST', client: vendorAClient, body: { consent: true } })).status, 503, 'disabled DigiLocker cannot fake verification');
-  assert.equal((await request('/vendor-verification/digilocker/callback?state=invalid&code=invalid')).status, 400, 'invalid DigiLocker callback state is rejected');
+  assert.deepEqual(Object.keys(ownVerification.payload.providerAvailability).sort(), ['cashfree', 'cashfreeCapabilities', 'manual'], 'only manual review and Cashfree are offered');
+  assert.equal(ownVerification.payload.providerAvailability.cashfree, false, 'Cashfree is disabled without credentials');
+  assert.equal((await request('/vendor-verification/external/pan', { method: 'POST', client: vendorAClient, body: { consent: true, identifier: 'ABCDE1234F', name: 'Vendor A' } })).status, 503, 'disabled Cashfree cannot fake verification');
+  assert.equal((await request('/vendor-verification/digilocker/start', { method: 'POST', client: vendorAClient, body: { consent: true } })).status, 404, 'the removed DigiLocker start route is gone');
+  assert.equal((await request('/vendor-verification/digilocker/callback?state=x&code=y', { client: vendorAClient })).status, 404, 'the removed DigiLocker callback route is gone');
 
   const invalidUpload = verificationUpload({ category: 'IDENTITY', documentType: 'PAN', consent: true }, Buffer.from('plain text'), { type: 'text/plain', name: 'pan.txt' });
   assert.equal((await request('/vendor-verification/documents', { method: 'POST', client: vendorAClient, body: invalidUpload })).status, 400, 'invalid verification file type is rejected');

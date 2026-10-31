@@ -75,13 +75,6 @@ GEOCODING_PROVIDER=geoapify
 GEOCODING_API_KEY=your_geoapify_api_key
 API_NINJAS_API_KEY=
 VERIFICATION_STORAGE_PROVIDER=local
-DIGILOCKER_ENABLED=false
-DIGILOCKER_CLIENT_ID=
-DIGILOCKER_CLIENT_SECRET=
-DIGILOCKER_REDIRECT_URI=https://api.parksmart.live/api/vendor-verification/digilocker/callback
-DIGILOCKER_AUTHORIZATION_URL=
-DIGILOCKER_TOKEN_URL=
-DIGILOCKER_DOCUMENTS_URL=
 CASHFREE_VERIFY_ENABLED=false
 CASHFREE_CLIENT_ID=
 CASHFREE_CLIENT_SECRET=
@@ -308,7 +301,7 @@ API_NINJAS_API_KEY=your_backend_only_key
 
 Vendor application approval and vendor trust verification are separate. Once an application is approved, the vendor can submit identity, business, and payout-readiness evidence. `VendorVerification` holds normalized aggregate states, `VerificationDocument` holds evidence metadata, `ParkingAuthorization` holds evidence for one parking location, and `VerificationAudit` records status changes without document contents. States are `NOT_STARTED`, `PENDING`, `UNDER_REVIEW`, `VERIFIED`, `REJECTED`, and `RESUBMISSION_REQUIRED`.
 
-`VerificationService` is the provider-independent boundary. Manual review is always available. Cashfree Secure ID is optional and currently uses only its documented synchronous PAN and GSTIN verification APIs. DigiLocker is an optional Requester adapter with a short-lived, hashed, single-use OAuth state, an HttpOnly callback cookie, server-side code exchange, and normalized metadata retrieval. DigiLocker production verification works only when valid requester credentials have been approved and every DigiLocker endpoint variable has been configured. ParkSmart never simulates a successful provider response. The production callback is `https://api.parksmart.live/api/vendor-verification/digilocker/callback`; the result returns to `/vendor/verification`.
+`VerificationService` is the provider-independent boundary. Manual review is always available. Cashfree Secure ID is optional and uses only its documented synchronous PAN and GSTIN verification APIs. The providers are `MANUAL` and `CASHFREE`; DigiLocker was removed (run `npm run migrate:remove-digilocker` once against an existing database to drop its old OAuth state collection; it refuses to apply if any DigiLocker evidence needs a manual decision). ParkSmart never simulates a successful provider response.
 
 Manual files accept signature-validated PDF, JPEG, or PNG content up to 5 MB. Files live behind `StorageService`, not in MongoDB or a public directory. MongoDB stores a random private key plus safe name, MIME, and size metadata. The local provider writes mode-0600 files and is suitable for local/single-instance development. Before horizontally scaling production, add a private S3-compatible adapter or mount durable private storage. Admin downloads are permission checked and sent with no-store, nosniff, sandbox, and attachment headers. Virus scanning is not currently available; the storage boundary is intentionally extensible so scanning/quarantine can be added before high-volume production use.
 

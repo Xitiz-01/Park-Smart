@@ -5,7 +5,9 @@ const os = require('os');
 const path = require('path');
 
 const ParkingLocation = require('../models/ParkingLocation');
-const { CashfreeVerificationProvider, DigiLockerProvider, ProviderUnavailableError } = require('../services/verificationProviders');
+const verificationProviders = require('../services/verificationProviders');
+const { CashfreeVerificationProvider, ProviderUnavailableError } = verificationProviders;
+const { VERIFICATION_PROVIDERS } = require('../constants/verification');
 const { LocalPrivateStorage } = require('../services/storageService');
 const { maskIdentifier, redactSensitive } = require('../services/redactionService');
 
@@ -39,21 +41,12 @@ test('external verification outage is normalized to a safe provider error', asyn
   });
 });
 
-test('DigiLocker adapter uses unpredictable state, stable hashing, and exact callback binding', () => {
-  const first = DigiLockerProvider.generateState();
-  const second = DigiLockerProvider.generateState();
-  assert.notEqual(first, second);
-  assert.equal(DigiLockerProvider.hashState(first), DigiLockerProvider.hashState(first));
-  assert.notEqual(DigiLockerProvider.hashState(first), DigiLockerProvider.hashState(second));
-  const provider = new DigiLockerProvider({
-    enabled: true, clientId: 'requester-id', clientSecret: 'secret',
-    redirectUri: 'https://api.parksmart.live/api/vendor-verification/digilocker/callback',
-    authorizationUrl: 'https://example.test/oauth2/authorize', tokenUrl: 'https://example.test/oauth2/token', documentsUrl: 'https://example.test/documents',
-  });
-  const url = new URL(provider.createAuthorizationUrl(first));
-  assert.equal(url.searchParams.get('state'), first);
-  assert.equal(url.searchParams.get('redirect_uri'), 'https://api.parksmart.live/api/vendor-verification/digilocker/callback');
-  assert.equal(new DigiLockerProvider({ enabled: false }).isConfigured(), false);
+test('verification providers are manual review and Cashfree only', () => {
+  assert.deepEqual([...VERIFICATION_PROVIDERS], ['MANUAL', 'CASHFREE']);
+  assert.deepEqual(
+    Object.keys(verificationProviders).filter((name) => name.endsWith('Provider')).sort(),
+    ['CashfreeVerificationProvider', 'ManualVerificationProvider'],
+  );
 });
 
 test('private local storage generates opaque keys and prevents path traversal', async () => {
