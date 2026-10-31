@@ -7,7 +7,7 @@ const NAMES = {
   // vendor documents
   PAN: 'PAN', DRIVING_LICENCE: 'Driving licence', OTHER_IDENTITY: 'Other identity proof',
   GSTIN: 'GSTIN', CIN: 'CIN', BUSINESS_REGISTRATION: 'Business registration',
-  BANK_PROOF: 'Bank proof', CANCELLED_CHEQUE: 'Cancelled cheque',
+  BANK_PROOF: 'Bank proof', CANCELLED_CHEQUE: 'Cancelled cheque', BANK_ACCOUNT: 'Bank account',
   // parking authorisation
   OWNERSHIP_PROOF: 'Ownership proof', LEASE: 'Lease', NOC: 'NOC',
   AUTHORIZATION_LETTER: 'Authorisation letter', OTHER: 'Other',
@@ -61,21 +61,22 @@ export const AUTHORIZATION_TYPES = ['OWNERSHIP_PROOF', 'LEASE', 'NOC', 'AUTHORIZ
 export const VENDOR_CHECKS = [
   { key: 'identityStatus', label: 'Identity', copy: 'PAN, driving licence or another supported identity proof.' },
   { key: 'businessStatus', label: 'Business', copy: 'GSTIN, CIN or business registration evidence.' },
-  { key: 'bankStatus', label: 'Bank', copy: 'Bank proof or a cancelled cheque, for future payouts.' },
+  { key: 'bankStatus', label: 'Bank', copy: 'A bank account check, bank proof or a cancelled cheque, for future payouts.' },
 ];
 
 // Verified-provider options shown to vendors, as data: adding or removing a
 // provider is one edit here. `availability` is the key in the API's
-// providerAvailability; `checks` are the identifiers it can verify in place.
+// providerAvailability; `checks` are what it can verify in place (the API's
+// capabilities list narrows them further).
 export const VERIFICATION_PROVIDERS = [
   {
     id: 'cashfree',
     name: 'Cashfree Secure ID',
     availability: 'cashfree',
-    checks: ['PAN', 'GSTIN'],
-    summary: 'Check a PAN or GSTIN against official records straight away.',
+    checks: ['PAN', 'GSTIN', 'BANK_ACCOUNT'],
+    summary: 'Check a PAN, GSTIN or bank account against official records straight away.',
     consent: 'I consent to this verification request.',
-    unavailable: 'Not available yet: PAN and GSTIN checks will appear here once they are switched on.',
+    unavailable: 'Not available yet: PAN, GSTIN and bank account checks will appear here once they are switched on.',
     action: 'Run check',
   },
 ];

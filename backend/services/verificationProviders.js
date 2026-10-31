@@ -61,6 +61,33 @@ class CashfreeVerificationProvider {
       safeMetadata: { maskedIdentifier: maskIdentifier(identifier), legalName: result.legal_name_of_business, tradeName: result.trade_name_of_business, gstinStatus: result.gstin_status },
     };
   }
+
+  /**
+   * Bank Account Verification, Sync V2 (POST /bank-account/sync). A valid
+   * account whose holder name is a direct or good partial match is verified;
+   * a valid account with a weaker or missing name match goes to manual
+   * review; an invalid account is rejected. Only the last four digits of the
+   * account number are kept.
+   * @param {{ accountNumber: string, ifsc: string, name: string }} input
+   */
+  async verifyBankAccount({ accountNumber, ifsc, name }) {
+    const result = await this.request('bank-account/sync', { bank_account: accountNumber, ifsc, name });
+    const valid = result.account_status === 'VALID';
+    const nameMatched = ['DIRECT_MATCH', 'GOOD_PARTIAL_MATCH'].includes(result.name_match_result);
+    return {
+      provider: 'CASHFREE', documentType: 'BANK_ACCOUNT', category: 'BANK',
+      status: !valid ? 'REJECTED' : nameMatched ? 'VERIFIED' : 'UNDER_REVIEW',
+      providerReference: String(result.reference_id || ''),
+      safeMetadata: {
+        maskedIdentifier: maskIdentifier(accountNumber),
+        ifsc,
+        bankName: result.bank_name || result.ifsc_details?.bank,
+        nameAtBank: result.name_at_bank,
+        nameMatchResult: result.name_match_result,
+        accountStatusCode: result.account_status_code,
+      },
+    };
+  }
 }
 
 module.exports = {

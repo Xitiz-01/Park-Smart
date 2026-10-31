@@ -31,6 +31,38 @@ test('Cashfree adapter normalizes documented PAN and GSTIN responses without ret
   assert.equal(calls[0].options.headers['x-client-secret'], 'test-secret');
 });
 
+test('Cashfree bank account check follows the Sync V2 contract and keeps only the last four digits', async () => {
+  const calls = [];
+  const responses = [
+    { account_status: 'VALID', account_status_code: 'ACCOUNT_IS_VALID', name_match_result: 'DIRECT_MATCH', name_at_bank: 'SAMPLE PARKING PVT LTD', bank_name: 'HDFC Bank', reference_id: 3301 },
+    { account_status: 'VALID', account_status_code: 'ACCOUNT_IS_VALID', name_match_result: 'POOR_PARTIAL_MATCH', name_at_bank: 'S P LTD', reference_id: 3302 },
+    { account_status: 'INVALID', account_status_code: 'INVALID_ACCOUNT_FAIL', name_match_result: null, name_at_bank: null, reference_id: 3303 },
+  ];
+  const provider = new CashfreeVerificationProvider({
+    enabled: true, clientId: 'test-id', clientSecret: 'test-secret', baseUrl: 'https://sandbox.cashfree.com/verification',
+    fetch: async (url, options) => {
+      calls.push({ url, body: JSON.parse(options.body) });
+      return new Response(JSON.stringify(responses[calls.length - 1]), { status: 200 });
+    },
+  });
+  const input = { accountNumber: '50100123456789', ifsc: 'HDFC0001234', name: 'Sample Parking Pvt Ltd' };
+  const matched = await provider.verifyBankAccount(input);
+  const weak = await provider.verifyBankAccount(input);
+  const invalid = await provider.verifyBankAccount(input);
+
+  assert.equal(calls[0].url, 'https://sandbox.cashfree.com/verification/bank-account/sync');
+  assert.deepEqual(calls[0].body, { bank_account: '50100123456789', ifsc: 'HDFC0001234', name: 'Sample Parking Pvt Ltd' });
+  assert.equal(matched.status, 'VERIFIED');
+  assert.equal(matched.category, 'BANK');
+  assert.equal(matched.documentType, 'BANK_ACCOUNT');
+  assert.equal(weak.status, 'UNDER_REVIEW', 'a valid account with a weak name match goes to manual review');
+  assert.equal(invalid.status, 'REJECTED');
+  assert.equal(matched.safeMetadata.maskedIdentifier.endsWith('6789'), true);
+  for (const result of [matched, weak, invalid]) {
+    assert.equal(JSON.stringify(result).includes('50100123456789'), false, 'the full account number is never kept');
+  }
+});
+
 test('external verification outage is normalized to a safe provider error', async () => {
   const provider = new CashfreeVerificationProvider({ enabled: true, clientId: 'id', clientSecret: 'secret', fetch: async () => { throw new Error('socket exposed internal detail'); } });
   await assert.rejects(() => provider.verifyPan({ identifier: 'ABCDE1234F', name: 'Vendor' }), (error) => {

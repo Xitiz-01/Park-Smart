@@ -19,6 +19,11 @@ const categoryForType = (type) => {
   if (['BANK_PROOF', 'CANCELLED_CHEQUE'].includes(type)) return 'BANK';
   return null;
 };
+const CASHFREE_CHECKS = ['PAN', 'GSTIN', 'BANK_ACCOUNT'];
+const IDENTIFIER_RULES = {
+  PAN: /^[A-Z]{5}[0-9]{4}[A-Z]$/,
+  GSTIN: /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/,
+};
 const providers = () => ({
   cashfree: new CashfreeVerificationProvider(),
 });
@@ -33,7 +38,7 @@ const getMyVerification = async (req, res, next) => {
       providerAvailability: {
         manual: true,
         cashfree: configured.cashfree.isConfigured(),
-        cashfreeCapabilities: configured.cashfree.isConfigured() ? ['PAN', 'GSTIN'] : [],
+        cashfreeCapabilities: configured.cashfree.isConfigured() ? CASHFREE_CHECKS : [],
       },
     });
   } catch (error) { next(error); }
@@ -84,25 +89,34 @@ const submitParkingAuthorization = async (req, res, next) => {
 const verifyWithCashfree = async (req, res, next) => {
   try {
     const kind = String(req.params.kind || '').toUpperCase();
-    if (!['PAN', 'GSTIN'].includes(kind)) return res.status(400).json({ success: false, message: 'Cashfree verification currently supports PAN and GSTIN' });
+    if (!CASHFREE_CHECKS.includes(kind)) return res.status(400).json({ success: false, message: 'Cashfree verification supports PAN, GSTIN and bank accounts' });
     if (req.body.consent !== true) return res.status(400).json({ success: false, message: 'Explicit Cashfree verification consent is required' });
-    const identifier = String(req.body.identifier || '').trim().toUpperCase();
-    const validIdentifier = kind === 'PAN'
-      ? /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(identifier)
-      : /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(identifier);
-    if (!validIdentifier) return res.status(400).json({ success: false, message: `Enter a valid ${kind}` });
     const suppliedName = String(req.body.name || req.body.businessName || '').trim();
     if (suppliedName.length < 2 || suppliedName.length > 160) return res.status(400).json({ success: false, message: 'Enter the name associated with this identifier' });
     const provider = providers().cashfree;
-    const result = kind === 'PAN'
-      ? await provider.verifyPan({ identifier, name: suppliedName.slice(0, 120) })
-      : await provider.verifyGstin({ identifier, businessName: suppliedName });
+    let result;
+    if (kind === 'BANK_ACCOUNT') {
+      // Formats from Cashfree's Sync V2 request schema.
+      const accountNumber = String(req.body.accountNumber || '').replace(/\s+/g, '');
+      const ifsc = String(req.body.ifsc || '').trim().toUpperCase();
+      if (!/^[A-Za-z0-9]{6,40}$/.test(accountNumber)) return res.status(400).json({ success: false, message: 'Enter a valid bank account number' });
+      if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) return res.status(400).json({ success: false, message: 'Enter a valid IFSC' });
+      if (!/^[A-Za-z0-9 .\-/&]+$/.test(suppliedName)) return res.status(400).json({ success: false, message: 'Enter the account holder name using letters, numbers, spaces and . - / &' });
+      result = await provider.verifyBankAccount({ accountNumber, ifsc, name: suppliedName });
+    } else {
+      const identifier = String(req.body.identifier || '').trim().toUpperCase();
+      if (!IDENTIFIER_RULES[kind].test(identifier)) return res.status(400).json({ success: false, message: `Enter a valid ${kind}` });
+      result = kind === 'PAN'
+        ? await provider.verifyPan({ identifier, name: suppliedName.slice(0, 120) })
+        : await provider.verifyGstin({ identifier, businessName: suppliedName });
+    }
     const document = await VerificationDocument.create({ vendor: req.vendorProfile._id, ...result, submittedAt: new Date(), verifiedAt: result.status === 'VERIFIED' ? new Date() : undefined });
     const verification = await getOrCreateVerification(req.vendorProfile._id);
     verification.consents.push({ provider: 'CASHFREE', source: 'VENDOR_FORM', purpose: `Verify ${kind}`, scopes: [kind] });
     await verification.save();
     await recomputeVerification(req.vendorProfile._id);
-    await audit({ vendor: req.vendorProfile._id, action: result.status === 'VERIFIED' ? 'PROVIDER_VERIFIED' : 'PROVIDER_FAILED', previousStatus: 'NOT_STARTED', newStatus: result.status, provider: 'CASHFREE', document: document._id });
+    const action = { VERIFIED: 'PROVIDER_VERIFIED', REJECTED: 'PROVIDER_FAILED' }[result.status] || 'DOCUMENT_SUBMITTED';
+    await audit({ vendor: req.vendorProfile._id, action, previousStatus: 'NOT_STARTED', newStatus: result.status, provider: 'CASHFREE', document: document._id });
     return res.status(201).json({ success: true, result: document });
   } catch (error) { return next(error); }
 };

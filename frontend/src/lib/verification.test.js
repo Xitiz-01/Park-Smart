@@ -6,6 +6,7 @@ test('acronyms survive (audit M2)', () => {
   expect(verificationLabel('NOC')).toBe('NOC');
   expect(verificationLabel('DRIVING_LICENCE')).toBe('Driving licence');
   expect(verificationLabel('IDENTITY')).toBe('Identity');
+  expect(verificationLabel('BANK_ACCOUNT')).toBe('Bank account');
 });
 
 test('unknown values fall back to sentence case with acronyms kept', () => {

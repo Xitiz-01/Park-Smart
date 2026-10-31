@@ -197,6 +197,11 @@ test('Better Auth, RBAC, migration, and ParkSmart domain flows work end-to-end',
   assert.deepEqual(Object.keys(ownVerification.payload.providerAvailability).sort(), ['cashfree', 'cashfreeCapabilities', 'manual'], 'only manual review and Cashfree are offered');
   assert.equal(ownVerification.payload.providerAvailability.cashfree, false, 'Cashfree is disabled without credentials');
   assert.equal((await request('/vendor-verification/external/pan', { method: 'POST', client: vendorAClient, body: { consent: true, identifier: 'ABCDE1234F', name: 'Vendor A' } })).status, 503, 'disabled Cashfree cannot fake verification');
+  const bankCheck = (body) => request('/vendor-verification/external/bank_account', { method: 'POST', client: vendorAClient, body: { consent: true, name: 'Vendor A', ...body } });
+  assert.equal((await bankCheck({ accountNumber: '50100123456789', ifsc: 'HDFC1001234' })).status, 400, 'an IFSC without 0 in the fifth place is rejected');
+  assert.equal((await bankCheck({ accountNumber: '123', ifsc: 'HDFC0001234' })).status, 400, 'a too-short account number is rejected');
+  assert.equal((await bankCheck({ accountNumber: '50100123456789', ifsc: 'HDFC0001234' })).status, 503, 'disabled Cashfree cannot fake a bank check');
+  assert.equal((await request('/vendor-verification/external/aadhaar', { method: 'POST', client: vendorAClient, body: { consent: true, name: 'Vendor A' } })).status, 400, 'unsupported checks are refused');
   assert.equal((await request('/vendor-verification/digilocker/start', { method: 'POST', client: vendorAClient, body: { consent: true } })).status, 404, 'the removed DigiLocker start route is gone');
   assert.equal((await request('/vendor-verification/digilocker/callback?state=x&code=y', { client: vendorAClient })).status, 404, 'the removed DigiLocker callback route is gone');
 

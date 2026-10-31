@@ -84,14 +84,20 @@ function EvidenceList({ items, empty, describe }) {
 }
 
 // Provider cards come from VERIFICATION_PROVIDERS in lib/verification.js.
-function ProviderCard({ provider, available, busy, onCheck }) {
+// `checks` is the provider's list narrowed by what the API says is enabled.
+export function ProviderCard({ provider, available, checks, busy, onCheck }) {
   const [consent, setConsent] = useState(false);
-  const [form, setForm] = useState({ kind: provider.checks?.[0] || '', identifier: '', name: '' });
+  const [form, setForm] = useState({ kind: checks[0] || '', identifier: '', accountNumber: '', ifsc: '', name: '' });
+  const bank = form.kind === 'BANK_ACCOUNT';
+  const set = (field) => (event) => setForm({ ...form, [field]: event.target.value });
 
   const submit = async (event) => {
     event.preventDefault();
-    const ok = await onCheck(form.kind, { identifier: form.identifier, name: form.name, businessName: form.name, consent });
-    if (ok) { setForm((value) => ({ ...value, identifier: '' })); setConsent(false); }
+    const payload = bank
+      ? { accountNumber: form.accountNumber, ifsc: form.ifsc, name: form.name, consent }
+      : { identifier: form.identifier, name: form.name, businessName: form.name, consent };
+    const ok = await onCheck(form.kind, payload);
+    if (ok) { setForm((value) => ({ ...value, identifier: '', accountNumber: '', ifsc: '' })); setConsent(false); }
   };
 
   return (
@@ -101,21 +107,33 @@ function ProviderCard({ provider, available, busy, onCheck }) {
         <StatusBadge tone={available ? 'success' : 'neutral'}>{available ? 'Available' : 'Not available yet'}</StatusBadge>
       </div>
       <p className="mt-1 text-sm text-text-muted">{available ? provider.summary : provider.unavailable}</p>
-      {available && (
+      {available && checks.length > 0 && (
         <form onSubmit={submit} className="mt-4 grid gap-4">
-          <div className="grid gap-4 sm:grid-cols-[8rem_minmax(0,1fr)]">
+          <div className="grid gap-4 sm:grid-cols-[9rem_minmax(0,1fr)]">
             <FormField label="Check">
-              <NativeSelect className="w-full" value={form.kind} onChange={(event) => setForm({ ...form, kind: event.target.value })}>
-                {provider.checks.map((check) => <NativeSelectOption key={check} value={check}>{verificationLabel(check)}</NativeSelectOption>)}
+              <NativeSelect className="w-full" value={form.kind} onChange={set('kind')}>
+                {checks.map((check) => <NativeSelectOption key={check} value={check}>{verificationLabel(check)}</NativeSelectOption>)}
               </NativeSelect>
             </FormField>
-            <FormField label={`${verificationLabel(form.kind)} number`} required>
-              <Input className="font-mono uppercase" autoComplete="off" spellCheck={false} value={form.identifier} onChange={(event) => setForm({ ...form, identifier: event.target.value })} />
-            </FormField>
-            <FormField label="Name or business name" required className="sm:col-span-2">
-              <Input autoComplete="organization" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
+            {bank ? (
+              <FormField label="Account number" required>
+                <Input className="font-mono" inputMode="numeric" autoComplete="off" spellCheck={false} value={form.accountNumber} onChange={set('accountNumber')} />
+              </FormField>
+            ) : (
+              <FormField label={`${verificationLabel(form.kind)} number`} required>
+                <Input className="font-mono uppercase" autoComplete="off" spellCheck={false} value={form.identifier} onChange={set('identifier')} />
+              </FormField>
+            )}
+            {bank && (
+              <FormField label="IFSC" description="11 characters, e.g. HDFC0001234" required className="sm:col-span-2">
+                <Input className="font-mono uppercase" autoComplete="off" spellCheck={false} maxLength={11} value={form.ifsc} onChange={set('ifsc')} />
+              </FormField>
+            )}
+            <FormField label={bank ? 'Account holder name' : 'Name or business name'} required className="sm:col-span-2">
+              <Input autoComplete="organization" value={form.name} onChange={set('name')} />
             </FormField>
           </div>
+          {bank && <p className="text-sm text-text-muted">Only the last four digits are kept. If the name at the bank doesn’t clearly match, the check goes to a reviewer.</p>}
           <ConsentRow checked={consent} onChange={setConsent}>{provider.consent}</ConsentRow>
           <div>
             <Button type="submit" variant="outline" disabled={busy || !consent}>
@@ -195,8 +213,10 @@ export default function VendorVerification() {
   const runCheck = async (kind, payload) => {
     setBusy('cashfree');
     try {
-      await verificationAPI.verifyExternal(kind, payload);
-      toast.success(`${kind} verification completed`);
+      const { data: response } = await verificationAPI.verifyExternal(kind, payload);
+      const status = response?.result?.status;
+      if (status === 'REJECTED') toast.error(`${verificationLabel(kind)} could not be verified`);
+      else toast.success(`${verificationLabel(kind)} ${status === 'VERIFIED' ? 'verified' : 'sent for review'}`);
       await load();
       return true;
     } catch (error) { toast.error(error.response?.data?.message || 'Provider verification failed'); return false; }
@@ -284,6 +304,7 @@ export default function VendorVerification() {
                 key={provider.id}
                 provider={provider}
                 available={Boolean(data?.providerAvailability?.[provider.availability])}
+                checks={provider.checks.filter((check) => (data?.providerAvailability?.[`${provider.availability}Capabilities`] || provider.checks).includes(check))}
                 busy={busy === provider.id}
                 onCheck={runCheck}
               />
