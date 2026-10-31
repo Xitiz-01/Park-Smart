@@ -17,6 +17,10 @@ const NAMES = {
   document: 'Vendor document', authorization: 'Parking authorisation',
   // file metadata
   originalName: 'File name', mimeType: 'File type', size: 'File size',
+  // provider check details
+  maskedIdentifier: 'Number', ifsc: 'IFSC', bankName: 'Bank', nameAtBank: 'Name at bank',
+  nameMatchResult: 'Name match', accountStatusCode: 'Account status',
+  registeredName: 'Registered name', legalName: 'Legal name', tradeName: 'Trade name',
 };
 
 const FILE_TYPES = { 'application/pdf': 'PDF', 'image/jpeg': 'JPEG image', 'image/png': 'PNG image' };
@@ -28,10 +32,12 @@ export function metadataValue(key, value) {
     return bytes < 1024 ? `${bytes} bytes` : `${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 1 }).format(bytes / 1024)} KB`;
   }
   if (key === 'mimeType') return FILE_TYPES[value] || String(value);
+  // Provider result codes such as DIRECT_MATCH or ACCOUNT_IS_VALID.
+  if (key === 'nameMatchResult' || key === 'accountStatusCode') return verificationLabel(value);
   return String(value);
 }
 
-const ACRONYMS = new Set(['PAN', 'GSTIN', 'CIN', 'NOC', 'ID', 'KYC']);
+const ACRONYMS = new Set(['PAN', 'GSTIN', 'CIN', 'NOC', 'ID', 'KYC', 'IFSC']);
 
 export function verificationLabel(value) {
   if (value === undefined || value === null || value === '') return '';

@@ -32,4 +32,8 @@ test('file metadata reads naturally', () => {
   expect(metadataValue('size', 125)).toBe('125 bytes');
   expect(metadataValue('size', 2048)).toBe('2 KB');
   expect(metadataValue('originalName', 'pan.pdf')).toBe('pan.pdf');
+  expect(verificationLabel('ifsc')).toBe('IFSC');
+  expect(verificationLabel('nameAtBank')).toBe('Name at bank');
+  expect(metadataValue('nameMatchResult', 'GOOD_PARTIAL_MATCH')).toBe('Good partial match');
+  expect(metadataValue('accountStatusCode', 'ACCOUNT_IS_VALID')).toBe('Account is valid');
 });
