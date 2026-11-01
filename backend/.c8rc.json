@@ -1,0 +1,34 @@
+{
+  "all": true,
+  "include": [
+    "auth/**",
+    "config/**",
+    "data/**",
+    "validators/**",
+    "constants/**",
+    "controllers/**",
+    "middleware/**",
+    "models/**",
+    "routes/**",
+    "services/**",
+    "utils/**",
+    "scripts/**",
+    "*.js"
+  ],
+  "exclude": [
+    "tests/**",
+    "coverage/**",
+    "eslint.config.*"
+  ],
+  "reporter": [
+    "text-summary",
+    "lcov",
+    "html"
+  ],
+  "reports-dir": "coverage",
+  "check-coverage": true,
+  "lines": 77,
+  "statements": 77,
+  "functions": 77,
+  "branches": 62
+}

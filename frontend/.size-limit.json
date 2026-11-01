@@ -1,0 +1,5 @@
+[
+  { "name": "Entry JS", "path": "build/assets/index-*.js", "gzip": true, "limit": "110 kB" },
+  { "name": "All JS", "path": "build/assets/*.js", "gzip": true, "limit": "435 kB" },
+  { "name": "All CSS", "path": "build/assets/*.css", "gzip": true, "limit": "32 kB" }
+]
