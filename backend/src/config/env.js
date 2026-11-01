@@ -15,6 +15,9 @@ const schema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     PORT: z.coerce.number().int().min(1).max(65535).default(5000),
+    // Defaults: debug in development, silent under test, info in production.
+    LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).optional(),
+    SLOW_REQUEST_MS: z.coerce.number().int().min(1).default(1500),
 
     // Required everywhere except NODE_ENV=test, where the suites that need a
     // database set their own and pure unit tests need none.
@@ -100,6 +103,7 @@ const deepFreeze = (value) => {
  * @property {boolean} isProduction
  * @property {boolean} isTest
  * @property {number} port
+ * @property {{ level: string, pretty: boolean, slowRequestMs: number }} log
  * @property {string} mongodbUri
  * @property {string[]} allowedOrigins browser origins for CORS, Socket.IO and Better Auth
  * @property {{ secret?: string, url: string, crossSiteCookies: boolean, mongoTransactions: boolean }} auth
@@ -133,6 +137,11 @@ function parseEnv(source) {
     isProduction: env.NODE_ENV === 'production',
     isTest: env.NODE_ENV === 'test',
     port: env.PORT,
+    log: {
+      level: env.LOG_LEVEL || { development: 'debug', test: 'silent', production: 'info' }[env.NODE_ENV],
+      pretty: env.NODE_ENV === 'development',
+      slowRequestMs: env.SLOW_REQUEST_MS,
+    },
     mongodbUri: env.MONGODB_URI || TEST_MONGODB_URI,
     allowedOrigins: [...new Set([env.CLIENT_URL, ...list(env.CORS_ORIGINS), ...list(env.BETTER_AUTH_TRUSTED_ORIGINS)].filter(Boolean))],
     auth: {

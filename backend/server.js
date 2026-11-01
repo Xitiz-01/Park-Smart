@@ -1,9 +1,20 @@
 const http = require('http');
 const { Server } = require('socket.io');
 const connectDB = require('./config/db');
-const { getConfig } = require('./src/config/env');
+const { getConfig, EnvValidationError } = require('./src/config/env');
 
-const config = getConfig();
+let config;
+try {
+  config = getConfig();
+} catch (error) {
+  // No logger yet: it needs the config. Print the readable list and stop.
+  if (error instanceof EnvValidationError && require.main === module) {
+    process.stderr.write(`${error.message}\n`);
+    process.exit(1);
+  }
+  throw error;
+}
+const { logger } = require('./src/platform/logger');
 const { createApp } = require('./src/app');
 const { authenticateSocket } = require('./middleware/authMiddleware');
 
@@ -27,7 +38,7 @@ io.on('connection', (socket) => {
 if (require.main === module) {
   connectDB().then(() => {
     server.listen(config.port, () => {
-      console.log(`Server running on port ${config.port} in ${config.nodeEnv} mode`);
+      logger.info({ port: config.port, nodeEnv: config.nodeEnv }, 'server listening');
     });
   });
 }

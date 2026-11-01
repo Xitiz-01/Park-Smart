@@ -3,17 +3,22 @@ const cors = require('cors');
 
 const { betterAuthHandler } = require('../auth/betterAuthBridge');
 const { getConfig } = require('./config/env');
+const { logger: defaultLogger } = require('./platform/logger');
+const { requestLogger, slowRequestWarning } = require('./platform/http/requestLogging');
 
 /**
  * Build the ParkSmart Express app. It opens no sockets and connects to no
  * database, so tests can drive it directly; server.js adds the HTTP server,
  * Socket.IO and the MongoDB connection.
  *
- * @param {{ allowedOrigins: string[] }} options
+ * @param {{ allowedOrigins: string[], logger?: import('pino').Logger }} options
  * @returns {import('express').Express}
  */
-function createApp({ allowedOrigins }) {
+function createApp({ allowedOrigins, logger = defaultLogger }) {
   const app = express();
+
+  app.use(requestLogger(logger));
+  app.use(slowRequestWarning(getConfig().log.slowRequestMs));
 
   app.use(cors({
     origin: allowedOrigins,
