@@ -1,6 +1,7 @@
 const http = require('http');
 const { Server } = require('socket.io');
-const connectDB = require('./config/db');
+// Load the config before anything that reads it (the logger, the database
+// module), so a bad environment ends with the readable list, not a stack.
 const { getConfig, EnvValidationError } = require('./src/config/env');
 
 let config;
@@ -15,6 +16,7 @@ try {
   throw error;
 }
 const { logger } = require('./src/platform/logger');
+const connectDB = require('./config/db');
 const { createApp } = require('./src/app');
 const { authenticateSocket } = require('./middleware/authMiddleware');
 
