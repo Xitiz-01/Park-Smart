@@ -1,17 +1,13 @@
-const express = require('express');
 const http = require('http');
-const cors = require('cors');
 const dotenv = require('dotenv');
 const { Server } = require('socket.io');
 const connectDB = require('./config/db');
 
 dotenv.config();
 
-const { betterAuthHandler } = require('./auth/betterAuthBridge');
+const { createApp } = require('./src/app');
 const { authenticateSocket } = require('./middleware/authMiddleware');
 
-const app = express();
-const server = http.createServer(app);
 const configuredOrigins = (process.env.BETTER_AUTH_TRUSTED_ORIGINS || '')
   .split(',')
   .map((origin) => origin.trim())
@@ -22,6 +18,9 @@ const allowedOrigins = [...new Set([
   'https://park-smart-eight.vercel.app',
   ...configuredOrigins,
 ].filter(Boolean))];
+
+const app = createApp({ allowedOrigins });
+const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
@@ -34,51 +33,6 @@ app.set('io', io);
 io.use(authenticateSocket);
 io.on('connection', (socket) => {
   socket.emit('socket:connected', { connected: true });
-});
-
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
-}));
-// Better Auth must receive the untouched request body. Keep this mount before
-// express.json() and express.urlencoded().
-app.all('/api/auth/*', betterAuthHandler);
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.get("/api", (req, res) => {
-  res.send("API is working");
-});
-// Routes
-app.use('/api/account', require('./routes/accountRoutes'));
-app.use('/api/slots', require('./routes/slotRoutes'));
-app.use('/api/bookings', require('./routes/bookingRoutes'));
-app.use('/api/admin', require('./routes/adminRoutes'));
-app.use('/api/vehicles', require('./routes/vehicleRoutes'));
-app.use('/api/vehicle-catalog', require('./routes/vehicleCatalogRoutes'));
-app.use('/api/vendors', require('./routes/vendorRoutes'));
-app.use('/api/vendor-verification', require('./routes/vendorVerificationRoutes'));
-app.use('/api/parking-locations', require('./routes/parkingLocationRoutes'));
-app.use('/api/location', require('./routes/locationRoutes'));
-
-// Health check
-app.get('/', (req, res) => {
-  res.json({ message: 'Parking System API is running' });
-});
-// Error handler. Express only treats a four-parameter function as one, so
-// _next stays even though it isn't called.
-app.use((err, req, res, _next) => {
-  const isUploadError = err.name === 'MulterError';
-  const statusCode = err.statusCode || (err.code === 'LIMIT_FILE_SIZE' ? 413 : isUploadError ? 400 : 500);
-  const safeMessage = err.code === 'LIMIT_FILE_SIZE'
-    ? 'Document must be 5 MB or smaller'
-    : statusCode >= 500 && !err.statusCode
-      ? 'Internal Server Error'
-      : (err.message || 'Request could not be completed');
-  res.status(statusCode).json({
-    success: false,
-    message: safeMessage,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
-  });
 });
 
 const PORT = process.env.PORT || 5000;

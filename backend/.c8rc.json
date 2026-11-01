@@ -1,6 +1,7 @@
 {
   "all": true,
   "include": [
+    "src/**",
     "auth/**",
     "config/**",
     "data/**",
