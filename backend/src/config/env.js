@@ -19,6 +19,16 @@ const schema = z
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).optional(),
     SLOW_REQUEST_MS: z.coerce.number().int().min(1).default(1500),
 
+    // HTTP hardening. TRUST_PROXY is Express's "trust proxy" setting: a hop
+    // count, true/false, or a named range such as "loopback". It defaults to
+    // 1 in production (one load balancer in front, as on Render, Railway or
+    // Fly) and to loopback elsewhere.
+    TRUST_PROXY: optionalString,
+    JSON_BODY_LIMIT: z.string().trim().regex(/^\d+(b|kb|mb)$/i, 'must look like 100kb or 1mb').default('100kb'),
+    RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1000).default(15 * 60 * 1000),
+    RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(600),
+    AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(30),
+
     // Required everywhere except NODE_ENV=test, where the suites that need a
     // database set their own and pure unit tests need none.
     MONGODB_URI: optionalString.pipe(z.string().regex(/^mongodb(\+srv)?:\/\//, 'must be a mongodb:// or mongodb+srv:// URI').optional()),
@@ -90,6 +100,14 @@ class EnvValidationError extends Error {
   }
 }
 
+const parseTrustProxy = (value, nodeEnv) => {
+  if (value === undefined) return nodeEnv === 'production' ? 1 : 'loopback';
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  if (/^\d+$/.test(value)) return Number(value);
+  return value;
+};
+
 const deepFreeze = (value) => {
   Object.values(value).forEach((child) => {
     if (child && typeof child === 'object') deepFreeze(child);
@@ -105,6 +123,7 @@ const deepFreeze = (value) => {
  * @property {number} port
  * @property {{ level: string, pretty: boolean, slowRequestMs: number }} log
  * @property {string} mongodbUri
+ * @property {{ trustProxy: boolean|number|string, jsonBodyLimit: string, rateLimit: { windowMs: number, max: number, authMax: number } }} http
  * @property {string[]} allowedOrigins browser origins for CORS, Socket.IO and Better Auth
  * @property {{ secret?: string, url: string, crossSiteCookies: boolean, mongoTransactions: boolean }} auth
  * @property {string|undefined} addressSelectionSecret
@@ -143,6 +162,11 @@ function parseEnv(source) {
       slowRequestMs: env.SLOW_REQUEST_MS,
     },
     mongodbUri: env.MONGODB_URI || TEST_MONGODB_URI,
+    http: {
+      trustProxy: parseTrustProxy(env.TRUST_PROXY, env.NODE_ENV),
+      jsonBodyLimit: env.JSON_BODY_LIMIT.toLowerCase(),
+      rateLimit: { windowMs: env.RATE_LIMIT_WINDOW_MS, max: env.RATE_LIMIT_MAX, authMax: env.AUTH_RATE_LIMIT_MAX },
+    },
     allowedOrigins: [...new Set([env.CLIENT_URL, ...list(env.CORS_ORIGINS), ...list(env.BETTER_AUTH_TRUSTED_ORIGINS)].filter(Boolean))],
     auth: {
       secret: env.BETTER_AUTH_SECRET,

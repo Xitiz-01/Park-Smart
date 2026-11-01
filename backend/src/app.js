@@ -7,30 +7,38 @@ const { logger: defaultLogger } = require('./platform/logger');
 const { requestLogger, slowRequestWarning } = require('./platform/http/requestLogging');
 const { errorHandler, notFoundHandler } = require('./platform/http/errorHandler');
 const { forwardAsyncErrors } = require('./platform/http/asyncRoutes');
+const { securityMiddleware, AUTH_RATE_LIMITED_PATHS } = require('./platform/http/security');
 
 /**
  * Build the ParkSmart Express app. It opens no sockets and connects to no
  * database, so tests can drive it directly; server.js adds the HTTP server,
  * Socket.IO and the MongoDB connection.
  *
- * @param {{ allowedOrigins: string[], logger?: import('pino').Logger }} options
+ * @param {{ config?: import('./config/env').Config, logger?: import('pino').Logger }} [options]
  * @returns {import('express').Express}
  */
-function createApp({ allowedOrigins, logger = defaultLogger }) {
+function createApp({ config = getConfig(), logger = defaultLogger } = {}) {
   const app = express();
+  const security = securityMiddleware(config.http);
+  app.set('trust proxy', config.http.trustProxy);
 
   app.use(requestLogger(logger));
-  app.use(slowRequestWarning(getConfig().log.slowRequestMs));
-
+  app.use(slowRequestWarning(config.log.slowRequestMs));
+  app.use(security.headers);
   app.use(cors({
-    origin: allowedOrigins,
+    origin: config.allowedOrigins,
     credentials: true,
   }));
+  app.use(security.compression);
+  app.use('/api', security.apiRateLimit);
+  app.use(AUTH_RATE_LIMITED_PATHS, security.authRateLimit);
   // Better Auth must receive the untouched request body. Keep this mount before
   // express.json() and express.urlencoded().
   app.all('/api/auth/*', betterAuthHandler);
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json({ limit: config.http.jsonBodyLimit }));
+  app.use(express.urlencoded({ extended: true, limit: config.http.jsonBodyLimit }));
+  app.use(security.parameterPollution);
+  app.use(security.sanitizeInput);
   app.get('/api', (req, res) => {
     res.send('API is working');
   });

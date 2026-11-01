@@ -21,7 +21,7 @@ const { createApp } = require('./src/app');
 const { authenticateSocket } = require('./middleware/authMiddleware');
 
 const { allowedOrigins } = config;
-const app = createApp({ allowedOrigins });
+const app = createApp({ config, logger });
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {

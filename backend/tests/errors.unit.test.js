@@ -91,7 +91,7 @@ test('async errors are forwarded from routers nested inside routers', async () =
 });
 
 test('unknown API routes get a JSON 404', async () => {
-  const app = createApp({ allowedOrigins: [], logger: silent });
+  const app = createApp({ logger: silent });
   const response = await request(app).get('/api/no-such-thing');
   assert.equal(response.status, 404);
   assert.equal(response.body.error.code, 'NOT_FOUND');
