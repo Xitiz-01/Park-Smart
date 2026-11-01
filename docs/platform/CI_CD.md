@@ -51,7 +51,7 @@ Transactions (needed from Phase 7) only work on a replica set. GitHub service co
 
 | Check | Where | Current value | Baseline when set |
 |---|---|---|---|
-| Backend coverage floor | `backend/.c8rc.json` | lines and statements 77%, functions 77%, branches 62% | 78.35 / 78.35 / 78.7 / 63.67% |
+| Backend coverage floor | `backend/.c8rc.json` | lines and statements 80%, functions 79%, branches 67% | 81.59 / 81.59 / 80.69 / 69.36% (Phase 2) |
 | Frontend lint warnings | `frontend/package.json` (`--max-warnings`) | 59 | 59 |
 | Entry JS (gzip) | `frontend/.size-limit.json` | 116 kB | 110.5 kB |
 | All JS (gzip) | same | 435 kB | 422.5 kB |
