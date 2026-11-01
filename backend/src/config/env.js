@@ -22,6 +22,8 @@ const optionalUrl = optionalString.pipe(z.url().optional());
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(5000),
+  // The worker process serves only /health, on its own port.
+  WORKER_PORT: z.coerce.number().int().min(1).max(65535).default(5002),
   // Defaults: debug in development, silent under test, info in production.
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).optional(),
   SLOW_REQUEST_MS: z.coerce.number().int().min(1).default(1500),
@@ -80,6 +82,9 @@ const schema = z.object({
   CASHFREE_CLIENT_ID: optionalString,
   CASHFREE_CLIENT_SECRET: optionalString,
   CASHFREE_VERIFY_BASE_URL: z.url().default('https://sandbox.cashfree.com/verification'),
+
+  // Password for the local seed accounts (scripts/seed.js). Never set in production.
+  SEED_PASSWORD: optionalString.pipe(z.string().min(8, 'must be at least 8 characters').optional()),
 
   // Feature flags for work that lands in later phases. All off by default.
   CLERK_ENABLED: flag(false),
@@ -147,6 +152,7 @@ const deepFreeze = (value) => {
  * @property {boolean} isProduction
  * @property {boolean} isTest
  * @property {number} port
+ * @property {number} workerPort
  * @property {{ level: string, pretty: boolean, slowRequestMs: number }} log
  * @property {string} mongodbUri
  * @property {{ trustProxy: boolean|number|string, jsonBodyLimit: string, rateLimit: { windowMs: number, max: number, authMax: number } }} http
@@ -158,6 +164,7 @@ const deepFreeze = (value) => {
  * @property {{ apiNinjasApiKey?: string }} vehicleCatalog
  * @property {{ provider: string, localPath?: string }} verificationStorage
  * @property {{ enabled: boolean, clientId?: string, clientSecret?: string, baseUrl: string }} cashfree
+ * @property {{ password?: string }} seed
  * @property {{ clerk: boolean, payments: boolean, passes: boolean }} features
  */
 
@@ -184,6 +191,7 @@ function parseEnv(source) {
     isProduction: env.NODE_ENV === 'production',
     isTest: env.NODE_ENV === 'test',
     port: env.PORT,
+    workerPort: env.WORKER_PORT,
     log: {
       level: env.LOG_LEVEL || { development: 'debug', test: 'silent', production: 'info' }[env.NODE_ENV],
       pretty: env.NODE_ENV === 'development',
@@ -218,6 +226,7 @@ function parseEnv(source) {
       clientSecret: env.CASHFREE_CLIENT_SECRET,
       baseUrl: env.CASHFREE_VERIFY_BASE_URL.replace(/\/$/, ''),
     },
+    seed: { password: env.SEED_PASSWORD },
     features: { clerk: env.CLERK_ENABLED, payments: env.PAYMENTS_ENABLED, passes: env.PASSES_ENABLED },
   });
 }
