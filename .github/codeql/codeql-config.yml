@@ -1,0 +1,8 @@
+name: ParkSmart CodeQL config
+
+# Generated output and docs tooling aren't application code.
+paths-ignore:
+  - frontend/build
+  - backend/coverage
+  - docs/redesign/tools
+  - "**/node_modules"
