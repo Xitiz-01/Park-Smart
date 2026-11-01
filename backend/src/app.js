@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 
 const { betterAuthHandler } = require('../auth/betterAuthBridge');
+const { getConfig } = require('./config/env');
 
 /**
  * Build the ParkSmart Express app. It opens no sockets and connects to no
@@ -55,7 +56,7 @@ function createApp({ allowedOrigins }) {
     res.status(statusCode).json({
       success: false,
       message: safeMessage,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+      stack: getConfig().nodeEnv === 'development' ? err.stack : undefined,
     });
   });
 

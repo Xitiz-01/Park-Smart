@@ -1,9 +1,6 @@
-const path = require('path');
 const mongoose = require('mongoose');
-const dotenv = require('dotenv');
+const { getConfig } = require('../src/config/env');
 const { databaseNameFromUri } = require('./migrateVehicleFuelType');
-
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 const args = new Set(process.argv.slice(2));
 const getArg = (prefix) => process.argv.slice(2).find((arg) => arg.startsWith(prefix))?.slice(prefix.length);
@@ -49,15 +46,14 @@ const removeDigiLockerData = async ({ db, apply = false, logger = console }) => 
 };
 
 const run = async () => {
-  if (!process.env.MONGODB_URI) throw new Error('MONGODB_URI is required');
   const apply = args.has('--apply');
   const expectedDb = getArg('--confirm-db=');
-  const databaseName = databaseNameFromUri(process.env.MONGODB_URI);
+  const databaseName = databaseNameFromUri(getConfig().mongodbUri);
   if (apply && (!expectedDb || expectedDb !== databaseName)) {
     throw new Error(`Refusing writes. Re-run with --apply --confirm-db=${databaseName}`);
   }
 
-  await mongoose.connect(process.env.MONGODB_URI);
+  await mongoose.connect(getConfig().mongodbUri);
   console.log(`${apply ? 'APPLY' : 'DRY RUN'}: looking for DigiLocker leftovers in ${databaseName}`);
   await removeDigiLockerData({ db: mongoose.connection.db, apply });
   if (!apply) console.log(`No data changed. To apply: npm run migrate:remove-digilocker -- --apply --confirm-db=${databaseName}`);

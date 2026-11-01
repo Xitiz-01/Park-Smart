@@ -1,3 +1,5 @@
+const { getConfig } = require('../src/config/env');
+
 const DEFAULT_TIMEOUT_MS = 4500;
 
 const normalizeKey = (value) => String(value || '')
@@ -96,7 +98,7 @@ const fetchJson = async ({ fetchImpl, url, headers = {}, timeoutMs, provider }) 
 
 class ApiNinjasVehicleProvider {
   constructor({
-    apiKey = process.env.API_NINJAS_API_KEY,
+    apiKey = getConfig().vehicleCatalog.apiNinjasApiKey,
     fetchImpl = global.fetch,
     baseUrl = 'https://api.api-ninjas.com/v2',
     timeoutMs = DEFAULT_TIMEOUT_MS,

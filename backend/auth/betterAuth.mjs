@@ -7,20 +7,14 @@ import { mongodbAdapter } from '@better-auth/mongo-adapter';
 import { MongoClient, ObjectId } from 'mongodb';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
+import envConfig from '../src/config/env.js';
 
-const mongoUri = process.env.MONGODB_URI;
-if (!mongoUri) throw new Error('MONGODB_URI is required for Better Auth');
+const config = envConfig.getConfig();
 
-const isProduction = process.env.NODE_ENV === 'production';
-const crossSiteCookies = process.env.BETTER_AUTH_CROSS_SITE_COOKIES === 'true';
-const splitList = (value = '') => value.split(',').map((entry) => entry.trim()).filter(Boolean);
-
-const trustedOrigins = [...new Set([
-  process.env.CLIENT_URL,
-  'http://localhost:3000',
-  'https://park-smart-eight.vercel.app',
-  ...splitList(process.env.BETTER_AUTH_TRUSTED_ORIGINS),
-].filter(Boolean))];
+const mongoUri = config.mongodbUri;
+const isProduction = config.isProduction;
+const crossSiteCookies = config.auth.crossSiteCookies;
+const trustedOrigins = config.allowedOrigins;
 
 const mongoClient = new MongoClient(mongoUri);
 const authDb = mongoClient.db();
@@ -37,15 +31,15 @@ const authSuperAdminRole = accessControl.newRole({
 
 const auth = betterAuth({
   appName: 'ParkSmart',
-  baseURL: process.env.BETTER_AUTH_URL || `http://localhost:${process.env.PORT || 5000}`,
+  baseURL: config.auth.url,
   basePath: '/api/auth',
-  secret: process.env.BETTER_AUTH_SECRET,
+  secret: config.auth.secret,
   trustedOrigins,
   database: mongodbAdapter(authDb, {
     client: mongoClient,
     // Standalone MongoDB (including CI) cannot run transactions. Atlas users
     // can opt in explicitly when their deployment supports them.
-    transaction: process.env.BETTER_AUTH_MONGO_TRANSACTIONS === 'true',
+    transaction: config.auth.mongoTransactions,
   }),
   emailAndPassword: {
     enabled: true,

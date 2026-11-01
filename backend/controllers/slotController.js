@@ -1,4 +1,5 @@
 const ParkingSlot = require('../models/ParkingSlot');
+const { getConfig } = require('../src/config/env');
 
 const toRadians = (deg) => (deg * Math.PI) / 180;
 
@@ -18,7 +19,7 @@ const OVERPASS_URLS = [
   'https://lz4.overpass-api.de/api/interpreter',
 ];
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
-const EXTERNAL_PARKING_CACHE_TTL_MS = Number(process.env.EXTERNAL_PARKING_CACHE_TTL_MS || 120000);
+const EXTERNAL_PARKING_CACHE_TTL_MS = getConfig().externalParkingCacheTtlMs;
 const MAX_EXTERNAL_CACHE_ENTRIES = 200;
 const externalNearbyCache = new Map();
 

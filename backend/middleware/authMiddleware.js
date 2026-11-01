@@ -5,13 +5,7 @@ const {
   syncAuthIdentityRole,
 } = require('../auth/betterAuthBridge');
 const { requirePermission } = require('../auth/permissions');
-
-const bootstrapIds = () => new Set(
-  (process.env.BETTER_AUTH_SUPER_ADMIN_USER_IDS || process.env.BETTER_AUTH_ADMIN_USER_IDS || '')
-    .split(',')
-    .map((value) => value.trim())
-    .filter(Boolean)
-);
+const { bootstrapSuperAdminIds: bootstrapIds } = require('../src/config/env');
 
 const resolveDomainUser = async (authUser) => {
   let user = await User.findOne({ authUserId: authUser.id });

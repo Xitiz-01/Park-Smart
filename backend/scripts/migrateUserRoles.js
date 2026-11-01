@@ -1,13 +1,9 @@
-const path = require('path');
 const mongoose = require('mongoose');
-const dotenv = require('dotenv');
+const { getConfig } = require('../src/config/env');
 const User = require('../models/User');
 
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
-
 const migrate = async () => {
-  if (!process.env.MONGODB_URI) throw new Error('MONGODB_URI is required');
-  await mongoose.connect(process.env.MONGODB_URI);
+  await mongoose.connect(getConfig().mongodbUri);
   const result = await User.updateMany(
     { $or: [{ role: { $exists: false } }, { role: null }, { role: '' }] },
     { $set: { role: 'customer' } }
