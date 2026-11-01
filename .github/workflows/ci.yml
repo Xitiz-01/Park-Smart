@@ -8,6 +8,8 @@ on:
     branches:
       - main
   workflow_dispatch:
+  # release.yml runs the whole pipeline as its gate before publishing.
+  workflow_call:
 
 permissions:
   contents: read
