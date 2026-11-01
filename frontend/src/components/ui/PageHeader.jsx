@@ -1,5 +1,3 @@
-import React from 'react';
-
 export default function PageHeader({ eyebrow, title, description, actions }) {
   return (
     <header className="page-header ps-page-header">

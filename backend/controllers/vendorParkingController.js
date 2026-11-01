@@ -3,7 +3,7 @@ const ParkingLocation = require('../models/ParkingLocation');
 const ParkingSlot = require('../models/ParkingSlot');
 const Booking = require('../models/Booking');
 const { checkInRecord, checkOutRecord } = require('./bookingController');
-const { validateParkingLocation, VEHICLE_TYPES } = require('../validators/parkingLocationValidator');
+const { validateParkingLocation } = require('../validators/parkingLocationValidator');
 const { getAvailability, parseWindow } = require('../services/parkingAvailabilityService');
 const { canPublishLocation, audit } = require('../services/verificationService');
 
@@ -124,7 +124,7 @@ const publishParkingLocation = async (req, res) => {
     await location.save();
     await audit({ vendor: req.vendorProfile._id, action: 'LOCATION_PUBLISHED', previousStatus: 'draft', newStatus: 'active', provider: 'MANUAL', note: `Parking location ${location._id} published` });
     return res.json({ success: true, message: 'Parking location published', location });
-  } catch (error) {
+  } catch {
     return res.status(500).json({ success: false, message: 'Unable to publish parking location' });
   }
 };

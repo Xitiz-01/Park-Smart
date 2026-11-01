@@ -97,7 +97,7 @@ const authenticateSocket = async (socket, next) => {
     socket.auth = identity.authSession;
     socket.user = identity.user;
     return next();
-  } catch (error) {
+  } catch {
     return next(new Error('Authentication required'));
   }
 };

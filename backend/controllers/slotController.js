@@ -68,7 +68,7 @@ const fetchJsonWithTimeout = async (url, options, timeoutMs, providerLabel) => {
     try {
       return JSON.parse(rawBody);
     } catch (parseError) {
-      throw new Error(`${providerLabel} returned non-JSON data`);
+      throw new Error(`${providerLabel} returned non-JSON data`, { cause: parseError });
     }
   } finally {
     clearTimeout(timer);

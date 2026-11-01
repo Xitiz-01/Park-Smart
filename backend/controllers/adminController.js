@@ -139,7 +139,7 @@ const getVendors = async (req, res) => {
       .populate('approvedBy', 'name email')
       .sort({ createdAt: -1 });
     res.json({ success: true, vendors });
-  } catch (error) {
+  } catch {
     res.status(500).json({ success: false, message: 'Unable to load vendor applications' });
   }
 };
@@ -154,7 +154,7 @@ const getVendorById = async (req, res) => {
       .populate('approvedBy', 'name email');
     if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found' });
     res.json({ success: true, vendor });
-  } catch (error) {
+  } catch {
     res.status(500).json({ success: false, message: 'Unable to load vendor application' });
   }
 };
@@ -215,7 +215,7 @@ const updateVendorStatus = async (req, res, action) => {
       .populate('approvedBy', 'name email');
     const pastTense = { approve: 'approved', reject: 'rejected', suspend: 'suspended' }[action];
     res.json({ success: true, message: `Vendor ${pastTense} successfully`, vendor: populated });
-  } catch (error) {
+  } catch {
     res.status(500).json({ success: false, message: `Unable to ${action} vendor` });
   }
 };
