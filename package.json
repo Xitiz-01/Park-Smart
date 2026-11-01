@@ -1,0 +1,15 @@
+{
+  "name": "parksmart",
+  "private": true,
+  "description": "Repository tooling for ParkSmart: commit checks and git hooks. The apps live in frontend/ and backend/.",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "commitlint": "commitlint"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4"
+  }
+}

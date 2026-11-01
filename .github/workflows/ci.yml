@@ -173,6 +173,58 @@ jobs:
         with:
           category: /language:${{ matrix.language }}
 
+  commit-hygiene:
+    name: commit-hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Work out the commit range
+        id: range
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then
+            from="$PR_BASE"; to="$PR_HEAD"
+          elif [ -n "$PUSH_BEFORE" ] && ! [[ "$PUSH_BEFORE" =~ ^0+$ ]]; then
+            from="$PUSH_BEFORE"; to="$GITHUB_SHA"
+          else
+            from="$GITHUB_SHA~1"; to="$GITHUB_SHA"
+          fi
+          echo "from=$from" >> "$GITHUB_OUTPUT"
+          echo "to=$to" >> "$GITHUB_OUTPUT"
+          echo "Checking $(git rev-list --count "$from..$to") commit(s): $from..$to"
+
+      - name: Reject AI attribution trailers
+        env:
+          FROM: ${{ steps.range.outputs.from }}
+          TO: ${{ steps.range.outputs.to }}
+        run: scripts/check-commit-clean.sh "$FROM..$TO"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install commitlint
+        run: npm ci
+
+      - name: Check Conventional Commits
+        env:
+          FROM: ${{ steps.range.outputs.from }}
+          TO: ${{ steps.range.outputs.to }}
+        run: npx commitlint --from "$FROM" --to "$TO" --verbose
+
   e2e:
     name: e2e
     runs-on: ubuntu-latest
@@ -191,6 +243,7 @@ jobs:
       - backend-ci
       - security
       - codeql
+      - commit-hygiene
       - e2e
     runs-on: ubuntu-latest
     timeout-minutes: 5
