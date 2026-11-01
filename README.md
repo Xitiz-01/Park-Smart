@@ -42,7 +42,7 @@ npm run dev                 # Vite dev server (npm start is an alias)
 
 Frontend runs on: http://localhost:3000
 
-The frontend is built with Vite and tested with Vitest. Requires Node 20.19 or newer.
+The frontend is built with Vite and tested with Vitest. Requires Node 24 or newer; CI uses Node 26 (see `.nvmrc`).
 
 | Command | What it does |
 |---|---|
@@ -155,26 +155,19 @@ Raw `*.vercel.app` → `*.onrender.com` traffic is cross-site. If those hostname
 
 ## CI/CD
 
-GitHub Actions is the quality gate for ParkSmart. The `CI` workflow runs whenever a pull request targets `main`, whenever `main` is pushed, and when it is started manually from the Actions tab.
+GitHub Actions is the quality gate. The `CI` workflow runs on every pull request, on pushes to `main`, and by hand from the Actions tab. `ci-gate` passes only when every job does, so it's the one check branch protection needs:
 
-- `frontend-ci` installs the locked frontend dependencies, runs the Vitest suite, and creates a production build.
-- `backend-ci` installs the locked backend dependencies and runs the integration suite against an isolated MongoDB service. It never connects to the production database.
-- No GitHub Actions secrets are required by the current CI workflow. Tests use harmless local values, and Geoapify requests are mocked by the integration suite.
-- Vercel remains responsible for frontend preview and production deployments.
-- Render remains responsible for backend production deployment.
+- `frontend-ci`: lint, Vitest, production build, bundle-size budget.
+- `backend-ci`: lint, unit tests, then every test against a disposable MongoDB replica set with a coverage floor. It never connects to a real database.
+- `security`: production dependency audit (with an expiring allow-list), gitleaks secret scan, dependency review on PRs; `codeql` analyses the code and the workflows.
+- `commit-hygiene`: Conventional Commits and no AI attribution trailers on every commit.
+- `e2e`: placeholder until the Playwright suite exists.
 
-The intended development flow is:
+CI needs no secrets: tests use harmless local values and mock every external provider. Vercel deploys the frontend (previews and production); the backend host deploys the backend. Tags `v*` run `release.yml`, which reruns CI and creates a GitHub Release with generated notes.
 
-1. Create a feature branch from an updated `main` branch.
-2. Make and verify the changes locally.
-3. Push the feature branch.
-4. Open a pull request targeting `main`.
-5. Wait for `frontend-ci` and `backend-ci` to pass.
-6. Review the Vercel preview deployment where applicable.
-7. Merge only after the required checks pass.
-8. Let Vercel and Render deploy the merged `main` branch automatically.
+Run `npm install` once at the repo root (Node 26, see `.nvmrc`) to install the git hooks. How to run each check locally, the thresholds, environments and the branch-protection checklist are in [docs/platform/CI_CD.md](docs/platform/CI_CD.md).
 
-Production credentials, including the production MongoDB URI, Better Auth secret, address-selection secret, Geoapify key, and optional API Ninjas key, stay in Render environment configuration. They must not be added to GitHub Actions for this workflow.
+Production credentials (database URI, auth secrets, Geoapify, API Ninjas, Cashfree) stay in the hosting providers' environment settings, never in GitHub Actions.
 
 ---
 
