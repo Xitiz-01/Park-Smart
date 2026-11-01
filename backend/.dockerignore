@@ -1,0 +1,13 @@
+# Keep the build context small and secret-free: no local env files, no
+# installed modules (the image runs npm ci), no uploads, no test output.
+node_modules
+coverage
+.env
+.env.*
+!.env.example
+private-verification-storage
+tests
+*.log
+.DS_Store
+Dockerfile
+.dockerignore
