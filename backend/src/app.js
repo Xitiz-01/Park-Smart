@@ -10,16 +10,22 @@ const { forwardAsyncErrors } = require('./platform/http/asyncRoutes');
 const { securityMiddleware, AUTH_RATE_LIMITED_PATHS } = require('./platform/http/security');
 const { deprecatedAlias } = require('./platform/http/versioning');
 const { buildOpenApiDocument } = require('./platform/openapi');
+const { healthRouter } = require('./platform/health');
+const { pingMongo } = require('./platform/db');
 
 /**
  * Build the ParkSmart Express app. It opens no sockets and connects to no
  * database, so tests can drive it directly; server.js adds the HTTP server,
  * Socket.IO and the MongoDB connection.
  *
- * @param {{ config?: import('./config/env').Config, logger?: import('pino').Logger }} [options]
+ * @param {{
+ *   config?: import('./config/env').Config,
+ *   logger?: import('pino').Logger,
+ *   healthChecks?: Record<string, () => Promise<boolean>>,
+ * }} [options]
  * @returns {import('express').Express}
  */
-function createApp({ config = getConfig(), logger = defaultLogger } = {}) {
+function createApp({ config = getConfig(), logger = defaultLogger, healthChecks = { mongo: pingMongo } } = {}) {
   const app = express();
   const security = securityMiddleware(config.http);
   app.set('trust proxy', config.http.trustProxy);
@@ -27,6 +33,7 @@ function createApp({ config = getConfig(), logger = defaultLogger } = {}) {
   app.use(requestLogger(logger));
   app.use(slowRequestWarning(config.log.slowRequestMs));
   app.use(security.headers);
+  app.use('/health', healthRouter(healthChecks));
   app.use(cors({
     origin: config.allowedOrigins,
     credentials: true,

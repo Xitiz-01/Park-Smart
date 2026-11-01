@@ -16,9 +16,11 @@ try {
   throw error;
 }
 const { logger } = require('./src/platform/logger');
-const connectDB = require('./config/db');
+const { connectMongo, disconnectMongo } = require('./src/platform/db');
+const { createShutdown, installProcessHandlers } = require('./src/platform/lifecycle');
 const { createApp } = require('./src/app');
 const { authenticateSocket } = require('./middleware/authMiddleware');
+const { closeBetterAuth } = require('./auth/betterAuthBridge');
 
 const { allowedOrigins } = config;
 const app = createApp({ config, logger });
@@ -38,11 +40,27 @@ io.on('connection', (socket) => {
 });
 
 if (require.main === module) {
-  connectDB().then(() => {
-    server.listen(config.port, () => {
-      logger.info({ port: config.port, nodeEnv: config.nodeEnv }, 'server listening');
-    });
+  const shutdown = createShutdown({
+    server,
+    io,
+    logger,
+    closers: [
+      { name: 'mongodb', close: disconnectMongo },
+      { name: 'better-auth', close: closeBetterAuth },
+    ],
   });
+  installProcessHandlers({ shutdown, logger });
+
+  connectMongo({ logger })
+    .then(() => {
+      server.listen(config.port, () => {
+        logger.info({ port: config.port, nodeEnv: config.nodeEnv }, 'server listening');
+      });
+    })
+    .catch((error) => {
+      logger.fatal({ err: error }, 'could not connect to MongoDB; giving up');
+      process.exit(1);
+    });
 }
 
 module.exports = { app, server };
