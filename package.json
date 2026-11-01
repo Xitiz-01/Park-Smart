@@ -1,15 +1,21 @@
 {
   "name": "parksmart",
   "private": true,
-  "description": "Repository tooling for ParkSmart: commit checks and git hooks. The apps live in frontend/ and backend/.",
+  "description": "Repository tooling for ParkSmart: git hooks, commit checks and formatting. The apps live in frontend/ and backend/.",
   "engines": {
     "node": ">=24"
   },
   "scripts": {
-    "commitlint": "commitlint"
+    "prepare": "husky",
+    "commitlint": "commitlint",
+    "format": "prettier --write",
+    "format:check": "prettier --check"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.4",
-    "@commitlint/config-conventional": "^21.2.4"
+    "@commitlint/config-conventional": "^21.2.4",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.10"
   }
 }

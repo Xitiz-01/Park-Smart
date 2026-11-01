@@ -5,4 +5,4 @@ paths-ignore:
   - frontend/build
   - backend/coverage
   - docs/redesign/tools
-  - "**/node_modules"
+  - '**/node_modules'

@@ -1,0 +1,9 @@
+# Generated or vendored
+**/package-lock.json
+frontend/build
+backend/coverage
+backend/private-verification-storage
+# Briefs and screenshot reports are kept as written
+claude
+docs/redesign/baseline
+docs/redesign/screens

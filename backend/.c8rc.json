@@ -15,16 +15,8 @@
     "scripts/**",
     "*.js"
   ],
-  "exclude": [
-    "tests/**",
-    "coverage/**",
-    "eslint.config.*"
-  ],
-  "reporter": [
-    "text-summary",
-    "lcov",
-    "html"
-  ],
+  "exclude": ["tests/**", "coverage/**", "eslint.config.*"],
+  "reporter": ["text-summary", "lcov", "html"],
   "reports-dir": "coverage",
   "check-coverage": true,
   "lines": 77,

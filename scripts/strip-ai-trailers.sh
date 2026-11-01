@@ -4,7 +4,7 @@
 # is created. Patterns: scripts/commit-hygiene-patterns.txt. Other
 # Co-authored-by lines (real people) are kept.
 #
-# Enable once per clone:  git config core.hooksPath .githooks
+# Called from .husky/commit-msg, which `npm install` at the repo root wires up.
 set -euo pipefail
 
 msg_file="$1"

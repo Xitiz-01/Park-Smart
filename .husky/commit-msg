@@ -1,0 +1,2 @@
+scripts/strip-ai-trailers.sh "$1"
+npx --no -- commitlint --edit "$1"
