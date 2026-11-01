@@ -8,6 +8,8 @@ const { requestLogger, slowRequestWarning } = require('./platform/http/requestLo
 const { errorHandler, notFoundHandler } = require('./platform/http/errorHandler');
 const { forwardAsyncErrors } = require('./platform/http/asyncRoutes');
 const { securityMiddleware, AUTH_RATE_LIMITED_PATHS } = require('./platform/http/security');
+const { deprecatedAlias } = require('./platform/http/versioning');
+const { buildOpenApiDocument } = require('./platform/openapi');
 
 /**
  * Build the ParkSmart Express app. It opens no sockets and connects to no
@@ -42,21 +44,32 @@ function createApp({ config = getConfig(), logger = defaultLogger } = {}) {
   app.get('/api', (req, res) => {
     res.send('API is working');
   });
-  // Routes. forwardAsyncErrors sends rejected promises from async handlers
-  // to the error middleware instead of leaving them unhandled.
+  // Routes live under /api/v1. The same routers stay mounted at /api as a
+  // deprecated alias until the frontend moves over (Phase 14). Better Auth
+  // keeps /api/auth until Clerk replaces it. forwardAsyncErrors sends
+  // rejected promises from async handlers to the error middleware.
   const routes = {
-    '/api/account': require('../routes/accountRoutes'),
-    '/api/slots': require('../routes/slotRoutes'),
-    '/api/bookings': require('../routes/bookingRoutes'),
-    '/api/admin': require('../routes/adminRoutes'),
-    '/api/vehicles': require('../routes/vehicleRoutes'),
-    '/api/vehicle-catalog': require('../routes/vehicleCatalogRoutes'),
-    '/api/vendors': require('../routes/vendorRoutes'),
-    '/api/vendor-verification': require('../routes/vendorVerificationRoutes'),
-    '/api/parking-locations': require('../routes/parkingLocationRoutes'),
-    '/api/location': require('../routes/locationRoutes'),
+    account: require('../routes/accountRoutes'),
+    slots: require('../routes/slotRoutes'),
+    bookings: require('../routes/bookingRoutes'),
+    admin: require('../routes/adminRoutes'),
+    vehicles: require('../routes/vehicleRoutes'),
+    'vehicle-catalog': require('../routes/vehicleCatalogRoutes'),
+    vendors: require('../routes/vendorRoutes'),
+    'vendor-verification': require('../routes/vendorVerificationRoutes'),
+    'parking-locations': require('../routes/parkingLocationRoutes'),
+    location: require('../routes/locationRoutes'),
   };
-  Object.entries(routes).forEach(([path, router]) => app.use(path, forwardAsyncErrors(router)));
+  Object.entries(routes).forEach(([name, router]) => {
+    forwardAsyncErrors(router);
+    app.use(`/api/v1/${name}`, router);
+    app.use(`/api/${name}`, deprecatedAlias(`/api/${name}`, `/api/v1/${name}`), router);
+  });
+
+  if (!config.isProduction) {
+    const openApiDocument = buildOpenApiDocument();
+    app.get('/api/docs', (req, res) => res.json(openApiDocument));
+  }
 
   // Health check
   app.get('/', (req, res) => {
