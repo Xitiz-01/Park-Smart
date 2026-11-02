@@ -263,7 +263,7 @@ jobs:
       - name: Start the stack with the production images
         run: |
           cp .env.example .env
-          docker compose -f docker-compose.yml up --build --detach --wait --wait-timeout 300
+          docker compose -f docker-compose.yml up --build --detach --wait --wait-timeout 300 2>&1 | tee compose-up.log
 
       - name: Check readiness, the web proxy and a seeded sign-in
         run: |
@@ -278,7 +278,21 @@ jobs:
 
       - name: Show logs
         if: failure()
-        run: docker compose -f docker-compose.yml logs --no-color
+        # The full logs go to the job log; a short summary is also posted as
+        # an annotation, so the cause shows on the PR without opening the log.
+        run: |
+          docker compose -f docker-compose.yml logs --no-color
+          summary="$({
+            docker compose -f docker-compose.yml ps -a --format 'table {{.Service}}\t{{.State}}\t{{.Status}}'
+            echo; echo '--- end of compose up'; tail -n 15 compose-up.log 2>/dev/null
+            for service in seed api worker web mongo redis; do
+              echo; echo "--- $service"; docker compose -f docker-compose.yml logs --no-color --tail 12 "$service"
+            done
+          } 2>&1)"
+          summary="${summary//'%'/'%25'}"
+          summary="${summary//$'\r'/'%0D'}"
+          summary="${summary//$'\n'/'%0A'}"
+          echo "::error title=compose-smoke diagnostics::${summary}"
 
       - name: Stop the stack
         if: always()
