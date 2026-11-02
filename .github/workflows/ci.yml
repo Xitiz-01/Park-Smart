@@ -252,7 +252,10 @@ jobs:
 
   compose-smoke:
     name: compose-smoke
-    runs-on: ubuntu-latest
+    # Pinned below Ubuntu 26: MongoDB 8 refuses to start on Linux 6.19 and
+    # newer (SERVER-121912), and ubuntu-latest now has such a kernel. Move
+    # back to ubuntu-latest once a MongoDB 8.0 release runs there.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - name: Check out repository
