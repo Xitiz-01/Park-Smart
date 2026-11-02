@@ -1,0 +1,4 @@
+^co-authored-by:.*(claude|anthropic)
+^claude-session:
+generated with.*claude
+claude\.ai/code
