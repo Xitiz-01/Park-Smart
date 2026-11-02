@@ -25,17 +25,22 @@ const addSlotStats = async (locations) => {
   const ids = locations.map((location) => location._id);
   const rows = await ParkingSlot.aggregate([
     { $match: { parkingLocation: { $in: ids }, vehicleType: 'ev', evCompatible: true } },
-    { $group: {
-      _id: '$parkingLocation',
-      total: { $sum: 1 },
-      available: { $sum: { $cond: [{ $eq: ['$status', 'available'] }, 1, 0] } },
-    } },
+    {
+      $group: {
+        _id: '$parkingLocation',
+        total: { $sum: 1 },
+        available: { $sum: { $cond: [{ $eq: ['$status', 'available'] }, 1, 0] } },
+      },
+    },
   ]);
   const stats = new Map(rows.map((row) => [String(row._id), row]));
   return locations.map((location) => ({
     ...location.toObject(),
     slotStats: stats.get(String(location._id)) || { total: 0, available: 0 },
-    regularCapacity: Object.values(location.capacity?.toObject?.() || location.capacity || {}).reduce((sum, value) => sum + Number(value || 0), 0),
+    regularCapacity: Object.values(location.capacity?.toObject?.() || location.capacity || {}).reduce(
+      (sum, value) => sum + Number(value || 0),
+      0,
+    ),
   }));
 };
 
@@ -78,10 +83,14 @@ const updateParkingLocation = async (req, res) => {
     if (validated.error) return res.status(400).json({ success: false, message: validated.error });
     Object.assign(location, validated.value);
     await location.save();
-    await Promise.all(location.vehicleTypes.map((vehicleType) => ParkingSlot.updateMany(
-      { parkingLocation: location._id, vehicleType },
-      { $set: { pricePerHour: location.pricing?.[vehicleType] ?? 0 } }
-    )));
+    await Promise.all(
+      location.vehicleTypes.map((vehicleType) =>
+        ParkingSlot.updateMany(
+          { parkingLocation: location._id, vehicleType },
+          { $set: { pricePerHour: location.pricing?.[vehicleType] ?? 0 } },
+        ),
+      ),
+    );
     res.json({ success: true, message: 'Parking location updated', location });
   } catch {
     res.status(500).json({ success: false, message: 'Unable to update parking location' });
@@ -96,7 +105,7 @@ const deactivateParkingLocation = async (req, res) => {
     await location.save();
     await ParkingSlot.updateMany(
       { parkingLocation: location._id, status: 'available' },
-      { $set: { status: 'maintenance' } }
+      { $set: { status: 'maintenance' } },
     );
     res.json({ success: true, message: 'Parking location deactivated', location });
   } catch {
@@ -113,16 +122,24 @@ const publishParkingLocation = async (req, res) => {
       return res.status(409).json({
         success: false,
         code: 'VERIFICATION_REQUIRED',
-        message: eligibility.verificationStatus !== 'VERIFIED'
-          ? 'Complete vendor identity, business, and bank verification before publishing'
-          : 'This parking location needs an approved authorization document before publishing',
+        message:
+          eligibility.verificationStatus !== 'VERIFIED'
+            ? 'Complete vendor identity, business, and bank verification before publishing'
+            : 'This parking location needs an approved authorization document before publishing',
         eligibility,
       });
     }
     location.status = 'active';
     location.publishedAt = new Date();
     await location.save();
-    await audit({ vendor: req.vendorProfile._id, action: 'LOCATION_PUBLISHED', previousStatus: 'draft', newStatus: 'active', provider: 'MANUAL', note: `Parking location ${location._id} published` });
+    await audit({
+      vendor: req.vendorProfile._id,
+      action: 'LOCATION_PUBLISHED',
+      previousStatus: 'draft',
+      newStatus: 'active',
+      provider: 'MANUAL',
+      note: `Parking location ${location._id} published`,
+    });
     return res.json({ success: true, message: 'Parking location published', location });
   } catch {
     return res.status(500).json({ success: false, message: 'Unable to publish parking location' });
@@ -137,7 +154,7 @@ const getLocationSlots = async (req, res) => {
     const window = parseWindow(
       req.query.startTime || defaultStart,
       req.query.endTime || new Date(defaultStart.getTime() + 60 * 60 * 1000),
-      { allowPast: true }
+      { allowPast: true },
     );
     if (window.error) return res.status(400).json({ success: false, message: window.error });
     const availability = await getAvailability(location, 'ev', window.startTime, window.endTime);
@@ -153,12 +170,17 @@ const getLocationSlots = async (req, res) => {
 };
 
 const validateSlotInput = (body, location) => {
-  const slotNumber = String(body.slotNumber || '').trim().toUpperCase();
+  const slotNumber = String(body.slotNumber || '')
+    .trim()
+    .toUpperCase();
   const requestedVehicleType = String(body.vehicleType || 'ev').toLowerCase();
   const vehicleType = 'ev';
-  if (!/^[A-Z0-9_-]{1,20}$/.test(slotNumber)) return { error: 'Slot number may contain only letters, numbers, underscores, and hyphens' };
-  if (requestedVehicleType !== 'ev') return { error: 'Only EV charging bays use physical slots; configure regular vehicles with location capacity' };
-  if (!location.evSupported || !location.vehicleTypes.includes('ev')) return { error: 'Enable EV support for this location before adding physical slots' };
+  if (!/^[A-Z0-9_-]{1,20}$/.test(slotNumber))
+    return { error: 'Slot number may contain only letters, numbers, underscores, and hyphens' };
+  if (requestedVehicleType !== 'ev')
+    return { error: 'Only EV charging bays use physical slots; configure regular vehicles with location capacity' };
+  if (!location.evSupported || !location.vehicleTypes.includes('ev'))
+    return { error: 'Enable EV support for this location before adding physical slots' };
   return { slotNumber, vehicleType };
 };
 
@@ -169,8 +191,12 @@ const slotDocument = (input, location) => ({
   type: input.slotType || (input.vehicleType === 'ev' ? 'ev' : 'standard'),
   status: input.status || 'available',
   evCompatible: input.vehicleType === 'ev' || Boolean(input.evCompatible),
-  chargerType: String(input.chargerType || location.evDetails?.chargerType || '').trim().slice(0, 80),
-  connectorType: String(input.connectorType || '').trim().slice(0, 80),
+  chargerType: String(input.chargerType || location.evDetails?.chargerType || '')
+    .trim()
+    .slice(0, 80),
+  connectorType: String(input.connectorType || '')
+    .trim()
+    .slice(0, 80),
   chargerPowerKw: Math.max(0, Number(input.chargerPowerKw) || 0),
   pricePerHour: location.pricing?.[input.vehicleType] ?? 0,
   features: {
@@ -189,7 +215,8 @@ const createSlot = async (req, res) => {
   try {
     const location = await findOwnedLocation(req.params.id, req.vendorProfile._id);
     if (!location) return res.status(404).json({ success: false, message: 'Parking location not found' });
-    if (location.status !== 'active') return res.status(409).json({ success: false, message: 'Activate this location before adding slots' });
+    if (location.status !== 'active')
+      return res.status(409).json({ success: false, message: 'Activate this location before adding slots' });
     const input = validateSlotInput(req.body, location);
     if (input.error) return res.status(400).json({ success: false, message: input.error });
     const exists = await ParkingSlot.exists({ parkingLocation: location._id, slotNumber: input.slotNumber });
@@ -198,7 +225,8 @@ const createSlot = async (req, res) => {
     emitSlotChanged(req, location._id, slot);
     res.status(201).json({ success: true, message: 'Parking slot created', slot });
   } catch (error) {
-    if (error.code === 11000) return res.status(409).json({ success: false, message: 'Slot number already exists at this location' });
+    if (error.code === 11000)
+      return res.status(409).json({ success: false, message: 'Slot number already exists at this location' });
     res.status(500).json({ success: false, message: 'Unable to create parking slot' });
   }
 };
@@ -207,22 +235,36 @@ const bulkCreateSlots = async (req, res) => {
   try {
     const location = await findOwnedLocation(req.params.id, req.vendorProfile._id);
     if (!location) return res.status(404).json({ success: false, message: 'Parking location not found' });
-    if (location.status !== 'active') return res.status(409).json({ success: false, message: 'Activate this location before adding slots' });
-    const prefix = String(req.body.prefix || '').trim().toUpperCase();
+    if (location.status !== 'active')
+      return res.status(409).json({ success: false, message: 'Activate this location before adding slots' });
+    const prefix = String(req.body.prefix || '')
+      .trim()
+      .toUpperCase();
     const count = Number(req.body.count);
-    if (!/^[A-Z][A-Z0-9_-]{0,9}$/.test(prefix)) return res.status(400).json({ success: false, message: 'Enter a valid slot prefix' });
-    if (!Number.isInteger(count) || count < 1 || count > 200) return res.status(400).json({ success: false, message: 'Slot count must be between 1 and 200' });
+    if (!/^[A-Z][A-Z0-9_-]{0,9}$/.test(prefix))
+      return res.status(400).json({ success: false, message: 'Enter a valid slot prefix' });
+    if (!Number.isInteger(count) || count < 1 || count > 200)
+      return res.status(400).json({ success: false, message: 'Slot count must be between 1 and 200' });
     const base = validateSlotInput({ ...req.body, slotNumber: `${prefix}01` }, location);
     if (base.error) return res.status(400).json({ success: false, message: base.error });
     const width = Math.max(2, String(count).length);
     const numbers = Array.from({ length: count }, (_, index) => `${prefix}${String(index + 1).padStart(width, '0')}`);
     const duplicate = await ParkingSlot.findOne({ parkingLocation: location._id, slotNumber: { $in: numbers } });
-    if (duplicate) return res.status(409).json({ success: false, message: `Slot ${duplicate.slotNumber} already exists at this location` });
-    const slots = await ParkingSlot.insertMany(numbers.map((slotNumber) => slotDocument({ ...req.body, ...base, slotNumber }, location)), { ordered: true });
+    if (duplicate)
+      return res
+        .status(409)
+        .json({ success: false, message: `Slot ${duplicate.slotNumber} already exists at this location` });
+    const slots = await ParkingSlot.insertMany(
+      numbers.map((slotNumber) => slotDocument({ ...req.body, ...base, slotNumber }, location)),
+      { ordered: true },
+    );
     emitSlotChanged(req, location._id);
     res.status(201).json({ success: true, message: `${slots.length} parking slots created`, slots });
   } catch (error) {
-    if (error.code === 11000) return res.status(409).json({ success: false, message: 'One or more slot numbers already exist at this location' });
+    if (error.code === 11000)
+      return res
+        .status(409)
+        .json({ success: false, message: 'One or more slot numbers already exist at this location' });
     res.status(500).json({ success: false, message: 'Unable to create parking slots' });
   }
 };
@@ -235,27 +277,47 @@ const updateSlot = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Parking slot not found' });
     }
     const location = slot.parkingLocation;
-    const input = validateSlotInput({
-      slotNumber: req.body.slotNumber ?? slot.slotNumber,
-      vehicleType: req.body.vehicleType ?? slot.vehicleType,
-    }, location);
+    const input = validateSlotInput(
+      {
+        slotNumber: req.body.slotNumber ?? slot.slotNumber,
+        vehicleType: req.body.vehicleType ?? slot.vehicleType,
+      },
+      location,
+    );
     if (input.error) return res.status(400).json({ success: false, message: input.error });
-    if (input.slotNumber !== slot.slotNumber && await ParkingSlot.exists({ parkingLocation: location._id, slotNumber: input.slotNumber, _id: { $ne: slot._id } })) {
+    if (
+      input.slotNumber !== slot.slotNumber &&
+      (await ParkingSlot.exists({
+        parkingLocation: location._id,
+        slotNumber: input.slotNumber,
+        _id: { $ne: slot._id },
+      }))
+    ) {
       return res.status(409).json({ success: false, message: 'Slot number already exists at this location' });
     }
     const allowedStatuses = ['available', 'occupied', 'reserved', 'maintenance'];
-    if (req.body.status && !allowedStatuses.includes(req.body.status)) return res.status(400).json({ success: false, message: 'Invalid slot status' });
-    Object.assign(slot, slotDocument({
-      ...req.body, ...input, status: req.body.status || slot.status,
-      chargerType: req.body.chargerType ?? slot.chargerType,
-      connectorType: req.body.connectorType ?? slot.connectorType,
-      chargerPowerKw: req.body.chargerPowerKw ?? slot.chargerPowerKw,
-    }, location));
+    if (req.body.status && !allowedStatuses.includes(req.body.status))
+      return res.status(400).json({ success: false, message: 'Invalid slot status' });
+    Object.assign(
+      slot,
+      slotDocument(
+        {
+          ...req.body,
+          ...input,
+          status: req.body.status || slot.status,
+          chargerType: req.body.chargerType ?? slot.chargerType,
+          connectorType: req.body.connectorType ?? slot.connectorType,
+          chargerPowerKw: req.body.chargerPowerKw ?? slot.chargerPowerKw,
+        },
+        location,
+      ),
+    );
     await slot.save();
     emitSlotChanged(req, location._id, slot);
     res.json({ success: true, message: 'Parking slot updated', slot });
   } catch (error) {
-    if (error.code === 11000) return res.status(409).json({ success: false, message: 'Slot number already exists at this location' });
+    if (error.code === 11000)
+      return res.status(409).json({ success: false, message: 'Slot number already exists at this location' });
     res.status(500).json({ success: false, message: 'Unable to update parking slot' });
   }
 };
@@ -264,7 +326,9 @@ const getVendorBookings = async (req, res) => {
   try {
     const locationIds = await ParkingLocation.find({ vendorId: req.vendorProfile._id }).distinct('_id');
     const slotIds = await ParkingSlot.find({ parkingLocation: { $in: locationIds } }).distinct('_id');
-    const bookings = await Booking.find({ $or: [{ parkingLocation: { $in: locationIds } }, { slot: { $in: slotIds } }] })
+    const bookings = await Booking.find({
+      $or: [{ parkingLocation: { $in: locationIds } }, { slot: { $in: slotIds } }],
+    })
       .populate('user', 'name email phone')
       .populate({ path: 'slot', populate: { path: 'parkingLocation', select: 'name' } })
       .populate('parkingLocation', 'name')
@@ -280,7 +344,10 @@ const findOwnedBooking = async (bookingId, vendorId) => {
   if (!isId(bookingId)) return null;
   const locationIds = await ParkingLocation.find({ vendorId }).distinct('_id');
   const slotIds = await ParkingSlot.find({ parkingLocation: { $in: locationIds } }).distinct('_id');
-  return Booking.findOne({ _id: bookingId, $or: [{ parkingLocation: { $in: locationIds } }, { slot: { $in: slotIds } }] });
+  return Booking.findOne({
+    _id: bookingId,
+    $or: [{ parkingLocation: { $in: locationIds } }, { slot: { $in: slotIds } }],
+  });
 };
 
 const checkInVendorBooking = async (req, res) => {
@@ -306,7 +373,17 @@ const checkOutVendorBooking = async (req, res) => {
 };
 
 module.exports = {
-  getParkingLocations, getParkingLocation, createParkingLocation, updateParkingLocation,
-  deactivateParkingLocation, getLocationSlots, createSlot, bulkCreateSlots, updateSlot, getVendorBookings,
-  checkInVendorBooking, checkOutVendorBooking, publishParkingLocation,
+  getParkingLocations,
+  getParkingLocation,
+  createParkingLocation,
+  updateParkingLocation,
+  deactivateParkingLocation,
+  getLocationSlots,
+  createSlot,
+  bulkCreateSlots,
+  updateSlot,
+  getVendorBookings,
+  checkInVendorBooking,
+  checkOutVendorBooking,
+  publishParkingLocation,
 };

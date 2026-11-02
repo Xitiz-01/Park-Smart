@@ -9,15 +9,15 @@
  */
 @layer theme, base, legacy, vendor, components, utilities;
 
-@import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
-@import "@fontsource-variable/geist-mono";
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';
 /* opsz build: Bricolage's optical sizes give signage punch at display sizes
    and stay calm around 20px. */
-@import "@fontsource-variable/bricolage-grotesque/opsz.css";
-@import "./tokens.css";
+@import '@fontsource-variable/bricolage-grotesque/opsz.css';
+@import './tokens.css';
 /* index.css (layer legacy) and Leaflet (layer vendor) are imported by the
    screens that need them: see styles/legacy.css and styles/leaflet.css. */
 
@@ -27,10 +27,10 @@
 @source not inline("container");
 
 @theme inline {
-  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Bricolage Grotesque Variable", "Geist Variable", ui-sans-serif, sans-serif;
+  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Bricolage Grotesque Variable', 'Geist Variable', ui-sans-serif, sans-serif;
   --font-heading: var(--font-display);
-  --font-mono: "Geist Mono Variable", ui-monospace, "SFMono-Regular", monospace;
+  --font-mono: 'Geist Mono Variable', ui-monospace, 'SFMono-Regular', monospace;
 
   /* Fluid display scale (1.25 ratio at the small end, wider on desktop). */
   --text-display-2xl: clamp(2.75rem, 1.55rem + 4.4vw, 5rem);
@@ -177,7 +177,9 @@
      collapse to an instant change. Motion components follow the same
      setting through <MotionConfig reducedMotion="user">. */
   @media (prefers-reduced-motion: reduce) {
-    *, ::before, ::after {
+    *,
+    ::before,
+    ::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
@@ -236,11 +238,32 @@
   transform-origin: center bottom;
   transition: transform 150ms var(--ease-standard);
 }
-.ps-pin-free { background: var(--slot-available-soft); color: var(--slot-available); border-color: var(--slot-available); }
-.ps-pin-low { background: var(--slot-reserved-soft); color: var(--slot-reserved); border-color: var(--slot-reserved); }
-.ps-pin-full, .ps-pin-closed { background: var(--surface-raised); color: var(--text-muted); border-color: var(--border-strong); }
-.ps-pin-active { transform: scale(1.18); z-index: 1000; box-shadow: 0 0 0 3px var(--focus); }
-@media (prefers-reduced-motion: reduce) { .ps-pin { transition: none; } }
+.ps-pin-free {
+  background: var(--slot-available-soft);
+  color: var(--slot-available);
+  border-color: var(--slot-available);
+}
+.ps-pin-low {
+  background: var(--slot-reserved-soft);
+  color: var(--slot-reserved);
+  border-color: var(--slot-reserved);
+}
+.ps-pin-full,
+.ps-pin-closed {
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  border-color: var(--border-strong);
+}
+.ps-pin-active {
+  transform: scale(1.18);
+  z-index: 1000;
+  box-shadow: 0 0 0 3px var(--focus);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ps-pin {
+    transition: none;
+  }
+}
 .ps-origin {
   display: block;
   width: 18px;
@@ -250,13 +273,22 @@
   border: 3px solid var(--surface-raised);
   box-shadow: 0 0 0 6px color-mix(in oklab, var(--brand) 25%, transparent);
 }
-.ps-map-radius { stroke: var(--brand); stroke-width: 1.5; fill: var(--brand); fill-opacity: 0.05; }
-.ps-map .leaflet-popup-content-wrapper, .ps-map .leaflet-popup-tip {
+.ps-map-radius {
+  stroke: var(--brand);
+  stroke-width: 1.5;
+  fill: var(--brand);
+  fill-opacity: 0.05;
+}
+.ps-map .leaflet-popup-content-wrapper,
+.ps-map .leaflet-popup-tip {
   background: var(--surface-raised);
   color: var(--text);
   box-shadow: var(--shadow-overlay);
 }
-.ps-map .leaflet-popup-content { margin: 0.75rem 0.875rem; font-family: var(--font-sans); }
+.ps-map .leaflet-popup-content {
+  margin: 0.75rem 0.875rem;
+  font-family: var(--font-sans);
+}
 
 /* Location editor: the draggable pin that marks the entrance. */
 .ps-drop-pin {

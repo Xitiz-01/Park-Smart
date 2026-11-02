@@ -23,9 +23,18 @@ function SlotTileBody({ id, state, detail, meta, ev }) {
   return (
     <>
       {/* painted bay lines */}
-      <span aria-hidden="true" className="pointer-events-none absolute inset-y-2 left-0 w-0.5 rounded-full bg-current opacity-35" />
-      <span aria-hidden="true" className="pointer-events-none absolute inset-y-2 right-0 w-0.5 rounded-full bg-current opacity-35" />
-      <span aria-hidden="true" className="pointer-events-none absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-current opacity-35" />
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-2 left-0 w-0.5 rounded-full bg-current opacity-35"
+      />
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-2 right-0 w-0.5 rounded-full bg-current opacity-35"
+      />
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-current opacity-35"
+      />
       <span className="flex items-center justify-between gap-2">
         <span className="font-mono text-base font-semibold tracking-tight text-foreground">{id}</span>
         {ev && <PlugZap aria-hidden="true" className="size-4" />}
@@ -37,7 +46,8 @@ function SlotTileBody({ id, state, detail, meta, ev }) {
   );
 }
 
-const tileClass = 'relative flex min-h-32 min-w-0 flex-col rounded-lg px-3.5 pt-3 pb-2.5 text-left transition-[background-color,color] duration-150';
+const tileClass =
+  'relative flex min-h-32 min-w-0 flex-col rounded-lg px-3.5 pt-3 pb-2.5 text-left transition-[background-color,color] duration-150';
 
 // One bay. Inside an interactive SlotBoard it becomes an option the driver can
 // pick; available bays only. `id` is the visible bay ID, `value` the record id.
@@ -47,7 +57,12 @@ export function SlotTile({ value, id, state, detail, meta, ev = false, powerKw, 
 
   if (!board?.interactive) {
     return (
-      <div role="listitem" aria-label={label} data-state={state} className={cn(tileClass, stateStyles[state], className)}>
+      <div
+        role="listitem"
+        aria-label={label}
+        data-state={state}
+        className={cn(tileClass, stateStyles[state], className)}
+      >
         <SlotTileBody id={id} state={state} detail={detail} meta={meta} ev={ev} />
       </div>
     );
@@ -68,7 +83,8 @@ export function SlotTile({ value, id, state, detail, meta, ev = false, powerKw, 
       onClick={() => board.onValueChange(value)}
       onKeyDown={board.onKeyDown}
       className={cn(
-        tileClass, stateStyles[state],
+        tileClass,
+        stateStyles[state],
         'outline-offset-2 enabled:hover:brightness-[0.97] disabled:cursor-not-allowed dark:enabled:hover:brightness-110',
         className,
       )}
@@ -113,7 +129,11 @@ export function SlotBoard({ label, onValueChange, children, className }) {
     if (event.key === 'Home') next = 0;
     if (event.key === 'End') next = list.length - 1;
     const target = list[(next + list.length) % list.length];
-    if (target) { target.tabIndex = 0; event.currentTarget.tabIndex = -1; target.focus(); }
+    if (target) {
+      target.tabIndex = 0;
+      event.currentTarget.tabIndex = -1;
+      target.focus();
+    }
   }, []);
 
   return (
@@ -141,7 +161,10 @@ const legendSwatch = {
 
 export function SlotLegend({ states = SLOT_STATES, className }) {
   return (
-    <ul aria-label="Bay status legend" className={cn('flex flex-wrap gap-x-4 gap-y-2 text-xs text-text-muted', className)}>
+    <ul
+      aria-label="Bay status legend"
+      className={cn('flex flex-wrap gap-x-4 gap-y-2 text-xs text-text-muted', className)}
+    >
       {states.map((state) => (
         <li key={state} className="inline-flex items-center gap-1.5">
           <span aria-hidden="true" className={cn('size-3 rounded-[3px]', legendSwatch[state])} />

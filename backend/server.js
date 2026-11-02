@@ -17,6 +17,7 @@ try {
 }
 const { logger } = require('./src/platform/logger');
 const { connectMongo, disconnectMongo } = require('./src/platform/db');
+const { getRedis, closeRedis } = require('./src/platform/redis');
 const { createShutdown, installProcessHandlers } = require('./src/platform/lifecycle');
 const { createApp } = require('./src/app');
 const { authenticateSocket } = require('./middleware/authMiddleware');
@@ -46,11 +47,16 @@ if (require.main === module) {
     logger,
     closers: [
       { name: 'mongodb', close: disconnectMongo },
+      { name: 'redis', close: closeRedis },
       { name: 'better-auth', close: closeBetterAuth },
     ],
   });
   installProcessHandlers({ shutdown, logger });
 
+  if (!getRedis()) {
+    const level = config.isProduction ? 'warn' : 'info';
+    logger[level]('REDIS_URL is not set: no shared cache, and rate limits are counted per instance');
+  }
   connectMongo({ logger })
     .then(() => {
       server.listen(config.port, () => {

@@ -13,7 +13,9 @@ export default function TicketStub({ stubLabel = 'Bay', stubValue, stub, childre
         <span className="absolute -top-2 -left-2 size-4 rounded-full border bg-background" />
         <span className="absolute -bottom-2 -left-2 size-4 rounded-full border bg-background" />
       </div>
-      {stub ? <div className="w-24 shrink-0 p-2 sm:w-28">{stub}</div> : (
+      {stub ? (
+        <div className="w-24 shrink-0 p-2 sm:w-28">{stub}</div>
+      ) : (
         <div className="grid w-20 shrink-0 place-content-center gap-0.5 bg-surface-sunken/60 px-2 text-center sm:w-24">
           <span className="text-xs text-text-muted">{stubLabel}</span>
           <span className="font-mono text-xl font-semibold text-foreground">{stubValue}</span>

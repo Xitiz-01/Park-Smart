@@ -12,7 +12,9 @@ import { isAvailabilityEventForLocation } from '@/utils/hybridParking';
 // `locationId` change.
 export default function useAvailabilitySocket({ enabled = true, locationId, debounceMs, onChange }) {
   const onChangeRef = useRef(onChange);
-  useEffect(() => { onChangeRef.current = onChange; });
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  });
 
   useEffect(() => {
     if (!enabled) return undefined;
@@ -23,6 +25,9 @@ export default function useAvailabilitySocket({ enabled = true, locationId, debo
       clearTimeout(timer);
       timer = setTimeout(() => onChangeRef.current?.(), debounceMs);
     });
-    return () => { clearTimeout(timer); socket.disconnect(); };
+    return () => {
+      clearTimeout(timer);
+      socket.disconnect();
+    };
   }, [enabled, locationId, debounceMs]);
 }

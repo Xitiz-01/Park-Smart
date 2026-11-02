@@ -10,10 +10,11 @@ const { isIndianState, normalizeIndianState } = require('../constants/indianStat
 const PROFILE_FIELDS = ['businessName', 'businessType', 'phone', 'address', 'city', 'state', 'pincode'];
 const EDITABLE_PROFILE_FIELDS = ['businessName', 'businessType', 'phone'];
 
-const pickProfileFields = (body) => PROFILE_FIELDS.reduce((result, field) => {
-  if (body[field] !== undefined) result[field] = String(body[field]).trim();
-  return result;
-}, {});
+const pickProfileFields = (body) =>
+  PROFILE_FIELDS.reduce((result, field) => {
+    if (body[field] !== undefined) result[field] = String(body[field]).trim();
+    return result;
+  }, {});
 
 const validateProfile = (profile, requireAll = true) => {
   const missing = PROFILE_FIELDS.filter((field) => requireAll && !profile[field]);
@@ -27,8 +28,10 @@ const validateProfile = (profile, requireAll = true) => {
     return 'Pincode must contain exactly 6 digits';
   }
   if (profile.pincode !== undefined && !/^\d{6}$/.test(profile.pincode)) return 'Pincode must contain exactly 6 digits';
-  if (profile.phone !== undefined && !/^(?:\+91[ -]?)?[6-9]\d{9}$/.test(profile.phone.replace(/\s/g, ''))) return 'Enter a valid Indian phone number';
-  if (profile.state !== undefined && !isIndianState(normalizeIndianState(profile.state))) return 'Select a valid Indian state';
+  if (profile.phone !== undefined && !/^(?:\+91[ -]?)?[6-9]\d{9}$/.test(profile.phone.replace(/\s/g, '')))
+    return 'Enter a valid Indian phone number';
+  if (profile.state !== undefined && !isIndianState(normalizeIndianState(profile.state)))
+    return 'Select a valid Indian state';
   return null;
 };
 
@@ -114,7 +117,7 @@ const updateMyVendorProfile = async (req, res) => {
     const vendorProfile = await VendorProfile.findOneAndUpdate(
       { userId: req.user._id },
       { $set: updates },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
     if (!vendorProfile) return res.status(404).json({ success: false, message: 'Vendor profile not found' });
     res.json({ success: true, message: 'Vendor profile updated', vendorProfile });
@@ -132,16 +135,24 @@ const getVendorDashboard = async (req, res) => {
     let totalSlots = 0;
     let availableSlots = 0;
     for (const location of locations.filter((item) => item.status === 'active')) {
-      const vehicleTypes = [...new Set(location.vehicleTypes.map((type) => type === 'ev' ? 'ev' : physicalVehicleType({ vehicleType: type })))];
+      const vehicleTypes = [
+        ...new Set(
+          location.vehicleTypes.map((type) => (type === 'ev' ? 'ev' : physicalVehicleType({ vehicleType: type }))),
+        ),
+      ];
       for (const vehicleType of vehicleTypes) {
         const availability = await getAvailability(location, vehicleType, now, oneHourLater);
-        totalSlots += vehicleType === 'ev'
-          ? await ParkingSlot.countDocuments({ parkingLocation: location._id, vehicleType: 'ev', evCompatible: true })
-          : regularCapacityFor(location, vehicleType);
+        totalSlots +=
+          vehicleType === 'ev'
+            ? await ParkingSlot.countDocuments({ parkingLocation: location._id, vehicleType: 'ev', evCompatible: true })
+            : regularCapacityFor(location, vehicleType);
         availableSlots += availability.available;
       }
     }
-    const activeBookings = await Booking.countDocuments({ parkingLocation: { $in: locationIds }, status: { $in: ['active', 'upcoming'] } });
+    const activeBookings = await Booking.countDocuments({
+      parkingLocation: { $in: locationIds },
+      status: { $in: ['active', 'upcoming'] },
+    });
     const earnings = await Booking.aggregate([
       { $match: { parkingLocation: { $in: locationIds }, status: 'completed' } },
       { $group: { _id: null, total: { $sum: '$totalAmount' } } },

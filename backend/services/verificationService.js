@@ -3,9 +3,7 @@ const VerificationDocument = require('../models/VerificationDocument');
 const ParkingAuthorization = require('../models/ParkingAuthorization');
 const VerificationAudit = require('../models/VerificationAudit');
 
-const STATUS_PRIORITY = [
-  'REJECTED', 'RESUBMISSION_REQUIRED', 'UNDER_REVIEW', 'PENDING', 'VERIFIED', 'NOT_STARTED',
-];
+const STATUS_PRIORITY = ['REJECTED', 'RESUBMISSION_REQUIRED', 'UNDER_REVIEW', 'PENDING', 'VERIFIED', 'NOT_STARTED'];
 
 const aggregateStatus = (documents) => {
   if (!documents.length) return 'NOT_STARTED';
@@ -17,11 +15,12 @@ const aggregateStatus = (documents) => {
   return STATUS_PRIORITY.find((status) => current.has(status)) || 'NOT_STARTED';
 };
 
-const getOrCreateVerification = (vendorId) => VendorVerification.findOneAndUpdate(
-  { vendor: vendorId },
-  { $setOnInsert: { vendor: vendorId } },
-  { upsert: true, new: true, setDefaultsOnInsert: true }
-);
+const getOrCreateVerification = (vendorId) =>
+  VendorVerification.findOneAndUpdate(
+    { vendor: vendorId },
+    { $setOnInsert: { vendor: vendorId } },
+    { upsert: true, new: true, setDefaultsOnInsert: true },
+  );
 
 const recomputeVerification = async (vendorId, review = {}) => {
   const verification = await getOrCreateVerification(vendorId);
@@ -33,7 +32,8 @@ const recomputeVerification = async (vendorId, review = {}) => {
   if (parts.every((status) => status === 'VERIFIED')) verification.overallStatus = 'VERIFIED';
   else if (parts.includes('REJECTED')) verification.overallStatus = 'REJECTED';
   else if (parts.includes('RESUBMISSION_REQUIRED')) verification.overallStatus = 'RESUBMISSION_REQUIRED';
-  else if (parts.some((status) => ['UNDER_REVIEW', 'VERIFIED'].includes(status))) verification.overallStatus = 'UNDER_REVIEW';
+  else if (parts.some((status) => ['UNDER_REVIEW', 'VERIFIED'].includes(status)))
+    verification.overallStatus = 'UNDER_REVIEW';
   else if (parts.includes('PENDING')) verification.overallStatus = 'PENDING';
   else verification.overallStatus = 'NOT_STARTED';
   verification.submittedAt ||= documents[documents.length - 1]?.submittedAt;
@@ -74,7 +74,9 @@ const getVerificationSummary = async (vendorId) => {
 const canPublishLocation = async (vendorId, locationId) => {
   const [verification, authorization] = await Promise.all([
     VendorVerification.findOne({ vendor: vendorId }),
-    ParkingAuthorization.findOne({ vendor: vendorId, parkingLocation: locationId, status: 'VERIFIED' }).sort({ createdAt: -1 }),
+    ParkingAuthorization.findOne({ vendor: vendorId, parkingLocation: locationId, status: 'VERIFIED' }).sort({
+      createdAt: -1,
+    }),
   ]);
   return {
     allowed: verification?.overallStatus === 'VERIFIED' && Boolean(authorization),

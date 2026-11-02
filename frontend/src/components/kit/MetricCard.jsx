@@ -23,7 +23,10 @@ function CountUp({ value, format }) {
   const [shown, setShown] = useState(numeric && !reduceMotion ? 0 : value);
 
   useEffect(() => {
-    if (!numeric || reduceMotion) { setShown(value); return undefined; }
+    if (!numeric || reduceMotion) {
+      setShown(value);
+      return undefined;
+    }
     if (!inView) return undefined;
     const controls = animate(0, value, { duration: 0.8, ease: [0.2, 0.8, 0.2, 1], onUpdate: setShown });
     return () => controls.stop();
@@ -36,7 +39,13 @@ export default function MetricCard({ label, value, detail, icon, tone = 'brand',
   return (
     <article className={cn('flex items-start gap-4 rounded-xl border bg-card p-5 shadow-hairline', className)}>
       {icon && (
-        <span aria-hidden="true" className={cn('grid size-10 shrink-0 place-items-center rounded-lg [&_svg]:size-5', iconTones[tone] || iconTones.brand)}>
+        <span
+          aria-hidden="true"
+          className={cn(
+            'grid size-10 shrink-0 place-items-center rounded-lg [&_svg]:size-5',
+            iconTones[tone] || iconTones.brand,
+          )}
+        >
           {icon}
         </span>
       )}
@@ -45,7 +54,9 @@ export default function MetricCard({ label, value, detail, icon, tone = 'brand',
         {/* The live region is the static final value so screen readers never hear the count. */}
         <p className="mt-1 font-display text-display-md font-semibold tabular-nums text-foreground">
           <span className="sr-only">{typeof value === 'number' ? format(value) : value}</span>
-          <span aria-hidden="true"><CountUp value={value} format={format} /></span>
+          <span aria-hidden="true">
+            <CountUp value={value} format={format} />
+          </span>
         </p>
         {detail && <p className="mt-1 text-sm text-text-muted">{detail}</p>}
       </div>

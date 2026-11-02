@@ -1,0 +1,23 @@
+# Image-scan findings we've accepted, each with a reason and an expiry date
+# (after which Trivy reports it again). Keep in step with
+# .github/audit-allowlist.json, which covers the same packages for npm audit.
+vulnerabilities:
+  # better-auth: OAuth state reused as a magic link. ParkSmart signs in with
+  # email and password only, with no OAuth or magic-link sign-in.
+  # better-auth is removed when Clerk lands (Phase 4).
+  - id: GHSA-965c-763c-88jm
+    expired_at: 2026-12-31
+    statement: No OAuth or magic-link sign-in; better-auth removed in Phase 4
+  - id: CVE-2026-110862
+    expired_at: 2026-12-31
+    statement: Alias of GHSA-965c-763c-88jm
+  - id: CVE-2026-114607
+    expired_at: 2026-12-31
+    statement: Alias of GHSA-965c-763c-88jm
+  # better-auth: OAuth Proxy plugin sign-in as another user. The plugin isn't enabled.
+  - id: GHSA-r4xp-prcw-77qf
+    expired_at: 2026-12-31
+    statement: OAuth Proxy plugin not enabled; better-auth removed in Phase 4
+  - id: CVE-2026-110864
+    expired_at: 2026-12-31
+    statement: Alias of GHSA-r4xp-prcw-77qf

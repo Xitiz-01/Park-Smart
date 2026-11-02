@@ -12,6 +12,18 @@ const { deprecatedAlias } = require('./platform/http/versioning');
 const { buildOpenApiDocument } = require('./platform/openapi');
 const { healthRouter } = require('./platform/health');
 const { pingMongo } = require('./platform/db');
+const { getRedis, pingRedis } = require('./platform/redis');
+
+/**
+ * MongoDB is critical. Redis, when configured, is reported but not
+ * critical: the cache and rate limits fail open, so the API still serves
+ * without it. Queues make it critical for the worker in Phase 8.
+ * @param {import('./config/env').Config} config
+ */
+const defaultHealthChecks = (config) => ({
+  mongo: pingMongo,
+  ...(config.redis.url && { redis: { check: pingRedis, critical: false } }),
+});
 
 // Every resource mounted under /api/v1 (and its deprecated /api alias).
 const V1_RESOURCES = [
@@ -35,23 +47,31 @@ const V1_RESOURCES = [
  * @param {{
  *   config?: import('./config/env').Config,
  *   logger?: import('pino').Logger,
- *   healthChecks?: Record<string, () => Promise<boolean>>,
+ *   healthChecks?: Parameters<typeof healthRouter>[0],
+ *   redis?: import('ioredis').Redis | null,
  * }} [options]
  * @returns {import('express').Express}
  */
-function createApp({ config = getConfig(), logger = defaultLogger, healthChecks = { mongo: pingMongo } } = {}) {
+function createApp({
+  config = getConfig(),
+  logger = defaultLogger,
+  healthChecks = defaultHealthChecks(config),
+  redis = config.redis.url ? getRedis() : null,
+} = {}) {
   const app = express();
-  const security = securityMiddleware(config.http);
+  const security = securityMiddleware(config.http, { redis, keyPrefix: config.redis.keyPrefix, logger });
   app.set('trust proxy', config.http.trustProxy);
 
   app.use(requestLogger(logger));
   app.use(slowRequestWarning(config.log.slowRequestMs));
   app.use(security.headers);
   app.use('/health', healthRouter(healthChecks));
-  app.use(cors({
-    origin: config.allowedOrigins,
-    credentials: true,
-  }));
+  app.use(
+    cors({
+      origin: config.allowedOrigins,
+      credentials: true,
+    }),
+  );
   app.use(security.compression);
   app.use('/api', security.apiRateLimit);
   app.use(AUTH_RATE_LIMITED_PATHS, security.authRateLimit);

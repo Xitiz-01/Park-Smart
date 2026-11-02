@@ -11,15 +11,26 @@ const { normalizeYear } = require('../services/vehicleCatalogProviders');
 const { vehicleCatalogService } = require('../services/vehicleCatalogService');
 
 const writableFields = [
-  'licensePlate', 'vehicleType', 'fuelType', 'make', 'brand', 'model',
-  'modelYear', 'bodyStyle', 'color', 'isDefault',
+  'licensePlate',
+  'vehicleType',
+  'fuelType',
+  'make',
+  'brand',
+  'model',
+  'modelYear',
+  'bodyStyle',
+  'color',
+  'isDefault',
 ];
-const normalizeCatalogText = (value) => String(value || '').trim().toLocaleLowerCase('en-IN');
+const normalizeCatalogText = (value) =>
+  String(value || '')
+    .trim()
+    .toLocaleLowerCase('en-IN');
 
 const normalizedVehicleInput = (body) => {
-  const input = Object.fromEntries(writableFields
-    .filter((field) => body[field] !== undefined)
-    .map((field) => [field, body[field]]));
+  const input = Object.fromEntries(
+    writableFields.filter((field) => body[field] !== undefined).map((field) => [field, body[field]]),
+  );
   if (input.make === undefined && input.brand !== undefined) input.make = input.brand;
   if (input.brand === undefined && input.make !== undefined) input.brand = input.make;
   if (input.vehicleType !== undefined) input.vehicleType = normalizeVehicleType(input.vehicleType);
@@ -59,16 +70,21 @@ const validateCatalogSelection = async (input, existing = null) => {
   const modelYear = input.modelYear !== undefined ? input.modelYear : current.modelYear;
   if (!existing && (!make || !model)) return 'Select a make and model from the vehicle catalog';
 
-  const pairChanged = !existing
-    || ((input.make !== undefined || input.brand !== undefined) && normalizeCatalogText(make) !== normalizeCatalogText(currentMake))
-    || (input.model !== undefined && normalizeCatalogText(input.model) !== normalizeCatalogText(current.model));
+  const pairChanged =
+    !existing ||
+    ((input.make !== undefined || input.brand !== undefined) &&
+      normalizeCatalogText(make) !== normalizeCatalogText(currentMake)) ||
+    (input.model !== undefined && normalizeCatalogText(input.model) !== normalizeCatalogText(current.model));
   const yearChanged = input.modelYear !== undefined && input.modelYear !== current.modelYear;
-  const metadataChanged = input.vehicleType !== undefined || input.fuelType !== undefined || input.bodyStyle !== undefined;
+  const metadataChanged =
+    input.vehicleType !== undefined || input.fuelType !== undefined || input.bodyStyle !== undefined;
   if (!pairChanged && !yearChanged && !metadataChanged) return null;
 
   const details = make && model ? await vehicleCatalogService.getModelDetails(make, model, modelYear) : null;
   if (!details) {
-    return pairChanged || yearChanged ? 'Select a valid make, model, and model-year combination from the vehicle catalog' : null;
+    return pairChanged || yearChanged
+      ? 'Select a valid make, model, and model-year combination from the vehicle catalog'
+      : null;
   }
   const vehicleType = input.vehicleType ?? current.vehicleType;
   const fuelType = input.fuelType ?? current.fuelType;
@@ -128,7 +144,8 @@ const updateVehicle = async (req, res) => {
     if (!vehicle) return res.status(404).json({ success: false, message: 'Vehicle not found' });
     const catalogError = await validateCatalogSelection(input, vehicle);
     if (catalogError) return res.status(400).json({ success: false, message: catalogError });
-    if (input.isDefault) await Vehicle.updateMany({ user: req.user._id, _id: { $ne: req.params.id } }, { isDefault: false });
+    if (input.isDefault)
+      await Vehicle.updateMany({ user: req.user._id, _id: { $ne: req.params.id } }, { isDefault: false });
     Object.assign(vehicle, input);
     await vehicle.save();
     res.json({ success: true, vehicle });

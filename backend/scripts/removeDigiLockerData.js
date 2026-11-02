@@ -3,7 +3,11 @@ const { getConfig } = require('../src/config/env');
 const { databaseNameFromUri } = require('./migrateVehicleFuelType');
 
 const args = new Set(process.argv.slice(2));
-const getArg = (prefix) => process.argv.slice(2).find((arg) => arg.startsWith(prefix))?.slice(prefix.length);
+const getArg = (prefix) =>
+  process.argv
+    .slice(2)
+    .find((arg) => arg.startsWith(prefix))
+    ?.slice(prefix.length);
 
 const PROVIDER = 'DIGILOCKER';
 const STATE_COLLECTION = 'verificationoauthstates';
@@ -26,7 +30,9 @@ const removeDigiLockerData = async ({ db, apply = false, logger = console }) => 
     stateRecords: await count(STATE_COLLECTION, {}),
     documents: await count('verificationdocuments', { provider: PROVIDER }),
     audits: await count('verificationaudits', { provider: PROVIDER }),
-    verifications: await count('vendorverifications', { $or: [{ provider: PROVIDER }, { 'consents.provider': PROVIDER }] }),
+    verifications: await count('vendorverifications', {
+      $or: [{ provider: PROVIDER }, { 'consents.provider': PROVIDER }],
+    }),
     droppedStateCollection: false,
     applied: apply,
   };
@@ -34,7 +40,12 @@ const removeDigiLockerData = async ({ db, apply = false, logger = console }) => 
 
   if (apply) {
     if (report.needsReview) {
-      throw Object.assign(new Error(`${report.needsReview} DigiLocker evidence, audit or consent record(s) need a manual decision before applying`), { report });
+      throw Object.assign(
+        new Error(
+          `${report.needsReview} DigiLocker evidence, audit or consent record(s) need a manual decision before applying`,
+        ),
+        { report },
+      );
     }
     if (collections.has(STATE_COLLECTION)) {
       await db.collection(STATE_COLLECTION).drop();
@@ -56,7 +67,8 @@ const run = async () => {
   await mongoose.connect(getConfig().mongodbUri);
   console.log(`${apply ? 'APPLY' : 'DRY RUN'}: looking for DigiLocker leftovers in ${databaseName}`);
   await removeDigiLockerData({ db: mongoose.connection.db, apply });
-  if (!apply) console.log(`No data changed. To apply: npm run migrate:remove-digilocker -- --apply --confirm-db=${databaseName}`);
+  if (!apply)
+    console.log(`No data changed. To apply: npm run migrate:remove-digilocker -- --apply --confirm-db=${databaseName}`);
   await mongoose.disconnect();
 };
 

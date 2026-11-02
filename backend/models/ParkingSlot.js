@@ -59,16 +59,13 @@ const parkingSlotSchema = new mongoose.Schema(
     },
     location: {
       lat: { type: Number, required: true, default: 28.6139 },
-      lng: { type: Number, required: true, default: 77.2090 },
+      lng: { type: Number, required: true, default: 77.209 },
       label: { type: String, default: 'City Center' },
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-parkingSlotSchema.index(
-  { parkingLocation: 1, slotNumber: 1 },
-  { unique: true }
-);
+parkingSlotSchema.index({ parkingLocation: 1, slotNumber: 1 }, { unique: true });
 
 module.exports = mongoose.model('ParkingSlot', parkingSlotSchema);

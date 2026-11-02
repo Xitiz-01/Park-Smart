@@ -26,8 +26,20 @@ router.patch('/vendors/:id/approve', requirePermission('vendor:approve'), approv
 router.patch('/vendors/:id/reject', requirePermission('vendor:approve'), rejectVendor);
 router.patch('/vendors/:id/suspend', requirePermission('vendor:approve'), suspendVendor);
 router.get('/vendor-verifications', requirePermission('verification:review'), verification.listVerificationCases);
-router.get('/vendor-verifications/:vendorId', requirePermission('verification:review'), verification.getVerificationCase);
-router.patch('/vendor-verifications/:type/:id/:action', requirePermission('verification:review'), verification.reviewEvidence);
-router.get('/vendor-verifications/:type/:id/content', requirePermission('verification:review'), verification.readEvidence);
+router.get(
+  '/vendor-verifications/:vendorId',
+  requirePermission('verification:review'),
+  verification.getVerificationCase,
+);
+router.patch(
+  '/vendor-verifications/:type/:id/:action',
+  requirePermission('verification:review'),
+  verification.reviewEvidence,
+);
+router.get(
+  '/vendor-verifications/:type/:id/content',
+  requirePermission('verification:review'),
+  verification.readEvidence,
+);
 
 module.exports = router;

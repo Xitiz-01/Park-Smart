@@ -5,16 +5,17 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 const cache = new Map();
 
 const validCoordinate = (latitude, longitude) =>
-  Number.isFinite(latitude) && latitude >= -90 && latitude <= 90 &&
-  Number.isFinite(longitude) && longitude >= -180 && longitude <= 180;
+  Number.isFinite(latitude) &&
+  latitude >= -90 &&
+  latitude <= 90 &&
+  Number.isFinite(longitude) &&
+  longitude >= -180 &&
+  longitude <= 180;
 
 const selectionSecret = () => getConfig().addressSelectionSecret;
 
-const createSelectionToken = (place) => jwt.sign(
-  { kind: 'geocoding-selection', place },
-  selectionSecret(),
-  { expiresIn: '30m' }
-);
+const createSelectionToken = (place) =>
+  jwt.sign({ kind: 'geocoding-selection', place }, selectionSecret(), { expiresIn: '30m' });
 
 const verifySelectionToken = (token) => {
   try {
@@ -75,10 +76,13 @@ const autocomplete = async (query) => {
     });
     if (!response.ok) throw new Error(`Geocoding provider responded with ${response.status}`);
     const payload = await response.json();
-    const results = (payload.results || []).map(normalizeGeoapifyResult).filter(Boolean).map((place) => ({
-      ...place,
-      selectionToken: createSelectionToken(place),
-    }));
+    const results = (payload.results || [])
+      .map(normalizeGeoapifyResult)
+      .filter(Boolean)
+      .map((place) => ({
+        ...place,
+        selectionToken: createSelectionToken(place),
+      }));
     cache.set(cacheKey, { results, createdAt: Date.now() });
     if (cache.size > 200) cache.delete(cache.keys().next().value);
     return results;
@@ -91,7 +95,8 @@ const distanceMeters = (a, b) => {
   const radians = (degrees) => (degrees * Math.PI) / 180;
   const dLat = radians(b.latitude - a.latitude);
   const dLng = radians(b.longitude - a.longitude);
-  const value = Math.sin(dLat / 2) ** 2 + Math.cos(radians(a.latitude)) * Math.cos(radians(b.latitude)) * Math.sin(dLng / 2) ** 2;
+  const value =
+    Math.sin(dLat / 2) ** 2 + Math.cos(radians(a.latitude)) * Math.cos(radians(b.latitude)) * Math.sin(dLng / 2) ** 2;
   return 6371000 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
 };
 

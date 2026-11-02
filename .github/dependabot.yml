@@ -1,5 +1,5 @@
 # Weekly dependency updates. Minor and patch bumps arrive grouped; majors get
-# their own PR. Docker images are added in Phase 3, when the Dockerfiles exist.
+# their own PR. Base images are pinned by digest; Dependabot moves the digest.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -40,3 +40,29 @@ updates:
     groups:
       actions:
         patterns: ['*']
+
+  - package-ecosystem: docker
+    directories:
+      - /backend
+      - /frontend
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Asia/Kolkata
+    cooldown:
+      default-days: 5
+    commit-message:
+      prefix: build
+      include: scope
+
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Asia/Kolkata
+    cooldown:
+      default-days: 5
+    commit-message:
+      prefix: build
+      include: scope

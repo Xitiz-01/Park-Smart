@@ -37,14 +37,23 @@ test('typed values are coerced and origins merged without duplicates', () => {
     JWT_SECRET: 'legacy-secret',
   });
   assert.equal(config.port, 5001);
-  assert.deepEqual(config.allowedOrigins, ['https://app.example.com', 'http://localhost:3000', 'https://admin.example.com']);
+  assert.deepEqual(config.allowedOrigins, [
+    'https://app.example.com',
+    'http://localhost:3000',
+    'https://admin.example.com',
+  ]);
   assert.equal(config.auth.crossSiteCookies, true);
   assert.equal(config.features.payments, true);
   assert.equal(config.addressSelectionSecret, 'legacy-secret', 'JWT_SECRET is still honoured');
 });
 
 test('every problem is reported at once, by name, without echoing values', () => {
-  const problems = problemsFor({ NODE_ENV: 'production', PORT: 'eighty', MONGODB_URI: 'postgres://secret-host/db', BETTER_AUTH_SECRET: 'short' });
+  const problems = problemsFor({
+    NODE_ENV: 'production',
+    PORT: 'eighty',
+    MONGODB_URI: 'postgres://secret-host/db',
+    BETTER_AUTH_SECRET: 'short',
+  });
   const keys = problems.map((problem) => problem.key).sort();
   assert.deepEqual(keys, ['ADDRESS_SELECTION_SECRET', 'BETTER_AUTH_SECRET', 'MONGODB_URI', 'PORT']);
   const message = new EnvValidationError(problems).message;
@@ -54,13 +63,21 @@ test('every problem is reported at once, by name, without echoing values', () =>
 });
 
 test('MONGODB_URI is required outside tests, and Cashfree needs credentials when enabled', () => {
-  assert.deepEqual(problemsFor({ NODE_ENV: 'development' }).map((p) => p.key), ['MONGODB_URI']);
+  assert.deepEqual(
+    problemsFor({ NODE_ENV: 'development' }).map((p) => p.key),
+    ['MONGODB_URI'],
+  );
   assert.equal(parseEnv({ NODE_ENV: 'test' }).mongodbUri, 'mongodb://127.0.0.1:27028/parksmart-test');
   assert.deepEqual(
-    problemsFor({ ...base, CASHFREE_VERIFY_ENABLED: 'true' }).map((p) => p.key).sort(),
+    problemsFor({ ...base, CASHFREE_VERIFY_ENABLED: 'true' })
+      .map((p) => p.key)
+      .sort(),
     ['CASHFREE_CLIENT_ID', 'CASHFREE_CLIENT_SECRET'],
   );
-  assert.deepEqual(problemsFor({ ...base, PAYMENTS_ENABLED: 'maybe' }).map((p) => p.key), ['PAYMENTS_ENABLED']);
+  assert.deepEqual(
+    problemsFor({ ...base, PAYMENTS_ENABLED: 'maybe' }).map((p) => p.key),
+    ['PAYMENTS_ENABLED'],
+  );
 });
 
 test('the bootstrap super-admin list is read when asked, not cached', () => {
@@ -71,4 +88,19 @@ test('the bootstrap super-admin list is read when asked, not cached', () => {
   assert.deepEqual([...bootstrapSuperAdminIds()], ['c']);
   if (previous === undefined) delete process.env.BETTER_AUTH_SUPER_ADMIN_USER_IDS;
   else process.env.BETTER_AUTH_SUPER_ADMIN_USER_IDS = previous;
+});
+
+test('Redis is optional and validated when set', () => {
+  assert.deepEqual(parseEnv({ NODE_ENV: 'test' }).redis, { url: undefined, keyPrefix: 'ps' });
+  const config = parseEnv({
+    NODE_ENV: 'test',
+    REDIS_URL: 'rediss://default:pw@cache.example.com:6380',
+    REDIS_KEY_PREFIX: 'ps-staging',
+  });
+  assert.deepEqual(config.redis, { url: 'rediss://default:pw@cache.example.com:6380', keyPrefix: 'ps-staging' });
+  assert.throws(
+    () => parseEnv({ NODE_ENV: 'test', REDIS_URL: 'http://cache' }),
+    /REDIS_URL: must be a redis:\/\/ or rediss:\/\/ URL/,
+  );
+  assert.throws(() => parseEnv({ NODE_ENV: 'test', REDIS_KEY_PREFIX: 'PS:prod' }), /REDIS_KEY_PREFIX/);
 });

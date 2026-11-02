@@ -1,19 +1,27 @@
 const VEHICLE_TYPES = ['car', 'motorcycle'];
 const FUEL_TYPES = ['petrol', 'diesel', 'cng', 'hybrid', 'electric'];
-const BODY_STYLES = ['hatchback', 'sedan', 'suv', 'crossover', 'coupe', 'wagon', 'convertible', 'pickup', 'van', 'mpv', 'other'];
+const BODY_STYLES = [
+  'hatchback',
+  'sedan',
+  'suv',
+  'crossover',
+  'coupe',
+  'wagon',
+  'convertible',
+  'pickup',
+  'van',
+  'mpv',
+  'other',
+];
 
-const normalizeValue = (value) => (
-  typeof value === 'string' ? value.trim().toLowerCase() : value
-);
+const normalizeValue = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : value);
 
 const normalizeVehicleType = (value) => normalizeValue(value);
 const normalizeFuelType = (value) => normalizeValue(value);
 const normalizeBodyStyle = (value) => normalizeValue(value);
 
-const isElectricVehicle = (vehicle) => (
-  normalizeFuelType(vehicle?.fuelType) === 'electric'
-  || normalizeVehicleType(vehicle?.vehicleType) === 'ev'
-);
+const isElectricVehicle = (vehicle) =>
+  normalizeFuelType(vehicle?.fuelType) === 'electric' || normalizeVehicleType(vehicle?.vehicleType) === 'ev';
 
 const physicalVehicleType = (vehicle) => {
   const type = normalizeVehicleType(vehicle?.vehicleType);
@@ -22,9 +30,7 @@ const physicalVehicleType = (vehicle) => {
   return type;
 };
 
-const inventoryVehicleType = (vehicle) => (
-  isElectricVehicle(vehicle) ? 'ev' : physicalVehicleType(vehicle)
-);
+const inventoryVehicleType = (vehicle) => (isElectricVehicle(vehicle) ? 'ev' : physicalVehicleType(vehicle));
 
 const inventoryAliasesFor = (vehicleType) => {
   if (vehicleType === 'car') return ['car', 'suv'];

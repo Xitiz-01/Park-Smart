@@ -11,8 +11,12 @@ export const optionLabel = (value) => {
   return ACRONYMS.has(text.toLowerCase()) ? text.toUpperCase() : text[0].toUpperCase() + text.slice(1).toLowerCase();
 };
 
-export const vehicleLabel = (vehicle) => [
-  physicalVehicleType(vehicle),
-  vehicle?.bodyStyle,
-  vehicle?.fuelType || (String(vehicle?.vehicleType).toLowerCase() === 'ev' ? 'electric' : null),
-].filter(Boolean).map(optionLabel).join(' · ');
+export const vehicleLabel = (vehicle) =>
+  [
+    physicalVehicleType(vehicle),
+    vehicle?.bodyStyle,
+    vehicle?.fuelType || (String(vehicle?.vehicleType).toLowerCase() === 'ev' ? 'electric' : null),
+  ]
+    .filter(Boolean)
+    .map(optionLabel)
+    .join(' · ');

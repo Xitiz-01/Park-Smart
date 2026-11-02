@@ -12,7 +12,10 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
  * @param {() => Promise<unknown>} connect
  * @param {{ attempts?: number, initialDelayMs?: number, maxDelayMs?: number, logger?: import('pino').Logger, wait?: (ms: number) => Promise<void> }} [options]
  */
-async function connectWithRetry(connect, { attempts = 6, initialDelayMs = 500, maxDelayMs = 8000, logger = defaultLogger, wait = sleep } = {}) {
+async function connectWithRetry(
+  connect,
+  { attempts = 6, initialDelayMs = 500, maxDelayMs = 8000, logger = defaultLogger, wait = sleep } = {},
+) {
   for (let attempt = 1; ; attempt += 1) {
     try {
       return await connect();
@@ -47,7 +50,9 @@ async function pingMongo(timeoutMs = 1500) {
   try {
     await Promise.race([
       mongoose.connection.db.admin().ping(),
-      new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('ping timed out')), timeoutMs); }),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error('ping timed out')), timeoutMs);
+      }),
     ]);
     return true;
   } catch {

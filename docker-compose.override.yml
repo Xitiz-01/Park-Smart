@@ -1,0 +1,25 @@
+# Development overrides, applied automatically by `docker compose up`.
+# The backend services run the image's `dev` stage (all dependencies,
+# nodemon) with ./backend mounted, so saving a file restarts the process.
+# node_modules stays the image's own (Linux) copy.
+
+x-backend-dev: &backend-dev
+  image: parksmart-api:dev
+  volumes:
+    - ./backend:/app
+    - /app/node_modules
+    - verification-docs:/app/private-verification-storage
+
+services:
+  seed:
+    <<: *backend-dev
+
+  api:
+    <<: *backend-dev
+    build:
+      context: ./backend
+      target: dev
+
+  worker:
+    <<: *backend-dev
+    command: ['npx', 'nodemon', '--legacy-watch', 'worker.js']

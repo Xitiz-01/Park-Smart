@@ -4,9 +4,7 @@ const { migrateExistingUsers } = require('../services/betterAuthMigration');
 
 const run = async () => {
   const apply = process.argv.includes('--apply');
-  const confirmedDatabase = process.argv
-    .find((arg) => arg.startsWith('--confirm-db='))
-    ?.slice('--confirm-db='.length);
+  const confirmedDatabase = process.argv.find((arg) => arg.startsWith('--confirm-db='))?.slice('--confirm-db='.length);
   await mongoose.connect(getConfig().mongodbUri, { autoIndex: false });
   const databaseName = mongoose.connection.name;
 

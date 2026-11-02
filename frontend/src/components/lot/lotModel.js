@@ -24,7 +24,11 @@ export function lotLayout(columns = 8) {
   const width = right + TURN;
   const height = aisle2 + AISLE + 20;
   return {
-    columns, width, height, left: LEFT, right,
+    columns,
+    width,
+    height,
+    left: LEFT,
+    right,
     aisle1: { y: aisle1, mid: aisle1 + AISLE / 2 },
     aisle2: { y: aisle2, mid: aisle2 + AISLE / 2 },
     turnMidX: right + TURN / 2,
@@ -55,9 +59,16 @@ export const EV_BAYS = { A4: 22, A5: 60 };
 // Every bay the story touches sits in the first five columns, so the mobile
 // lot tells the same story.
 const INITIAL = {
-  A1: 'occupied', A3: 'occupied', A5: 'occupied', A7: 'occupied',
-  B1: 'occupied', B6: 'occupied', C2: 'occupied', C5: 'occupied',
-  B7: 'reserved', C7: 'reserved',
+  A1: 'occupied',
+  A3: 'occupied',
+  A5: 'occupied',
+  A7: 'occupied',
+  B1: 'occupied',
+  B6: 'occupied',
+  C2: 'occupied',
+  C5: 'occupied',
+  B7: 'reserved',
+  C7: 'reserved',
 };
 
 export function initialBays(columns = 8) {

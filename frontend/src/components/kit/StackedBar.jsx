@@ -8,10 +8,22 @@ export default function StackedBar({ segments, total, label, className }) {
   const summary = segments.map((segment) => `${segment.value} ${segment.label.toLowerCase()}`).join(', ');
   return (
     <figure className={cn('m-0', className)}>
-      <div role="img" aria-label={`${label}: ${summary}, of ${sum}`} className="flex h-4 w-full overflow-hidden rounded-full bg-surface-sunken">
-        {sum > 0 && segments.map((segment) => (
-          segment.value > 0 && <span key={segment.label} className={cn('h-full border-r-2 border-card last:border-r-0', segment.className)} style={{ width: `${(segment.value / sum) * 100}%` }} />
-        ))}
+      <div
+        role="img"
+        aria-label={`${label}: ${summary}, of ${sum}`}
+        className="flex h-4 w-full overflow-hidden rounded-full bg-surface-sunken"
+      >
+        {sum > 0 &&
+          segments.map(
+            (segment) =>
+              segment.value > 0 && (
+                <span
+                  key={segment.label}
+                  className={cn('h-full border-r-2 border-card last:border-r-0', segment.className)}
+                  style={{ width: `${(segment.value / sum) * 100}%` }}
+                />
+              ),
+          )}
       </div>
       <figcaption>
         <dl className="m-0 mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">

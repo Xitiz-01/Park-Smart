@@ -25,12 +25,15 @@ const appWith = (logger, ...middleware) => {
 
 test('credentials, cookies and identity numbers are redacted', () => {
   const { lines, logger } = capture();
-  logger.info({
-    authorization: 'Bearer abc',
-    password: 'hunter22',
-    user: { email: 'a@example.com', pan: 'ABCDE1234F', accountNumber: '123456789012', token: 't' },
-    req: { headers: { authorization: 'Bearer abc', cookie: 'session=1', accept: 'json' } },
-  }, 'redaction check');
+  logger.info(
+    {
+      authorization: 'Bearer abc',
+      password: 'hunter22',
+      user: { email: 'a@example.com', pan: 'ABCDE1234F', accountNumber: '123456789012', token: 't' },
+      req: { headers: { authorization: 'Bearer abc', cookie: 'session=1', accept: 'json' } },
+    },
+    'redaction check',
+  );
   const [line] = lines;
   const text = JSON.stringify(line);
   for (const secret of ['Bearer abc', 'hunter22', 'ABCDE1234F', '123456789012', 'session=1']) {

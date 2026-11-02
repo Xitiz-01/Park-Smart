@@ -4,7 +4,11 @@ const Vehicle = require('../models/Vehicle');
 const { databaseNameFromUri } = require('./migrateVehicleFuelType');
 
 const args = new Set(process.argv.slice(2));
-const getArg = (prefix) => process.argv.slice(2).find((arg) => arg.startsWith(prefix))?.slice(prefix.length);
+const getArg = (prefix) =>
+  process.argv
+    .slice(2)
+    .find((arg) => arg.startsWith(prefix))
+    ?.slice(prefix.length);
 
 const migrateVehicleBodyStyles = async ({ collection = Vehicle.collection, apply = false, logger = console } = {}) => {
   const vehicles = await collection.find({}).toArray();
@@ -12,8 +16,15 @@ const migrateVehicleBodyStyles = async ({ collection = Vehicle.collection, apply
   let conflicts = 0;
 
   for (const vehicle of vehicles) {
-    if (String(vehicle.vehicleType || '').trim().toLowerCase() !== 'suv') continue;
-    const currentBodyStyle = String(vehicle.bodyStyle || '').trim().toLowerCase();
+    if (
+      String(vehicle.vehicleType || '')
+        .trim()
+        .toLowerCase() !== 'suv'
+    )
+      continue;
+    const currentBodyStyle = String(vehicle.bodyStyle || '')
+      .trim()
+      .toLowerCase();
     if (currentBodyStyle && currentBodyStyle !== 'suv') conflicts += 1;
     operations.push({
       updateOne: {
@@ -56,8 +67,12 @@ const run = async () => {
   await mongoose.connect(getConfig().mongodbUri);
   console.log(`${apply ? 'APPLY' : 'DRY RUN'}: inspecting SUV vehicle classifications in ${databaseName}`);
   const report = await migrateVehicleBodyStyles({ apply });
-  if (report.conflicts) console.warn(`${report.conflicts} record(s) retained an explicit non-SUV bodyStyle for manual review.`);
-  if (!apply) console.log(`No data changed. To apply: npm run migrate:vehicle-body-style -- --apply --confirm-db=${databaseName}`);
+  if (report.conflicts)
+    console.warn(`${report.conflicts} record(s) retained an explicit non-SUV bodyStyle for manual review.`);
+  if (!apply)
+    console.log(
+      `No data changed. To apply: npm run migrate:vehicle-body-style -- --apply --confirm-db=${databaseName}`,
+    );
   await mongoose.disconnect();
 };
 

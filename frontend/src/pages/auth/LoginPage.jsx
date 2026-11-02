@@ -31,30 +31,67 @@ export default function LoginPage() {
     } catch (err) {
       setError(err.message || 'Sign-in failed. Check your email and password and try again.');
       requestAnimationFrame(() => errorRef.current?.focus());
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <AuthShell
       title="Sign in"
       description="Pick up where you left off."
-      footer={<p>New to ParkSmart? <Link to="/register" className="font-medium text-brand underline-offset-4 hover:underline">Create an account</Link></p>}
+      footer={
+        <p>
+          New to ParkSmart?{' '}
+          <Link to="/register" className="font-medium text-brand underline-offset-4 hover:underline">
+            Create an account
+          </Link>
+        </p>
+      }
     >
       <form onSubmit={handleSubmit} className="grid gap-5">
         <FormField label="Email address">
-          <Input name="email" type="email" placeholder="you@example.com" value={form.email} onChange={handleChange} autoComplete="email" spellCheck={false} required />
+          <Input
+            name="email"
+            type="email"
+            placeholder="you@example.com"
+            value={form.email}
+            onChange={handleChange}
+            autoComplete="email"
+            spellCheck={false}
+            required
+          />
         </FormField>
         <FormField label="Password">
-          <PasswordInput name="password" placeholder="Your password" value={form.password} onChange={handleChange} autoComplete="current-password" required />
+          <PasswordInput
+            name="password"
+            placeholder="Your password"
+            value={form.password}
+            onChange={handleChange}
+            autoComplete="current-password"
+            required
+          />
         </FormField>
         {error && (
-          <div ref={errorRef} tabIndex={-1} role="alert" className="flex gap-2 rounded-lg border border-danger/30 bg-danger-soft px-3 py-2.5 text-sm text-danger outline-none">
+          <div
+            ref={errorRef}
+            tabIndex={-1}
+            role="alert"
+            className="flex gap-2 rounded-lg border border-danger/30 bg-danger-soft px-3 py-2.5 text-sm text-danger outline-none"
+          >
             <AlertCircle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
         <Button type="submit" size="lg" className="w-full" disabled={loading}>
-          {loading ? <><Spinner data-icon="inline-start" />Signing in…</> : 'Sign in'}
+          {loading ? (
+            <>
+              <Spinner data-icon="inline-start" />
+              Signing in…
+            </>
+          ) : (
+            'Sign in'
+          )}
         </Button>
       </form>
     </AuthShell>

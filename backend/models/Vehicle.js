@@ -43,7 +43,7 @@ const vehicleSchema = new mongoose.Schema(
     color: { type: String, trim: true },
     isDefault: { type: Boolean, default: false },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model('Vehicle', vehicleSchema);
