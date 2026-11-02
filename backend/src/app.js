@@ -25,6 +25,20 @@ const defaultHealthChecks = (config) => ({
   ...(config.redis.url && { redis: { check: pingRedis, critical: false } }),
 });
 
+// Every resource mounted under /api/v1 (and its deprecated /api alias).
+const V1_RESOURCES = [
+  'account',
+  'slots',
+  'bookings',
+  'admin',
+  'vehicles',
+  'vehicle-catalog',
+  'vendors',
+  'vendor-verification',
+  'parking-locations',
+  'location',
+];
+
 /**
  * Build the ParkSmart Express app. It opens no sockets and connects to no
  * database, so tests can drive it directly; server.js adds the HTTP server,
@@ -71,27 +85,26 @@ function createApp({
   app.get('/api', (req, res) => {
     res.send('API is working');
   });
-  // Routes live under /api/v1. The same routers stay mounted at /api as a
+  // Routes live under /api/v1. The same router stays mounted at /api as a
   // deprecated alias until the frontend moves over (Phase 14). Better Auth
-  // keeps /api/auth until Clerk replaces it. forwardAsyncErrors sends
-  // rejected promises from async handlers to the error middleware.
-  const routes = {
-    account: require('../routes/accountRoutes'),
-    slots: require('../routes/slotRoutes'),
-    bookings: require('../routes/bookingRoutes'),
-    admin: require('../routes/adminRoutes'),
-    vehicles: require('../routes/vehicleRoutes'),
-    'vehicle-catalog': require('../routes/vehicleCatalogRoutes'),
-    vendors: require('../routes/vendorRoutes'),
-    'vendor-verification': require('../routes/vendorVerificationRoutes'),
-    'parking-locations': require('../routes/parkingLocationRoutes'),
-    location: require('../routes/locationRoutes'),
-  };
-  Object.entries(routes).forEach(([name, router]) => {
-    forwardAsyncErrors(router);
-    app.use(`/api/v1/${name}`, router);
-    app.use(`/api/${name}`, deprecatedAlias(`/api/${name}`, `/api/v1/${name}`), router);
-  });
+  // keeps /api/auth until Clerk replaces it. The mounts are spelled out (not
+  // looped) so static analysis can see that the /api rate limit above covers
+  // every route. forwardAsyncErrors sends rejected promises from async
+  // handlers to the error middleware.
+  const v1 = express.Router();
+  v1.use('/account', require('../routes/accountRoutes'));
+  v1.use('/slots', require('../routes/slotRoutes'));
+  v1.use('/bookings', require('../routes/bookingRoutes'));
+  v1.use('/admin', require('../routes/adminRoutes'));
+  v1.use('/vehicles', require('../routes/vehicleRoutes'));
+  v1.use('/vehicle-catalog', require('../routes/vehicleCatalogRoutes'));
+  v1.use('/vendors', require('../routes/vendorRoutes'));
+  v1.use('/vendor-verification', require('../routes/vendorVerificationRoutes'));
+  v1.use('/parking-locations', require('../routes/parkingLocationRoutes'));
+  v1.use('/location', require('../routes/locationRoutes'));
+  forwardAsyncErrors(v1);
+  app.use('/api/v1', v1);
+  app.use('/api', deprecatedAlias(V1_RESOURCES), v1);
 
   if (!config.isProduction) {
     const openApiDocument = buildOpenApiDocument();
@@ -108,4 +121,4 @@ function createApp({
   return app;
 }
 
-module.exports = { createApp };
+module.exports = { createApp, V1_RESOURCES };

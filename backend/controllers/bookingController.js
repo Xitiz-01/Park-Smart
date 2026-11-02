@@ -299,7 +299,8 @@ const checkOut = async (req, res) => {
 const getAllBookings = async (req, res) => {
   try {
     const { status, page = 1, limit = 20 } = req.query;
-    const filter = status ? { status } : {};
+    // Only a plain string reaches the query: ?status[$ne]=x arrives as an object.
+    const filter = typeof status === 'string' && status ? { status } : {};
     const bookings = await populateBooking(
       Booking.find(filter)
         .sort({ createdAt: -1 })

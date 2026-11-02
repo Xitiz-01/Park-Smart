@@ -27,7 +27,7 @@ const removeDigiLockerData = async ({ db, apply = false, logger = console }) => 
   const count = async (name, filter) => (collections.has(name) ? db.collection(name).countDocuments(filter) : 0);
 
   const report = {
-    oauthStates: await count(STATE_COLLECTION, {}),
+    stateRecords: await count(STATE_COLLECTION, {}),
     documents: await count('verificationdocuments', { provider: PROVIDER }),
     audits: await count('verificationaudits', { provider: PROVIDER }),
     verifications: await count('vendorverifications', {
