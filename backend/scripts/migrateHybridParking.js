@@ -1,26 +1,22 @@
-const path = require('path');
 const mongoose = require('mongoose');
-const dotenv = require('dotenv');
+const { getConfig } = require('../src/config/env');
 const Booking = require('../models/Booking');
 const ParkingLocation = require('../models/ParkingLocation');
 const ParkingSlot = require('../models/ParkingSlot');
 const Vehicle = require('../models/Vehicle');
 const ReservationLedger = require('../models/ReservationLedger');
 
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
-
 const args = new Set(process.argv.slice(2));
 const getArg = (prefix) => process.argv.slice(2).find((arg) => arg.startsWith(prefix))?.slice(prefix.length);
 
 const run = async () => {
-  if (!process.env.MONGODB_URI) throw new Error('MONGODB_URI is required');
   const apply = args.has('--apply');
   const expectedDb = getArg('--confirm-db=');
-  const parsedDb = new URL(process.env.MONGODB_URI).pathname.replace(/^\//, '').split('?')[0];
+  const parsedDb = new URL(getConfig().mongodbUri).pathname.replace(/^\//, '').split('?')[0];
   if (apply && (!expectedDb || expectedDb !== parsedDb)) {
     throw new Error(`Refusing writes. Re-run with --apply --confirm-db=${parsedDb}`);
   }
-  await mongoose.connect(process.env.MONGODB_URI);
+  await mongoose.connect(getConfig().mongodbUri);
 
   const locations = await ParkingLocation.find();
   const bookings = await Booking.collection.find({}).toArray();

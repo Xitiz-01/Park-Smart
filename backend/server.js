@@ -1,27 +1,30 @@
-const express = require('express');
 const http = require('http');
-const cors = require('cors');
-const dotenv = require('dotenv');
 const { Server } = require('socket.io');
-const connectDB = require('./config/db');
+// Load the config before anything that reads it (the logger, the database
+// module), so a bad environment ends with the readable list, not a stack.
+const { getConfig, EnvValidationError } = require('./src/config/env');
 
-dotenv.config();
-
-const { betterAuthHandler } = require('./auth/betterAuthBridge');
+let config;
+try {
+  config = getConfig();
+} catch (error) {
+  // No logger yet: it needs the config. Print the readable list and stop.
+  if (error instanceof EnvValidationError && require.main === module) {
+    process.stderr.write(`${error.message}\n`);
+    process.exit(1);
+  }
+  throw error;
+}
+const { logger } = require('./src/platform/logger');
+const { connectMongo, disconnectMongo } = require('./src/platform/db');
+const { createShutdown, installProcessHandlers } = require('./src/platform/lifecycle');
+const { createApp } = require('./src/app');
 const { authenticateSocket } = require('./middleware/authMiddleware');
+const { closeBetterAuth } = require('./auth/betterAuthBridge');
 
-const app = express();
+const { allowedOrigins } = config;
+const app = createApp({ config, logger });
 const server = http.createServer(app);
-const configuredOrigins = (process.env.BETTER_AUTH_TRUSTED_ORIGINS || '')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-const allowedOrigins = [...new Set([
-  process.env.CLIENT_URL,
-  'http://localhost:3000',
-  'https://park-smart-eight.vercel.app',
-  ...configuredOrigins,
-].filter(Boolean))];
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
@@ -36,58 +39,28 @@ io.on('connection', (socket) => {
   socket.emit('socket:connected', { connected: true });
 });
 
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
-}));
-// Better Auth must receive the untouched request body. Keep this mount before
-// express.json() and express.urlencoded().
-app.all('/api/auth/*', betterAuthHandler);
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.get("/api", (req, res) => {
-  res.send("API is working");
-});
-// Routes
-app.use('/api/account', require('./routes/accountRoutes'));
-app.use('/api/slots', require('./routes/slotRoutes'));
-app.use('/api/bookings', require('./routes/bookingRoutes'));
-app.use('/api/admin', require('./routes/adminRoutes'));
-app.use('/api/vehicles', require('./routes/vehicleRoutes'));
-app.use('/api/vehicle-catalog', require('./routes/vehicleCatalogRoutes'));
-app.use('/api/vendors', require('./routes/vendorRoutes'));
-app.use('/api/vendor-verification', require('./routes/vendorVerificationRoutes'));
-app.use('/api/parking-locations', require('./routes/parkingLocationRoutes'));
-app.use('/api/location', require('./routes/locationRoutes'));
-
-// Health check
-app.get('/', (req, res) => {
-  res.json({ message: 'Parking System API is running' });
-});
-// Error handler. Express only treats a four-parameter function as one, so
-// _next stays even though it isn't called.
-app.use((err, req, res, _next) => {
-  const isUploadError = err.name === 'MulterError';
-  const statusCode = err.statusCode || (err.code === 'LIMIT_FILE_SIZE' ? 413 : isUploadError ? 400 : 500);
-  const safeMessage = err.code === 'LIMIT_FILE_SIZE'
-    ? 'Document must be 5 MB or smaller'
-    : statusCode >= 500 && !err.statusCode
-      ? 'Internal Server Error'
-      : (err.message || 'Request could not be completed');
-  res.status(statusCode).json({
-    success: false,
-    message: safeMessage,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
-  });
-});
-
-const PORT = process.env.PORT || 5000;
 if (require.main === module) {
-  connectDB().then(() => {
-    server.listen(PORT, () => {
-      console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
-    });
+  const shutdown = createShutdown({
+    server,
+    io,
+    logger,
+    closers: [
+      { name: 'mongodb', close: disconnectMongo },
+      { name: 'better-auth', close: closeBetterAuth },
+    ],
   });
+  installProcessHandlers({ shutdown, logger });
+
+  connectMongo({ logger })
+    .then(() => {
+      server.listen(config.port, () => {
+        logger.info({ port: config.port, nodeEnv: config.nodeEnv }, 'server listening');
+      });
+    })
+    .catch((error) => {
+      logger.fatal({ err: error }, 'could not connect to MongoDB; giving up');
+      process.exit(1);
+    });
 }
 
 module.exports = { app, server };

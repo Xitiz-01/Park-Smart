@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { getConfig } = require('../src/config/env');
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const cache = new Map();
@@ -7,7 +8,7 @@ const validCoordinate = (latitude, longitude) =>
   Number.isFinite(latitude) && latitude >= -90 && latitude <= 90 &&
   Number.isFinite(longitude) && longitude >= -180 && longitude <= 180;
 
-const selectionSecret = () => process.env.ADDRESS_SELECTION_SECRET || process.env.JWT_SECRET;
+const selectionSecret = () => getConfig().addressSelectionSecret;
 
 const createSelectionToken = (place) => jwt.sign(
   { kind: 'geocoding-selection', place },
@@ -46,9 +47,9 @@ const normalizeGeoapifyResult = (result) => {
 };
 
 const autocomplete = async (query) => {
-  const provider = (process.env.GEOCODING_PROVIDER || 'geoapify').toLowerCase();
+  const { provider, apiKey } = getConfig().geocoding;
   if (provider !== 'geoapify') throw new Error(`Unsupported geocoding provider: ${provider}`);
-  if (!process.env.GEOCODING_API_KEY) {
+  if (!apiKey) {
     const error = new Error('Geocoding is not configured');
     error.statusCode = 503;
     throw error;
@@ -63,7 +64,7 @@ const autocomplete = async (query) => {
     filter: 'countrycode:in',
     format: 'json',
     limit: '6',
-    apiKey: process.env.GEOCODING_API_KEY,
+    apiKey,
   });
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8000);

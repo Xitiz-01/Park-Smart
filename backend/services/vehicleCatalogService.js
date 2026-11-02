@@ -1,4 +1,5 @@
 const catalog = require('../data/vehicleCatalog');
+const { getConfig } = require('../src/config/env');
 const {
   ApiNinjasVehicleProvider,
   NhtsaVehicleProvider,
@@ -196,8 +197,9 @@ class VehicleCatalogService {
 
 const createDefaultProviders = () => {
   const providers = [];
-  if (process.env.NODE_ENV !== 'test') {
-    if (process.env.API_NINJAS_API_KEY) providers.push(new ApiNinjasVehicleProvider());
+  const config = getConfig();
+  if (!config.isTest) {
+    if (config.vehicleCatalog.apiNinjasApiKey) providers.push(new ApiNinjasVehicleProvider());
     providers.push(new NhtsaVehicleProvider());
   }
   providers.push(new LocalVehicleCatalogProvider());

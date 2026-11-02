@@ -1,11 +1,12 @@
 const fs = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
+const { getConfig } = require('../src/config/env');
 
 const DEFAULT_ROOT = path.join(__dirname, '..', 'private-verification-storage');
 
 class LocalPrivateStorage {
-  constructor(root = process.env.VERIFICATION_STORAGE_LOCAL_PATH || DEFAULT_ROOT) {
+  constructor(root = getConfig().verificationStorage.localPath || DEFAULT_ROOT) {
     this.root = path.resolve(root);
   }
 
@@ -33,7 +34,7 @@ class LocalPrivateStorage {
 }
 
 const createStorageService = () => {
-  const provider = (process.env.VERIFICATION_STORAGE_PROVIDER || 'local').toLowerCase();
+  const { provider } = getConfig().verificationStorage;
   if (provider !== 'local') throw new Error(`Unsupported verification storage provider: ${provider}`);
   return new LocalPrivateStorage();
 };

@@ -215,13 +215,13 @@ def cmd_up(_args):
         # Every key in backend/.env is overridden so dotenv (which never overrides existing
         # variables) cannot fall back to a real database, real provider keys or real secrets.
         env = dict(os.environ,
-                   PORT=str(API_PORT), MONGODB_URI=uri, NODE_ENV='development',
-                   CLIENT_URL=APP, BETTER_AUTH_URL=API, BETTER_AUTH_TRUSTED_ORIGINS=APP,
+                   PORT=str(API_PORT), MONGODB_URI=uri, NODE_ENV='development', LOG_LEVEL='info',
+                   CLIENT_URL=APP, CORS_ORIGINS=APP, BETTER_AUTH_URL=API, BETTER_AUTH_TRUSTED_ORIGINS=APP,
                    BETTER_AUTH_SECRET=keys['betterAuthSecret'], ADDRESS_SELECTION_SECRET=keys['addressSelectionSecret'],
                    JWT_SECRET=keys['jwtSecret'], JWT_EXPIRE='7d', BETTER_AUTH_CROSS_SITE_COOKIES='false',
                    BETTER_AUTH_MONGO_TRANSACTIONS='false', BETTER_AUTH_SUPER_ADMIN_USER_IDS='', BETTER_AUTH_ADMIN_USER_IDS='',
                    GEOCODING_PROVIDER='geoapify', GEOCODING_API_KEY='', API_NINJAS_API_KEY='',
-                   DIGILOCKER_ENABLED='false', CASHFREE_VERIFY_ENABLED='false',
+                   CASHFREE_VERIFY_ENABLED='false',
                    VERIFICATION_STORAGE_PROVIDER='local', VERIFICATION_STORAGE_LOCAL_PATH=str(STATE / 'verification-storage'))
         log_path = LOGS / 'backend.log'
         with open(log_path, 'w') as log:
@@ -230,13 +230,17 @@ def cmd_up(_args):
         state['backend_pgid'] = os.getpgid(proc.pid)
         save_state(state)
 
+        # The backend logs with pino: pretty in development ('host: "…"' on the line
+        # after the message), JSON otherwise ('"host":"…"').
+        host_pattern = re.compile(r'MongoDB connected(?:.|\n)*?host"?:\s*"([^"]+)"')
+
         def connected():
             text = log_path.read_text()
-            if 'MongoDB connection error' in text or proc.poll() is not None:
+            if 'could not connect to MongoDB' in text or proc.poll() is not None:
                 die(f'backend failed to start; see {log_path}')
-            return 'MongoDB Connected:' in text
+            return bool(host_pattern.search(text))
         wait_for(connected, 60, 'backend database connection')
-        host = re.search(r'MongoDB Connected: (\S+)', log_path.read_text()).group(1)
+        host = host_pattern.search(log_path.read_text()).group(1)
         if host not in LOCAL_HOSTS:
             os.killpg(state['backend_pgid'], signal.SIGTERM)
             die(f'backend reported a non-local MongoDB host "{host}"; stopped it.')

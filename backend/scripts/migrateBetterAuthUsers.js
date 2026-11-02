@@ -1,17 +1,13 @@
-const dotenv = require('dotenv');
+const { getConfig } = require('../src/config/env');
 const mongoose = require('mongoose');
 const { migrateExistingUsers } = require('../services/betterAuthMigration');
-
-dotenv.config();
 
 const run = async () => {
   const apply = process.argv.includes('--apply');
   const confirmedDatabase = process.argv
     .find((arg) => arg.startsWith('--confirm-db='))
     ?.slice('--confirm-db='.length);
-
-  if (!process.env.MONGODB_URI) throw new Error('MONGODB_URI is required');
-  await mongoose.connect(process.env.MONGODB_URI, { autoIndex: false });
+  await mongoose.connect(getConfig().mongodbUri, { autoIndex: false });
   const databaseName = mongoose.connection.name;
 
   if (apply && confirmedDatabase !== databaseName) {

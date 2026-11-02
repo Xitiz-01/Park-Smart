@@ -1,4 +1,5 @@
 const { maskIdentifier } = require('./redactionService');
+const { getConfig } = require('../src/config/env');
 
 class ProviderUnavailableError extends Error {
   constructor(message) {
@@ -15,10 +16,11 @@ class ManualVerificationProvider {
 
 class CashfreeVerificationProvider {
   constructor(options = {}) {
-    this.enabled = options.enabled ?? process.env.CASHFREE_VERIFY_ENABLED === 'true';
-    this.clientId = options.clientId ?? process.env.CASHFREE_CLIENT_ID;
-    this.clientSecret = options.clientSecret ?? process.env.CASHFREE_CLIENT_SECRET;
-    this.baseUrl = (options.baseUrl ?? process.env.CASHFREE_VERIFY_BASE_URL ?? 'https://sandbox.cashfree.com/verification').replace(/\/$/, '');
+    const defaults = getConfig().cashfree;
+    this.enabled = options.enabled ?? defaults.enabled;
+    this.clientId = options.clientId ?? defaults.clientId;
+    this.clientSecret = options.clientSecret ?? defaults.clientSecret;
+    this.baseUrl = (options.baseUrl ?? defaults.baseUrl).replace(/\/$/, '');
     this.fetch = options.fetch ?? global.fetch;
   }
 

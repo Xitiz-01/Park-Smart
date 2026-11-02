@@ -1,13 +1,9 @@
-const path = require('path');
 const mongoose = require('mongoose');
-const dotenv = require('dotenv');
+const { getConfig } = require('../src/config/env');
 const ParkingSlot = require('../models/ParkingSlot');
 
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
-
 const migrate = async () => {
-  if (!process.env.MONGODB_URI) throw new Error('MONGODB_URI is required');
-  await mongoose.connect(process.env.MONGODB_URI);
+  await mongoose.connect(getConfig().mongodbUri);
   const indexes = await ParkingSlot.collection.indexes();
   if (indexes.some((index) => index.name === 'slotNumber_1')) {
     await ParkingSlot.collection.dropIndex('slotNumber_1');

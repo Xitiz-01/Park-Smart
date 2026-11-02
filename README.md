@@ -319,7 +319,11 @@ Catalog maintenance is intentionally manual in this phase. The fallback is not a
 ```
 parking-system/
 ├── backend/
-│   ├── config/db.js
+│   ├── src/
+│   │   ├── app.js            Express app factory
+│   │   ├── config/env.js     validated environment config
+│   │   ├── schemas/          zod request schemas
+│   │   └── platform/         logging, errors, HTTP middleware, health, lifecycle
 │   ├── controllers/
 │   ├── middleware/authMiddleware.js
 │   ├── models/
@@ -344,6 +348,8 @@ parking-system/
 ---
 
 ## API Endpoints
+
+Routes are served under `/api/v1` (for example `/api/v1/bookings`). The unversioned `/api/...` paths below still work but are deprecated: responses carry a `Deprecation` header. Better Auth stays at `/api/auth/*`. Errors use one envelope, `{ success: false, message, error: { code, message, details?, requestId } }`. Outside production the OpenAPI document is at `GET /api/docs`; health checks are `GET /health/live` and `GET /health/ready`. See [docs/platform/BACKEND.md](docs/platform/BACKEND.md).
 
 | Method | Route | Access | Description |
 |--------|-------|--------|-------------|
