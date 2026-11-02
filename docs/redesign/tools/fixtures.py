@@ -427,10 +427,9 @@ def console_errors(events):
 
 
 # Console errors already present in the Phase 0 baseline, so they don't fail the smoke run.
-KNOWN_ERRORS = {
-    # AUDIT.md 5.U: the editor fires an address lookup on mount; with Geoapify off it returns 503.
-    'vendor-location-edit': 'status of 503',
-}
+# AUDIT.md 5.U (the editor's address lookup on mount, a 503 with Geoapify off)
+# was fixed in Phase 5, so its allowance is gone.
+KNOWN_ERRORS = {}
 
 
 def cmd_smoke(args):

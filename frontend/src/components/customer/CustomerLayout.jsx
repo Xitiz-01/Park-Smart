@@ -1,34 +1,10 @@
-import React from 'react';
-import {
-  CalendarDays,
-  CarFront,
-  LayoutDashboard,
-  MapPin,
-  Navigation,
-  Store,
-  UserRound,
-} from 'lucide-react';
+import { useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import AppShell from '../layout/AppShell';
+import WorkspaceShell from '../workspace/WorkspaceShell';
+import { customerWorkspace } from '../workspace/navigation';
 
 export default function CustomerLayout() {
   const { user } = useAuth();
-  const vendorItem = user?.vendorProfile
-    ? {
-        to: user.role === 'vendor' && user.vendorProfile.vendorStatus === 'active' ? '/vendor' : '/vendor/status',
-        icon: Store,
-        label: user.role === 'vendor' ? 'Vendor Portal' : 'Vendor Application',
-      }
-    : { to: '/vendor/apply', icon: Store, label: 'Become a Vendor' };
-
-  const navItems = [
-    { to: '/dashboard', icon: LayoutDashboard, label: 'Overview', end: true },
-    { to: '/dashboard/nearby', icon: Navigation, label: 'Find Parking' },
-    { to: '/dashboard/bookings', icon: CalendarDays, label: 'My Bookings' },
-    { to: '/dashboard/vehicles', icon: CarFront, label: 'My Vehicles' },
-    { to: '/dashboard/profile', icon: UserRound, label: 'Profile' },
-    vendorItem,
-  ];
-
-  return <AppShell navItems={navItems} roleLabel="Driver workspace" accent="emerald" />;
+  const workspace = useMemo(() => customerWorkspace(user), [user]);
+  return <WorkspaceShell workspace={workspace} identity={{ name: user?.name, subtitle: user?.email }} />;
 }

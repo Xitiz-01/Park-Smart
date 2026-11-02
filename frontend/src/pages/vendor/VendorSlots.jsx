@@ -1,30 +1,51 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { ParkingSquare, Plus, RefreshCw, Zap } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Plus, RefreshCw, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 import { vendorsAPI } from '../../services/api';
 import useAvailabilitySocket from '../../hooks/useAvailabilitySocket';
-import EVSlotBoard, { slotDisplayStatus } from '../../components/parking/EVSlotBoard';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Spinner } from '@/components/ui/spinner';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import DataTable from '@/components/kit/DataTable';
+import EmptyState, { ErrorState } from '@/components/kit/EmptyState';
+import FormField from '@/components/kit/FormField';
+import { ListSkeleton } from '@/components/kit/Loaders';
+import PageHeader from '@/components/kit/PageHeader';
+import StatusBadge from '@/components/kit/StatusBadge';
+import { EvLotMap } from '@/components/kit/lotmap';
+import { slotDisplayStatus, slotStateLabel } from '@/lib/slotStates';
 
 const emptyForm = { slotNumber: '', prefix: 'EV', count: 4, vehicleType: 'ev', evCompatible: true, chargerType: 'CCS2', connectorType: 'CCS2', chargerPowerKw: 22 };
+const STATUS_LABELS = { active: 'live', draft: 'draft', inactive: 'inactive' };
 
 export default function VendorSlots() {
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const [locations, setLocations] = useState([]);
   const [locationId, setLocationId] = useState(params.get('location') || '');
   const [slots, setSlots] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [locationsLoading, setLocationsLoading] = useState(true);
+  const [locationsFailed, setLocationsFailed] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [updating, setUpdating] = useState('');
   const [mode, setMode] = useState('bulk');
   const [form, setForm] = useState(emptyForm);
 
-  useEffect(() => {
+  // The location list used to fail silently and leave an empty page (audit R).
+  const loadLocations = useCallback(() => {
+    setLocationsLoading(true);
+    setLocationsFailed(false);
     vendorsAPI.getLocations().then(({ data }) => {
       const evLocations = data.locations.filter((location) => location.evSupported && location.vehicleTypes.includes('ev'));
       setLocations(evLocations);
-      setLocationId((current) => evLocations.some((item) => item._id === current) ? current : evLocations[0]?._id || '');
-    }).finally(() => setLoading(false));
+      setLocationId((current) => (evLocations.some((item) => item._id === current) ? current : evLocations[0]?._id || ''));
+    }).catch(() => setLocationsFailed(true)).finally(() => setLocationsLoading(false));
   }, []);
+  useEffect(loadLocations, [loadLocations]);
+
   const loadSlots = useCallback(async (id = locationId) => {
     if (!id) return setSlots([]);
     setLoading(true);
@@ -35,6 +56,7 @@ export default function VendorSlots() {
   useEffect(() => { if (locationId) loadSlots(locationId); }, [locationId, loadSlots]);
   useAvailabilitySocket({ enabled: Boolean(locationId), locationId, debounceMs: 180, onChange: () => loadSlots(locationId) });
   const current = locations.find((location) => location._id === locationId);
+  const canCreate = current?.status === 'active';
 
   const submit = async (event) => {
     event.preventDefault(); setSaving(true);
@@ -48,28 +70,132 @@ export default function VendorSlots() {
     finally { setSaving(false); }
   };
   const setStatus = async (slot, status) => {
-    try { await vendorsAPI.updateSlot(slot._id, { status }); await loadSlots(); toast.success('EV slot status updated'); }
+    setUpdating(slot._id);
+    try { await vendorsAPI.updateSlot(slot._id, { status }); await loadSlots(); toast.success(status === 'maintenance' ? `${slot.slotNumber} is in maintenance` : `${slot.slotNumber} is back in service`); }
     catch (error) { toast.error(error.response?.data?.message || 'Unable to update slot'); }
+    finally { setUpdating(''); }
   };
 
-  return <div className="fade-in">
-    <div className="page-header"><h1>EV Charging Slots</h1><p>Regular parking uses capacity. Only exact EV charging bays are managed here.</p></div>
-    <div className="card" style={{ marginBottom: 20 }}><div className="form-group"><label className="form-label">EV-enabled location</label><select className="form-input" value={locationId} onChange={(e) => setLocationId(e.target.value)}><option value="">Select a location</option>{locations.map((location) => <option key={location._id} value={location._id}>{location.name} ({location.status})</option>)}</select></div></div>
-    {!locationId ? <div className="card empty-state"><Zap size={40} /><h3>No EV-enabled location</h3><p>Enable EV support and pricing on a parking location first.</p></div> : <>
-      <form className="card" onSubmit={submit} style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}><button type="button" className={`btn btn-sm ${mode === 'bulk' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setMode('bulk')}>Bulk Create</button><button type="button" className={`btn btn-sm ${mode === 'single' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setMode('single')}>Single Slot</button></div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14 }}>
-          {mode === 'bulk' ? <><div className="form-group"><label className="form-label">Prefix</label><input className="form-input" value={form.prefix} onChange={(e) => setForm({ ...form, prefix: e.target.value.toUpperCase() })} required /></div><div className="form-group"><label className="form-label">Number of bays</label><input className="form-input" type="number" min="1" max="200" value={form.count} onChange={(e) => setForm({ ...form, count: e.target.value })} required /></div></> : <div className="form-group"><label className="form-label">Slot number</label><input className="form-input" value={form.slotNumber} onChange={(e) => setForm({ ...form, slotNumber: e.target.value.toUpperCase() })} required /></div>}
-          <div className="form-group"><label className="form-label">Charger type</label><input className="form-input" value={form.chargerType} onChange={(e) => setForm({ ...form, chargerType: e.target.value })} placeholder="DC fast / AC" /></div>
-          <div className="form-group"><label className="form-label">Connector</label><input className="form-input" value={form.connectorType} onChange={(e) => setForm({ ...form, connectorType: e.target.value })} placeholder="CCS2" /></div>
-          <div className="form-group"><label className="form-label">Power (kW)</label><input className="form-input" type="number" min="0" max="1000" step="0.1" value={form.chargerPowerKw} onChange={(e) => setForm({ ...form, chargerPowerKw: e.target.value })} /></div>
-        </div>
-        <button className="btn btn-primary" style={{ marginTop: 16 }} disabled={saving || current?.status !== 'active'}><Plus size={15} /> {saving ? 'Creating…' : mode === 'bulk' ? 'Create EV slots' : 'Add EV slot'}</button>
-      </form>
-      <div className="card"><div className="flex items-center justify-between" style={{ marginBottom: 14 }}><div><h2 style={{ fontSize: 16 }}>{slots.length} EV Slots</h2><p style={{ color: 'var(--legacy-text-muted)', fontSize: 11, marginTop: 3 }}>Operational state for the current hour</p></div><button className="btn btn-sm btn-outline" onClick={() => loadSlots()}><RefreshCw size={13} /> Refresh</button></div>
-        <EVSlotBoard slots={slots} title={`${current?.name || 'Location'} EV board`} subtitle="Live operational view. Use the controls below to place a bay into or out of maintenance." />
-        <div className="table-wrapper" style={{ marginTop: 18 }}><table><thead><tr><th>Slot</th><th>Charger</th><th>Connector</th><th>Power</th><th>Rate</th><th>Live status</th><th>Action</th></tr></thead><tbody>{slots.map((slot) => { const liveStatus = slotDisplayStatus(slot); return <tr key={slot._id}><td style={{ fontWeight: 700 }}>{slot.slotNumber}</td><td>{slot.chargerType || '—'}</td><td>{slot.connectorType || '—'}</td><td>{slot.chargerPowerKw ? `${slot.chargerPowerKw} kW` : '—'}</td><td>₹{slot.pricePerHour}/hr</td><td><span className={`badge ${liveStatus === 'available' ? 'badge-green' : liveStatus === 'maintenance' ? 'badge-coral' : liveStatus === 'occupied' ? 'status-neutral' : 'badge-yellow'}`}>{liveStatus}</span></td><td>{['available', 'maintenance'].includes(slot.status) && <button className="btn btn-sm btn-outline" onClick={() => setStatus(slot, slot.status === 'available' ? 'maintenance' : 'available')}>{slot.status === 'available' ? 'Maintenance' : 'Make available'}</button>}</td></tr>; })}</tbody></table>{!loading && !slots.length && <div className="empty-state"><ParkingSquare size={38} /><h3>No EV slots at this location yet.</h3></div>}</div>
+  const columns = useMemo(() => [
+    { id: 'bay', accessorKey: 'slotNumber', header: 'Bay', meta: { mobile: 'title' }, cell: ({ getValue }) => <span className="font-mono font-semibold">{getValue()}</span> },
+    { id: 'status', accessorFn: (slot) => slotStateLabel(slotDisplayStatus(slot)), header: 'Live status', meta: { mobile: 'subtitle' }, cell: ({ row }) => <StatusBadge status={slotDisplayStatus(row.original)} /> },
+    { id: 'charger', accessorFn: (slot) => slot.chargerType || '—', header: 'Charger' },
+    { id: 'connector', accessorFn: (slot) => slot.connectorType || '—', header: 'Connector' },
+    { id: 'power', accessorFn: (slot) => Number(slot.chargerPowerKw) || 0, header: 'Power', cell: ({ getValue }) => (getValue() ? <span className="font-mono">{getValue()} kW</span> : '—') },
+    { id: 'rate', accessorFn: (slot) => Number(slot.pricePerHour) || 0, header: 'Rate', cell: ({ getValue }) => <span className="font-mono">₹{getValue()}/hr</span> },
+    {
+      id: 'action', header: <span className="sr-only">Actions</span>, enableSorting: false, meta: { mobile: 'actions' },
+      cell: ({ row }) => {
+        const slot = row.original;
+        if (!['available', 'maintenance'].includes(slot.status)) return <span className="text-sm text-text-muted">In use</span>;
+        const toMaintenance = slot.status === 'available';
+        return (
+          <Button variant="outline" size="sm" disabled={updating === slot._id} onClick={() => setStatus(slot, toMaintenance ? 'maintenance' : 'available')}>
+            {updating === slot._id ? <Spinner data-icon="inline-start" /> : toMaintenance ? <Wrench data-icon="inline-start" /> : <RefreshCw data-icon="inline-start" />}
+            {toMaintenance ? 'Put in maintenance' : 'Back in service'}<span className="sr-only"> {slot.slotNumber}</span>
+          </Button>
+        );
+      },
+    },
+  // setStatus is rebuilt each render; it only reads `updating` and loadSlots.
+  ], [updating, loadSlots]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const header = (
+    <PageHeader
+      eyebrow="Operator"
+      title="EV bays"
+      description="Exact charging bays that drivers pick when they book. Cars and motorcycles use the capacity set on each location."
+      actions={locationId && <Button variant="outline" onClick={() => loadSlots()} disabled={loading}><RefreshCw data-icon="inline-start" />Refresh</Button>}
+    />
+  );
+
+  if (locationsLoading) return <>{header}<ListSkeleton rows={2} /></>;
+  if (locationsFailed) return <>{header}<ErrorState description="Your locations didn’t load. Check your connection and try again." onRetry={loadLocations} /></>;
+  if (!locations.length) {
+    return (
+      <>
+        {header}
+        <EmptyState title="No EV-enabled locations" description="Turn on EV charging and set an EV price on a location first.">
+          <Button asChild><Link to="/vendor/locations">Go to locations</Link></Button>
+        </EmptyState>
+      </>
+    );
+  }
+
+  return (
+    <>
+      {header}
+      <div className="mb-6 max-w-sm">
+        <FormField label="Location">
+          <NativeSelect className="w-full" value={locationId} onChange={(e) => { setLocationId(e.target.value); setParams({ location: e.target.value }, { replace: true }); }}>
+            {locations.map((location) => <NativeSelectOption key={location._id} value={location._id}>{location.name} ({STATUS_LABELS[location.status] || location.status})</NativeSelectOption>)}
+          </NativeSelect>
+        </FormField>
       </div>
-    </>}
-  </div>;
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="grid min-w-0 content-start gap-6">
+          <EvLotMap
+            slots={slots}
+            label={`${current?.name || 'Location'} EV bays`}
+            aside={<p className="text-xs text-lot-text-muted">Live for the current hour</p>}
+          />
+          <section aria-labelledby="bays-title" className="min-w-0">
+            <h2 id="bays-title" className="mb-3 font-display text-lg font-semibold">All bays</h2>
+            <DataTable
+              columns={columns}
+              data={slots}
+              getRowId={(slot) => slot._id}
+              loading={loading && !slots.length}
+              searchLabel="Search bays"
+              searchPlaceholder="Search bays…"
+              empty={<EmptyState title="No EV bays here yet" description={canCreate ? 'Add the charging bays at this location with the form.' : 'Publish this location, then add its charging bays.'} />}
+            />
+          </section>
+        </div>
+
+        <form onSubmit={submit} aria-labelledby="add-bays-title" className="h-fit rounded-2xl border bg-card p-5 shadow-hairline">
+          <h2 id="add-bays-title" className="font-display text-lg font-semibold">Add bays</h2>
+          <Tabs value={mode} onValueChange={setMode} className="mt-3">
+            <TabsList aria-label="How many bays" className="w-full">
+              <TabsTrigger value="bulk" className="flex-1">Several</TabsTrigger>
+              <TabsTrigger value="single" className="flex-1">One</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <div className="mt-4 grid gap-4">
+            {mode === 'bulk' ? (
+              <div className="grid grid-cols-2 gap-4">
+                <FormField label="Prefix" required>
+                  <Input className="font-mono" autoComplete="off" spellCheck={false} value={form.prefix} onChange={(e) => setForm({ ...form, prefix: e.target.value.toUpperCase() })} />
+                </FormField>
+                <FormField label="How many" required>
+                  <Input type="number" inputMode="numeric" min="1" max="200" className="font-mono" value={form.count} onChange={(e) => setForm({ ...form, count: e.target.value })} />
+                </FormField>
+              </div>
+            ) : (
+              <FormField label="Bay number" required>
+                <Input className="font-mono" autoComplete="off" spellCheck={false} placeholder="EV07…" value={form.slotNumber} onChange={(e) => setForm({ ...form, slotNumber: e.target.value.toUpperCase() })} />
+              </FormField>
+            )}
+            <FormField label="Charger type">
+              <Input autoComplete="off" placeholder="DC fast / AC…" value={form.chargerType} onChange={(e) => setForm({ ...form, chargerType: e.target.value })} />
+            </FormField>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField label="Connector">
+                <Input autoComplete="off" placeholder="CCS2…" value={form.connectorType} onChange={(e) => setForm({ ...form, connectorType: e.target.value })} />
+              </FormField>
+              <FormField label="Power (kW)">
+                <Input type="number" inputMode="decimal" min="0" max="1000" step="0.1" className="font-mono" value={form.chargerPowerKw} onChange={(e) => setForm({ ...form, chargerPowerKw: e.target.value })} />
+              </FormField>
+            </div>
+          </div>
+          {!canCreate && <p className="mt-4 rounded-lg bg-surface-sunken p-3 text-sm text-text-muted">Bays can be added once this location is live.</p>}
+          <Button type="submit" className="mt-5 w-full" disabled={saving || !canCreate}>
+            {saving ? <Spinner data-icon="inline-start" /> : <Plus data-icon="inline-start" />}
+            {saving ? 'Adding…' : mode === 'bulk' ? `Add ${form.count || 0} bays` : 'Add bay'}
+          </Button>
+        </form>
+      </div>
+    </>
+  );
 }

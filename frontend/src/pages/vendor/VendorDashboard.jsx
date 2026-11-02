@@ -1,63 +1,108 @@
-import React, { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, BadgeCheck, CalendarDays, CircleParking, IndianRupee, MapPin, ParkingSquare, Plus } from 'lucide-react';
-import { toast } from 'sonner';
+import { ArrowRight, CalendarDays, CircleParking, IndianRupee, MapPin, Plus, Zap } from 'lucide-react';
 import { vendorsAPI } from '../../services/api';
-import LoadingState from '../../components/ui/LoadingState';
-import MetricCard from '../../components/ui/MetricCard';
-import PageHeader from '../../components/ui/PageHeader';
-import StatusBadge from '../../components/ui/StatusBadge';
+import { Button } from '@/components/ui/button';
+import EmptyState, { ErrorState } from '@/components/kit/EmptyState';
+import { MetricGridSkeleton } from '@/components/kit/Loaders';
+import MetricCard from '@/components/kit/MetricCard';
+import OccupancyRing from '@/components/kit/OccupancyRing';
+import PageHeader from '@/components/kit/PageHeader';
+import StatusBadge from '@/components/kit/StatusBadge';
+import { formatRupees } from '@/lib/bookings';
+
+const EMPTY_STATS = { parkingLocations: 0, totalSlots: 0, availableSlots: 0, occupiedSlots: 0, activeBookings: 0, totalEarnings: 0 };
+
+const shortcuts = [
+  { to: '/vendor/locations', icon: MapPin, title: 'Parking locations', body: 'Addresses, prices, hours and capacity.' },
+  { to: '/vendor/bookings', icon: CalendarDays, title: 'Bookings', body: 'Check drivers in and out.' },
+  { to: '/vendor/slots', icon: Zap, title: 'EV bays', body: 'Charging bays and maintenance.' },
+];
 
 export default function VendorDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setLoading(true);
+    setFailed(false);
     vendorsAPI.getDashboard()
       .then((response) => setData(response.data))
-      .catch((error) => toast.error(error.response?.data?.message || 'Unable to load vendor dashboard'))
+      .catch(() => setFailed(true))
       .finally(() => setLoading(false));
   }, []);
+  useEffect(load, [load]);
 
-  if (loading) return <LoadingState cards={4} />;
-  const stats = data?.stats || { parkingLocations: 0, totalSlots: 0, availableSlots: 0, occupiedSlots: 0, activeBookings: 0, totalEarnings: 0 };
-  const total = stats.totalSlots || 0;
-  const availablePct = total ? (stats.availableSlots / total) * 100 : 0;
-  const occupiedPct = total ? (stats.occupiedSlots / total) * 100 : 0;
+  const header = (
+    <PageHeader
+      eyebrow="Operator"
+      title="Operations overview"
+      description="Space across your published locations for the next hour, and the bookings in progress."
+      actions={<Button asChild><Link to="/vendor/locations/new"><Plus data-icon="inline-start" />Add location</Link></Button>}
+    />
+  );
+
+  if (loading) return <>{header}<MetricGridSkeleton /></>;
+  if (failed) return <>{header}<ErrorState description="Your operations overview didn’t load. Check your connection and try again." onRetry={load} /></>;
+
+  const stats = { ...EMPTY_STATS, ...data?.stats };
 
   return (
-    <div className="fade-in">
-      <PageHeader eyebrow="Operations overview" title="Your parking business, at a glance" description="Live inventory and booking signals across every managed location." actions={<Link to="/vendor/locations/new" className="btn btn-primary"><Plus size={16} /> Add location</Link>} />
-      <section className="dashboard-metrics">
-        <MetricCard label="Parking locations" value={stats.parkingLocations} icon={<MapPin size={20} />} detail="Managed facilities" />
-        <MetricCard label="Available now" value={stats.availableSlots} icon={<CircleParking size={20} />} tone="green" detail={`${stats.totalSlots} regular + EV spaces`} />
-        <MetricCard label="Active bookings" value={stats.activeBookings} icon={<CalendarDays size={20} />} tone="amber" detail="Currently in progress" />
-        <MetricCard label="Total earnings" value={`₹${stats.totalEarnings}`} icon={<IndianRupee size={20} />} tone="coral" detail="Recorded payments" />
+    <>
+      {header}
+      <section aria-label="Key figures" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard label="Parking locations" value={stats.parkingLocations} detail="Drafts and inactive included" icon={<MapPin />} />
+        <MetricCard label="Free in the next hour" value={stats.availableSlots} detail={`Of ${stats.totalSlots} spaces and EV bays`} icon={<CircleParking />} tone="available" />
+        <MetricCard label="Open bookings" value={stats.activeBookings} detail="Upcoming or checked in" icon={<CalendarDays />} tone="reserved" />
+        {/* The API sums completed bookings; it is not a payout figure. */}
+        <MetricCard label="Completed booking value" value={stats.totalEarnings} format={formatRupees} detail="Total of completed bookings, not payouts" icon={<IndianRupee />} tone="neutral" />
       </section>
 
-      <div className="dashboard-grid">
-        <section className="card">
-          <div className="panel-head"><h2>Live hybrid inventory</h2><Link to="/vendor/locations">Manage capacity <ArrowRight size={13} /></Link></div>
-          <div className="legend-row">
-            <span className="legend-item"><i style={{ background: 'var(--legacy-green)' }} />Available <strong>{stats.availableSlots}</strong></span>
-            <span className="legend-item"><i style={{ background: 'var(--legacy-yellow)' }} />Occupied / reserved <strong>{stats.occupiedSlots}</strong></span>
-            <span className="legend-item"><i style={{ background: 'var(--ps-muted)' }} />Other <strong>{Math.max(0, total - stats.availableSlots - stats.occupiedSlots)}</strong></span>
+      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+        <section aria-labelledby="occupancy-title" className="min-w-0 rounded-2xl border bg-card p-5 shadow-hairline sm:p-6">
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 id="occupancy-title" className="font-display text-lg font-semibold">Next hour</h2>
+              <p className="mt-0.5 text-sm text-text-muted">Capacity spaces and EV bays at published locations</p>
+            </div>
+            <Link to="/vendor/locations" className="inline-flex items-center gap-1 text-sm font-medium text-brand hover:underline">
+              Manage capacity<ArrowRight aria-hidden="true" className="size-4" />
+            </Link>
           </div>
-          <div className="occupancy-track" aria-label="Slot utilisation">
-            <span className="occupancy-segment" style={{ width: `${availablePct}%`, background: 'var(--legacy-green)' }} />
-            <span className="occupancy-segment" style={{ width: `${occupiedPct}%`, background: 'var(--legacy-yellow)' }} />
-          </div>
-          <p style={{ color: 'var(--legacy-text-muted)', fontSize: 11, marginTop: 15 }}>Totals are calculated from your vendor-owned parking data and update with live booking activity.</p>
+          {stats.totalSlots > 0 ? (
+            <OccupancyRing free={stats.availableSlots} total={stats.totalSlots} freeLabel="Free" takenLabel="Booked or unavailable" />
+          ) : (
+            <EmptyState
+              title="Nothing published yet"
+              description="Once a location is published, its spaces and EV bays show up here."
+            >
+              <Button asChild variant="outline"><Link to="/vendor/locations">Go to locations</Link></Button>
+            </EmptyState>
+          )}
         </section>
-        <aside className="card">
-          <div className="panel-head"><h2>Account readiness</h2><StatusBadge status={data?.vendorStatus || 'active'} /></div>
-          <div className="quick-actions">
-            <Link to="/vendor/locations" className="quick-action"><span><MapPin size={18} /></span><div><strong>Parking locations</strong><small>Review address and pricing</small></div><ArrowRight size={14} /></Link>
-            <Link to="/vendor/bookings" className="quick-action"><span><BadgeCheck size={18} /></span><div><strong>Incoming bookings</strong><small>Track customer activity</small></div><ArrowRight size={14} /></Link>
-            <Link to="/vendor/slots" className="quick-action"><span><ParkingSquare size={18} /></span><div><strong>EV slot inventory</strong><small>Manage exact charging bays</small></div><ArrowRight size={14} /></Link>
+
+        <section aria-labelledby="account-title" className="min-w-0 rounded-2xl border bg-card p-5 shadow-hairline sm:p-6">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 id="account-title" className="font-display text-lg font-semibold">Your account</h2>
+            <StatusBadge status={data?.vendorStatus || 'active'} />
           </div>
-        </aside>
+          <ul className="m-0 grid list-none gap-1 p-0">
+            {shortcuts.map(({ to, icon: Icon, title, body }) => (
+              <li key={to}>
+                <Link to={to} className="group flex items-center gap-3 rounded-lg p-2.5 hover:bg-surface-sunken focus-visible:outline-2 focus-visible:outline-focus">
+                  <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-soft text-brand-strong"><Icon className="size-4" /></span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-medium text-foreground">{title}</span>
+                    <span className="block text-sm text-text-muted">{body}</span>
+                  </span>
+                  <ArrowRight aria-hidden="true" className="size-4 text-text-muted transition-transform group-hover:translate-x-0.5" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       </div>
-    </div>
+    </>
   );
 }

@@ -1,0 +1,282 @@
+[
+ {
+  "name": "vendor-verification",
+  "colorScheme": "light",
+  "route": "/vendor/verification",
+  "width": 1440,
+  "finalPath": "/vendor/verification",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1776,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-verification",
+  "colorScheme": "light",
+  "route": "/vendor/verification",
+  "width": 1024,
+  "finalPath": "/vendor/verification",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1933,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-verification",
+  "colorScheme": "light",
+  "route": "/vendor/verification",
+  "width": 768,
+  "finalPath": "/vendor/verification",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 2274,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-verification",
+  "colorScheme": "light",
+  "route": "/vendor/verification",
+  "width": 390,
+  "finalPath": "/vendor/verification",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 2825,
+  "consoleErrors": []
+ },
+ {
+  "name": "admin-dashboard",
+  "colorScheme": "light",
+  "route": "/admin",
+  "width": 1440,
+  "finalPath": "/admin",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1152,
+  "consoleErrors": []
+ },
+ {
+  "name": "admin-dashboard",
+  "colorScheme": "light",
+  "route": "/admin",
+  "width": 1024,
+  "finalPath": "/admin",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1340,
+  "consoleErrors": []
+ },
+ {
+  "name": "admin-dashboard",
+  "colorScheme": "light",
+  "route": "/admin",
+  "width": 768,
+  "finalPath": "/admin",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1462,
+  "consoleErrors": []
+ },
+ {
+  "name": "admin-dashboard",
+  "colorScheme": "light",
+  "route": "/admin",
+  "width": 390,
+  "finalPath": "/admin",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 2102,
+  "consoleErrors": []
+ },
+ {
+  "name": "admin-slots",
+  "colorScheme": "light",
+  "route": "/admin/slots",
+  "width": 1440,
+  "finalPath": "/admin/slots",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 900,
+  "consoleErrors": []
+ },
+ {
+  "name": "admin-slots",
+  "colorScheme": "light",
+  "route": "/admin/slots",
+  "width": 1024,
+  "finalPath": "/admin/slots",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 832,
+  "consoleErrors": []
+ },
+ {
+  "name": "admin-slots",
+  "colorScheme": "light",
+  "route": "/admin/slots",
+  "width": 768,
+  "finalPath": "/admin/slots",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1024,
+  "consoleErrors": []
+ },
+ {
+  "name": "admin-slots",
+  "colorScheme": "light",
+  "route": "/admin/slots",
+  "width": 390,
+  "finalPath": "/admin/slots",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 2105,
+  "consoleErrors": []
+ },
+ {
+  "name": "admin-bookings",
+  "colorScheme": "light",
+  "route": "/admin/bookings",
+  "width": 1440,
+  "finalPath": "/admin/bookings",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 962,
+  "consoleErrors": []
+ },
+ {
+  "name": "admin-bookings",
+  "colorScheme": "light",
+  "route": "/admin/bookings",
+  "width": 1024,
+  "finalPath": "/admin/bookings",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 898,
+  "consoleErrors": []
+ },
+ {
+  "name": "admin-bookings",
+  "colorScheme": "light",
+  "route": "/admin/bookings",
+  "width": 768,
+  "finalPath": "/admin/bookings",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1073,
+  "consoleErrors": []
+ },
+ {
+  "name": "admin-bookings",
+  "colorScheme": "light",
+  "route": "/admin/bookings",
+  "width": 390,
+  "finalPath": "/admin/bookings",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 3076,
+  "consoleErrors": []
+ },
+ {
+  "name": "admin-users",
+  "colorScheme": "light",
+  "route": "/admin/users",
+  "width": 1440,
+  "finalPath": "/admin/users",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 900,
+  "consoleErrors": []
+ },
+ {
+  "name": "admin-users",
+  "colorScheme": "light",
+  "route": "/admin/users",
+  "width": 1024,
+  "finalPath": "/admin/users",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 768,
+  "consoleErrors": []
+ },
+ {
+  "name": "admin-users",
+  "colorScheme": "light",
+  "route": "/admin/users",
+  "width": 768,
+  "finalPath": "/admin/users",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1024,
+  "consoleErrors": []
+ },
+ {
+  "name": "admin-users",
+  "colorScheme": "light",
+  "route": "/admin/users",
+  "width": 390,
+  "finalPath": "/admin/users",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1351,
+  "consoleErrors": []
+ },
+ {
+  "name": "admin-vendors",
+  "colorScheme": "light",
+  "route": "/admin/vendors",
+  "width": 1440,
+  "finalPath": "/admin/vendors",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 900,
+  "consoleErrors": []
+ },
+ {
+  "name": "admin-vendors",
+  "colorScheme": "light",
+  "route": "/admin/vendors",
+  "width": 1024,
+  "finalPath": "/admin/vendors",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 768,
+  "consoleErrors": []
+ },
+ {
+  "name": "admin-vendors",
+  "colorScheme": "light",
+  "route": "/admin/vendors",
+  "width": 768,
+  "finalPath": "/admin/vendors",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1024,
+  "consoleErrors": []
+ },
+ {
+  "name": "admin-vendors",
+  "colorScheme": "light",
+  "route": "/admin/vendors",
+  "width": 390,
+  "finalPath": "/admin/vendors",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 957,
+  "consoleErrors": []
+ },
+ {
+  "name": "admin-verifications",
+  "colorScheme": "light",
+  "route": "/admin/verifications",
+  "width": 1440,
+  "finalPath": "/admin/verifications",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 900,
+  "consoleErrors": []
+ },
+ {
+  "name": "admin-verifications",
+  "colorScheme": "light",
+  "route": "/admin/verifications",
+  "width": 1024,
+  "finalPath": "/admin/verifications",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 768,
+  "consoleErrors": []
+ },
+ {
+  "name": "admin-verifications",
+  "colorScheme": "light",
+  "route": "/admin/verifications",
+  "width": 768,
+  "finalPath": "/admin/verifications",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1024,
+  "consoleErrors": []
+ },
+ {
+  "name": "admin-verifications",
+  "colorScheme": "light",
+  "route": "/admin/verifications",
+  "width": 390,
+  "finalPath": "/admin/verifications",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 846,
+  "consoleErrors": []
+ }
+]

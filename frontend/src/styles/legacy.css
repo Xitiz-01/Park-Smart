@@ -1,0 +1,5 @@
+/* The pre-redesign stylesheet, now loaded only by the screens that still use
+   it (the admin workspace and vendor Verification) instead of by every page.
+   Its layer's position is fixed by the @layer statement in globals.css, so
+   loading it later doesn't change the cascade. Delete with index.css. */
+@import "../index.css" layer(legacy);

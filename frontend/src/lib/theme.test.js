@@ -45,7 +45,13 @@ test('only redesigned routes get the new surface and dark mode', () => {
   expect(isRedesignedPath('/_design')).toBe(true);
   expect(isRedesignedPath('/_design/buttons')).toBe(true);
   expect(isRedesignedPath('/_designer')).toBe(false);
-  expect(isRedesignedPath('/dashboard')).toBe(false);
+  expect(isRedesignedPath('/dashboard')).toBe(true);
+  expect(isRedesignedPath('/dashboard/vehicles')).toBe(true);
+  expect(isRedesignedPath('/dashboards')).toBe(false);
+  expect(isRedesignedPath('/admin')).toBe(true);
+  expect(isRedesignedPath('/administrator')).toBe(false);
+  expect(isRedesignedPath('/vendor/locations/new')).toBe(true);
+  expect(isRedesignedPath('/vendor/verification')).toBe(true);
   expect(isRedesignedPath('/')).toBe(true);
   expect(isRedesignedPath('/login')).toBe(true);
   expect(isRedesignedPath('/register')).toBe(true);

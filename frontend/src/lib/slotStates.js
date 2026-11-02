@@ -24,3 +24,13 @@ export function slotAccessibleName({ id, powerKw, state }) {
   parts.push(slotStateLabel(state));
   return parts.join(', ');
 }
+
+// Effective state of a backend EV slot record ("selected" is client-side).
+export const slotDisplayStatus = (slot, selectedId) => {
+  if (selectedId && slot._id === selectedId && slot.available) return 'selected';
+  if (slot.availabilityStatus) return slot.availabilityStatus;
+  if (slot.status && slot.status !== 'available') return slot.status;
+  return slot.available === false ? 'unavailable' : 'available';
+};
+
+export const isSlotSelectable = (slot) => slotDisplayStatus(slot) === 'available';

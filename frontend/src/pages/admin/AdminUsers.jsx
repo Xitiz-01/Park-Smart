@@ -1,149 +1,147 @@
-import React, { useEffect, useState } from 'react';
-import { adminAPI } from '../../services/api';
-import { toast } from 'sonner';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
-import { Users, RefreshCw, ShieldCheck, ShieldOff, UserCheck, UserX } from 'lucide-react';
+import { RefreshCw, ShieldCheck, ShieldOff, UserCheck, UserX } from 'lucide-react';
+import { toast } from 'sonner';
+import { adminAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { useConfirm } from '@/components/kit/ConfirmDialog';
+import DataTable from '@/components/kit/DataTable';
+import { ErrorState } from '@/components/kit/EmptyState';
+import PageHeader from '@/components/kit/PageHeader';
+import StatusBadge from '@/components/kit/StatusBadge';
 
 export default function AdminUsers() {
   const confirm = useConfirm();
   const { user: currentUser, isSuperAdmin } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [toggling, setToggling] = useState(null);
-  const [changingRole, setChangingRole] = useState(null);
-  const [search, setSearch] = useState('');
+  const [failed, setFailed] = useState(false);
+  const [busy, setBusy] = useState('');
 
-  const fetchUsers = () => {
+  // Load failures used to leave an empty table (audit R).
+  const fetchUsers = useCallback(() => {
     setLoading(true);
+    setFailed(false);
     adminAPI.getUsers()
-      .then(res => setUsers(res.data.users))
+      .then((res) => setUsers(res.data.users))
+      .catch(() => setFailed(true))
       .finally(() => setLoading(false));
-  };
+  }, []);
+  useEffect(fetchUsers, [fetchUsers]);
 
-  const handleRole = async (user, role) => {
-    const action = role === 'admin' ? 'promote to Admin' : 'demote to Customer';
-    if (!(await confirm({ title: `${action.charAt(0).toUpperCase() + action.slice(1)} ${user.name}?`, confirmLabel: action.charAt(0).toUpperCase() + action.slice(1), cancelLabel: 'Cancel' }))) return;
-    setChangingRole(user._id);
+  const handleRole = useCallback(async (user, role) => {
+    const promote = role === 'admin';
+    if (!(await confirm({
+      title: promote ? `Make ${user.name} an admin?` : `Remove ${user.name}’s admin access?`,
+      description: promote ? 'Admins can manage users, vendors, bookings and verification.' : 'They keep their account as a customer.',
+      confirmLabel: promote ? 'Make admin' : 'Remove admin access',
+      cancelLabel: 'Cancel',
+      tone: promote ? 'default' : 'danger',
+    }))) return;
+    setBusy(`${user._id}:role`);
     try {
       await adminAPI.setUserRole(user._id, role);
-      toast.success(role === 'admin' ? 'Admin access granted' : 'Admin access removed');
+      toast.success(promote ? 'Admin access granted' : 'Admin access removed');
       fetchUsers();
     } catch (err) { toast.error(err.response?.data?.message || 'Role change failed'); }
-    finally { setChangingRole(null); }
-  };
+    finally { setBusy(''); }
+  }, [confirm, fetchUsers]);
 
-  useEffect(() => { fetchUsers(); }, []);
-
-  const handleToggle = async (id, name, isActive) => {
-    const action = isActive ? 'deactivate' : 'activate';
-    if (!(await confirm({ title: `${action.charAt(0).toUpperCase() + action.slice(1)} ${name}?`, confirmLabel: action.charAt(0).toUpperCase() + action.slice(1), cancelLabel: 'Cancel', tone: isActive ? 'danger' : 'default' }))) return;
-    setToggling(id);
+  const handleToggle = useCallback(async (user) => {
+    const deactivate = user.isActive;
+    if (!(await confirm({
+      title: deactivate ? `Deactivate ${user.name}?` : `Reactivate ${user.name}?`,
+      description: deactivate ? 'They won’t be able to sign in until reactivated.' : 'They can sign in again straight away.',
+      confirmLabel: deactivate ? 'Deactivate' : 'Reactivate',
+      cancelLabel: 'Cancel',
+      tone: deactivate ? 'danger' : 'default',
+    }))) return;
+    setBusy(`${user._id}:toggle`);
     try {
-      await adminAPI.toggleUser(id);
-      toast.success(`User ${action}d`);
+      await adminAPI.toggleUser(user._id);
+      toast.success(deactivate ? 'User deactivated' : 'User reactivated');
       fetchUsers();
     } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
-    finally { setToggling(null); }
-  };
+    finally { setBusy(''); }
+  }, [confirm, fetchUsers]);
 
-  const filtered = users.filter(u =>
-    u.name.toLowerCase().includes(search.toLowerCase()) ||
-    u.email.toLowerCase().includes(search.toLowerCase()) ||
-    u.phone?.includes(search)
-  );
-
-  return (
-    <div className="fade-in">
-      <div className="page-header flex items-center justify-between" style={{ flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h1>Manage Users</h1>
-          <p>{users.length} registered account{users.length !== 1 ? 's' : ''}{isSuperAdmin ? ' · admin roles unlocked' : ''}</p>
-        </div>
-        <button onClick={fetchUsers} className="btn btn-outline"><RefreshCw size={15} /> Refresh</button>
-      </div>
-
-      {/* Search */}
-      <div style={{ marginBottom: 20 }}>
-        <input className="form-input" style={{ maxWidth: 360 }} placeholder="Search by name, email or phone..."
-          value={search} onChange={e => setSearch(e.target.value)} />
-      </div>
-
-      {loading ? (
-        <div className="loading-spinner"><div className="spinner" /></div>
-      ) : (
-        <div className="card">
-          <div className="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th><th>Email</th><th>Role</th><th>Registered</th><th>Status</th><th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(u => (
-                  <tr key={u._id}>
-                    <td style={{ color: 'var(--legacy-text-primary)', fontWeight: 600 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{
-                          width: 34, height: 34, borderRadius: '50%',
-                          background: 'var(--legacy-accent-glow)', display: 'flex', alignItems: 'center',
-                          justifyContent: 'center', color: 'var(--legacy-accent)', fontFamily: 'var(--legacy-font-display)',
-                          fontWeight: 700, fontSize: 14, flexShrink: 0,
-                        }}>
-                          {u.name.charAt(0).toUpperCase()}
-                        </div>
-                        {u.name}
-                      </div>
-                    </td>
-                    <td>{u.email}</td>
-                    <td><span className={`badge ${['admin', 'super_admin'].includes(u.role) ? 'badge-info' : u.role === 'vendor' ? 'badge-warning' : 'badge-green'}`}>{u.role.replace('_', ' ')}</span></td>
-                    <td style={{ fontSize: 13 }}>{format(new Date(u.createdAt), 'dd MMM yyyy')}</td>
-                    <td>
-                      {u.isActive
-                        ? <span className="badge badge-green">Active</span>
-                        : <span className="badge badge-red">Inactive</span>}
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        {u.role !== 'super_admin' && u._id !== currentUser?._id && (u.role !== 'admin' || isSuperAdmin) && (
-                          <button
-                            onClick={() => handleToggle(u._id, u.name, u.isActive)}
-                            disabled={toggling === u._id}
-                            className={`btn btn-sm ${u.isActive ? 'btn-danger' : 'btn-primary'}`}
-                            style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            {toggling === u._id ? '...' : u.isActive
-                              ? <><UserX size={13} /> Deactivate</>
-                              : <><UserCheck size={13} /> Activate</>}
-                          </button>
-                        )}
-                        {isSuperAdmin && u.role === 'customer' && u.authUserId && u._id !== currentUser?._id && (
-                          <button className="btn btn-sm btn-outline" disabled={changingRole === u._id} onClick={() => handleRole(u, 'admin')}>
-                            <ShieldCheck size={13} /> Promote to Admin
-                          </button>
-                        )}
-                        {isSuperAdmin && u.role === 'admin' && u._id !== currentUser?._id && (
-                          <button className="btn btn-sm btn-outline" disabled={changingRole === u._id} onClick={() => handleRole(u, 'customer')}>
-                            <ShieldOff size={13} /> Demote Admin
-                          </button>
-                        )}
-                        {u.role === 'super_admin' && <span style={{ fontSize: 12, color: 'var(--legacy-text-muted)' }}>Bootstrap protected</span>}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {filtered.length === 0 && (
-              <div className="empty-state">
-                <Users size={40} style={{ margin: '0 auto 12px' }} />
-                <h3>{search ? 'No users match your search' : 'No users yet'}</h3>
-              </div>
+  const columns = useMemo(() => [
+    {
+      // Name, email and phone in one column so search covers all three.
+      id: 'user', accessorFn: (u) => `${u.name} ${u.email} ${u.phone || ''}`, header: 'User', meta: { mobile: 'title' },
+      sortingFn: (a, b) => a.original.name.localeCompare(b.original.name),
+      cell: ({ row }) => (
+        <span className="flex min-w-0 items-center gap-3">
+          <span aria-hidden="true" className="grid size-8 shrink-0 place-items-center rounded-lg bg-surface-sunken font-display text-sm font-semibold">{row.original.name.charAt(0).toUpperCase()}</span>
+          <span className="min-w-0">
+            <span className="block truncate font-medium">{row.original.name}</span>
+            <span className="block truncate text-xs text-text-muted">{row.original.email}</span>
+          </span>
+        </span>
+      ),
+    },
+    { id: 'role', accessorKey: 'role', header: 'Role', cell: ({ getValue }) => <StatusBadge status={getValue()} /> },
+    { id: 'phone', accessorFn: (u) => u.phone || '—', header: 'Phone', cell: ({ getValue }) => <span className="font-mono text-sm">{getValue()}</span> },
+    { id: 'joined', accessorFn: (u) => new Date(u.createdAt).getTime(), header: 'Joined', cell: ({ row }) => <span className="whitespace-nowrap">{format(new Date(row.original.createdAt), 'd MMM yyyy')}</span> },
+    { id: 'status', accessorFn: (u) => (u.isActive ? 'Active' : 'Inactive'), header: 'Access', cell: ({ row }) => <StatusBadge status={row.original.isActive ? 'active' : 'inactive'} /> },
+    {
+      id: 'actions', header: <span className="sr-only">Actions</span>, enableSorting: false, meta: { mobile: 'actions' },
+      cell: ({ row }) => {
+        const u = row.original;
+        const self = u._id === currentUser?._id;
+        // Same rules as before: the bootstrap super admin and yourself are
+        // protected; only super admins manage admins.
+        const canToggle = u.role !== 'super_admin' && !self && (u.role !== 'admin' || isSuperAdmin);
+        const canPromote = isSuperAdmin && u.role === 'customer' && u.authUserId && !self;
+        const canDemote = isSuperAdmin && u.role === 'admin' && !self;
+        if (u.role === 'super_admin') return <span className="text-sm text-text-muted">Protected</span>;
+        if (self) return <span className="text-sm text-text-muted">You</span>;
+        return (
+          <div className="flex flex-wrap gap-2">
+            {canToggle && (
+              <Button size="sm" variant={u.isActive ? 'outline' : 'default'} className={u.isActive ? 'text-danger hover:text-danger' : undefined} disabled={busy === `${u._id}:toggle`} onClick={() => handleToggle(u)}>
+                {busy === `${u._id}:toggle` ? <Spinner data-icon="inline-start" /> : u.isActive ? <UserX data-icon="inline-start" /> : <UserCheck data-icon="inline-start" />}
+                {u.isActive ? 'Deactivate' : 'Reactivate'}<span className="sr-only"> {u.name}</span>
+              </Button>
+            )}
+            {canPromote && (
+              <Button size="sm" variant="outline" disabled={busy === `${u._id}:role`} onClick={() => handleRole(u, 'admin')}>
+                <ShieldCheck data-icon="inline-start" />Make admin<span className="sr-only"> {u.name}</span>
+              </Button>
+            )}
+            {canDemote && (
+              <Button size="sm" variant="outline" disabled={busy === `${u._id}:role`} onClick={() => handleRole(u, 'customer')}>
+                <ShieldOff data-icon="inline-start" />Remove admin<span className="sr-only"> {u.name}</span>
+              </Button>
             )}
           </div>
-        </div>
+        );
+      },
+    },
+  ], [busy, currentUser?._id, handleRole, handleToggle, isSuperAdmin]);
+
+  return (
+    <>
+      <PageHeader
+        eyebrow="Admin"
+        title="Users"
+        description={loading ? 'Loading accounts…' : `${users.length} account${users.length === 1 ? '' : 's'}${isSuperAdmin ? '. As super admin you can also manage admin roles.' : '.'}`}
+        actions={<Button variant="outline" onClick={fetchUsers} disabled={loading}><RefreshCw data-icon="inline-start" />Refresh</Button>}
+      />
+      {failed ? (
+        <ErrorState description="Users didn’t load. Check your connection and try again." onRetry={fetchUsers} />
+      ) : (
+        <DataTable
+          columns={columns}
+          data={users}
+          getRowId={(u) => u._id}
+          loading={loading && !users.length}
+          searchLabel="Search users"
+          searchPlaceholder="Name, email or phone…"
+        />
       )}
-    </div>
+    </>
   );
 }

@@ -1,122 +1,129 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
 import { authAPI } from '../../services/api';
-import { toast } from 'sonner';
-import { User, Lock } from 'lucide-react';
 import { authClient } from '../../lib/authClient';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
+import FormField from '@/components/kit/FormField';
+import PageHeader from '@/components/kit/PageHeader';
+import PasswordInput from '@/components/kit/PasswordInput';
+import StatusBadge from '@/components/kit/StatusBadge';
+
+function Section({ id, title, description, children }) {
+  return (
+    <section aria-labelledby={id} className="grid gap-6 border-t py-8 first:border-t-0 first:pt-0 lg:grid-cols-[16rem_minmax(0,1fr)]">
+      <div>
+        <h2 id={id} className="font-display text-lg font-semibold">{title}</h2>
+        {description && <p className="mt-1 text-sm text-text-muted">{description}</p>}
+      </div>
+      <div className="max-w-xl">{children}</div>
+    </section>
+  );
+}
+
+// Same password rules as before (match, at least 8 characters), inline.
+export function validatePasswordChange(form) {
+  const errors = {};
+  if (form.newPassword.length < 8) errors.newPassword = 'Use at least 8 characters.';
+  if (form.confirmPassword !== form.newPassword) errors.confirmPassword = 'Passwords don’t match. Re-enter the new password.';
+  return errors;
+}
 
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth();
   const [profileForm, setProfileForm] = useState({ name: user?.name || '', phone: user?.phone || '' });
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [pwErrors, setPwErrors] = useState({});
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPw, setSavingPw] = useState(false);
 
-  const handleProfileSave = async (e) => {
-    e.preventDefault();
+  const handleProfileSave = async (event) => {
+    event.preventDefault();
     setSavingProfile(true);
     try {
       await authAPI.updateProfile(profileForm);
       await refreshUser();
-      toast.success('Profile updated');
+      toast.success('Profile saved');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Update failed');
+      toast.error(err.response?.data?.message || 'Your profile wasn’t saved. Try again.');
     } finally {
       setSavingProfile(false);
     }
   };
 
-  const handlePwSave = async (e) => {
-    e.preventDefault();
-    if (pwForm.newPassword !== pwForm.confirmPassword) return toast.error('Passwords do not match');
+  const handlePwSave = async (event) => {
+    event.preventDefault();
+    const errors = validatePasswordChange(pwForm);
+    setPwErrors(errors);
+    if (Object.keys(errors).length) return;
     setSavingPw(true);
     try {
-      if (pwForm.newPassword.length < 8) return toast.error('New password must be at least 8 characters');
       const result = await authClient.changePassword({
         currentPassword: pwForm.currentPassword,
         newPassword: pwForm.newPassword,
         revokeOtherSessions: true,
       });
       if (result.error) throw new Error(result.error.message);
-      toast.success('Password changed successfully');
+      toast.success('Password changed');
       setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err) {
-      toast.error(err.message || 'Failed to change password');
+      setPwErrors({ currentPassword: err.message || 'The password wasn’t changed. Check your current password.' });
     } finally {
       setSavingPw(false);
     }
   };
 
+  const updatePw = (field) => (event) => {
+    setPwForm({ ...pwForm, [field]: event.target.value });
+    if (pwErrors[field]) setPwErrors({ ...pwErrors, [field]: undefined });
+  };
+
   return (
-    <div className="fade-in" style={{ maxWidth: 600 }}>
-      <div className="page-header">
-        <h1>Profile</h1>
-        <p>Manage your account details</p>
-      </div>
+    <>
+      <PageHeader eyebrow="Driver" title="Profile" description="Your account details and sign-in password." />
+      <div className="rounded-2xl border bg-card p-6 shadow-hairline sm:p-8">
+        <Section id="account-title" title="Account" description="How you sign in to ParkSmart.">
+          <dl className="grid gap-4 sm:grid-cols-2">
+            <div><dt className="text-sm text-text-muted">Email</dt><dd className="mt-1 break-all">{user?.email}</dd></div>
+            <div><dt className="text-sm text-text-muted">Role</dt><dd className="mt-1"><StatusBadge status={user?.role || 'customer'} /></dd></div>
+            {user?.authUserId && (
+              <div className="sm:col-span-2">
+                <dt className="text-sm text-text-muted">Auth ID</dt>
+                <dd className="mt-1"><code className="rounded-md bg-surface-sunken px-2 py-1 font-mono text-sm break-all">{user.authUserId}</code></dd>
+              </div>
+            )}
+          </dl>
+        </Section>
 
-      {/* Profile info */}
-      <div className="card" style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, color: 'var(--legacy-text-secondary)' }}>
-          <User size={16} /> <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--legacy-text-primary)' }}>Personal Information</span>
-        </div>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
-          <span className="badge badge-info" style={{ fontSize: 13, padding: '4px 12px' }}>
-            {{ customer: '👤 Customer', vendor: '🏢 Vendor', admin: '🛡 Admin', super_admin: '🔐 Super Admin' }[user?.role] || '👤 Customer'}
-          </span>
-          <span style={{ fontSize: 13, color: 'var(--legacy-text-muted)' }}>{user?.email}</span>
-        </div>
-        {user?.authUserId && (
-          <p style={{ margin: '-12px 0 20px', fontSize: 12, color: 'var(--legacy-text-muted)' }}>
-            Auth ID: <code>{user.authUserId}</code>
-          </p>
-        )}
-        <form onSubmit={handleProfileSave} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div className="form-group">
-            <label className="form-label">Full Name</label>
-            <input className="form-input" value={profileForm.name}
-              onChange={e => setProfileForm({ ...profileForm, name: e.target.value })} required />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Phone Number</label>
-            <input className="form-input" value={profileForm.phone}
-              onChange={e => setProfileForm({ ...profileForm, phone: e.target.value })} required />
-          </div>
-          <div>
-            <button type="submit" className="btn btn-primary" disabled={savingProfile}>
-              {savingProfile ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
-        </form>
-      </div>
+        <Section id="personal-title" title="Personal details" description="Shown to operators on your bookings.">
+          <form onSubmit={handleProfileSave} className="grid gap-5">
+            <FormField label="Full name">
+              <Input name="name" autoComplete="name" value={profileForm.name} onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })} required />
+            </FormField>
+            <FormField label="Phone number">
+              <Input name="phone" type="tel" inputMode="tel" autoComplete="tel" value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} required />
+            </FormField>
+            <div><Button type="submit" disabled={savingProfile}>{savingProfile ? <><Spinner data-icon="inline-start" />Saving…</> : 'Save details'}</Button></div>
+          </form>
+        </Section>
 
-      {/* Change password */}
-      <div className="card">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, color: 'var(--legacy-text-secondary)' }}>
-          <Lock size={16} /> <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--legacy-text-primary)' }}>Change Password</span>
-        </div>
-        <form onSubmit={handlePwSave} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div className="form-group">
-            <label className="form-label">Current Password</label>
-            <input type="password" className="form-input" value={pwForm.currentPassword}
-              onChange={e => setPwForm({ ...pwForm, currentPassword: e.target.value })} required />
-          </div>
-          <div className="form-group">
-            <label className="form-label">New Password</label>
-            <input type="password" className="form-input" minLength="8" value={pwForm.newPassword}
-              onChange={e => setPwForm({ ...pwForm, newPassword: e.target.value })} required />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Confirm New Password</label>
-            <input type="password" className="form-input" value={pwForm.confirmPassword}
-              onChange={e => setPwForm({ ...pwForm, confirmPassword: e.target.value })} required />
-          </div>
-          <div>
-            <button type="submit" className="btn btn-primary" disabled={savingPw}>
-              {savingPw ? 'Updating...' : 'Update Password'}
-            </button>
-          </div>
-        </form>
+        <Section id="password-title" title="Password" description="Changing it signs you out on your other devices.">
+          <form onSubmit={handlePwSave} className="grid gap-5">
+            <FormField label="Current password" error={pwErrors.currentPassword}>
+              <PasswordInput name="currentPassword" autoComplete="current-password" value={pwForm.currentPassword} onChange={updatePw('currentPassword')} required />
+            </FormField>
+            <FormField label="New password" description="At least 8 characters." error={pwErrors.newPassword}>
+              <PasswordInput name="newPassword" autoComplete="new-password" value={pwForm.newPassword} onChange={updatePw('newPassword')} required />
+            </FormField>
+            <FormField label="Confirm new password" error={pwErrors.confirmPassword}>
+              <PasswordInput name="confirmPassword" autoComplete="new-password" value={pwForm.confirmPassword} onChange={updatePw('confirmPassword')} required />
+            </FormField>
+            <div><Button type="submit" disabled={savingPw}>{savingPw ? <><Spinner data-icon="inline-start" />Changing…</> : 'Change password'}</Button></div>
+          </form>
+        </Section>
       </div>
-    </div>
+    </>
   );
 }

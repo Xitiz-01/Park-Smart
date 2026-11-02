@@ -130,7 +130,7 @@ export default function DataTable({
                       ))}
                     </dl>
                   )}
-                  {pick('actions').map((cell) => <div key={cell.id} className="flex flex-wrap gap-2 border-t pt-3">{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>)}
+                  {pick('actions').map((cell) => <div key={cell.id} className="flex flex-wrap gap-2 border-t pt-3 empty:hidden">{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>)}
                 </li>
               );
             })}

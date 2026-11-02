@@ -1,0 +1,767 @@
+[
+ {
+  "name": "customer-dashboard",
+  "colorScheme": "light",
+  "route": "/dashboard",
+  "width": 1440,
+  "finalPath": "/dashboard",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 900,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-dashboard",
+  "colorScheme": "light",
+  "route": "/dashboard",
+  "width": 1024,
+  "finalPath": "/dashboard",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 988,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-dashboard",
+  "colorScheme": "light",
+  "route": "/dashboard",
+  "width": 768,
+  "finalPath": "/dashboard",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1301,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-dashboard",
+  "colorScheme": "light",
+  "route": "/dashboard",
+  "width": 390,
+  "finalPath": "/dashboard",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1694,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-find-parking",
+  "colorScheme": "light",
+  "route": "/dashboard/nearby",
+  "width": 1440,
+  "finalPath": "/dashboard/nearby",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 990,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-find-parking",
+  "colorScheme": "light",
+  "route": "/dashboard/nearby",
+  "width": 1024,
+  "finalPath": "/dashboard/nearby",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 903,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-find-parking",
+  "colorScheme": "light",
+  "route": "/dashboard/nearby",
+  "width": 768,
+  "finalPath": "/dashboard/nearby",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1024,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-find-parking",
+  "colorScheme": "light",
+  "route": "/dashboard/nearby",
+  "width": 390,
+  "finalPath": "/dashboard/nearby",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1029,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-booking-regular",
+  "colorScheme": "light",
+  "route": "/dashboard/parking/6acb4a579aed63a39da365ce",
+  "width": 1440,
+  "finalPath": "/dashboard/parking/6acb4a579aed63a39da365ce",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1758,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-booking-regular",
+  "colorScheme": "light",
+  "route": "/dashboard/parking/6acb4a579aed63a39da365ce",
+  "width": 1024,
+  "finalPath": "/dashboard/parking/6acb4a579aed63a39da365ce",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 2721,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-booking-regular",
+  "colorScheme": "light",
+  "route": "/dashboard/parking/6acb4a579aed63a39da365ce",
+  "width": 768,
+  "finalPath": "/dashboard/parking/6acb4a579aed63a39da365ce",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 2164,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-booking-regular",
+  "colorScheme": "light",
+  "route": "/dashboard/parking/6acb4a579aed63a39da365ce",
+  "width": 390,
+  "finalPath": "/dashboard/parking/6acb4a579aed63a39da365ce",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 3187,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-booking-ev",
+  "colorScheme": "light",
+  "route": "/dashboard/parking/6acb4a579aed63a39da365ce",
+  "width": 1440,
+  "finalPath": "/dashboard/parking/6acb4a579aed63a39da365ce",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1386,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-booking-ev",
+  "colorScheme": "light",
+  "route": "/dashboard/parking/6acb4a579aed63a39da365ce",
+  "width": 1024,
+  "finalPath": "/dashboard/parking/6acb4a579aed63a39da365ce",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1781,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-booking-ev",
+  "colorScheme": "light",
+  "route": "/dashboard/parking/6acb4a579aed63a39da365ce",
+  "width": 768,
+  "finalPath": "/dashboard/parking/6acb4a579aed63a39da365ce",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1720,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-booking-ev",
+  "colorScheme": "light",
+  "route": "/dashboard/parking/6acb4a579aed63a39da365ce",
+  "width": 390,
+  "finalPath": "/dashboard/parking/6acb4a579aed63a39da365ce",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 2391,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-my-bookings",
+  "colorScheme": "light",
+  "route": "/dashboard/bookings",
+  "width": 1440,
+  "finalPath": "/dashboard/bookings",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1529,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-my-bookings",
+  "colorScheme": "light",
+  "route": "/dashboard/bookings",
+  "width": 1024,
+  "finalPath": "/dashboard/bookings",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1550,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-my-bookings",
+  "colorScheme": "light",
+  "route": "/dashboard/bookings",
+  "width": 768,
+  "finalPath": "/dashboard/bookings",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1545,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-my-bookings",
+  "colorScheme": "light",
+  "route": "/dashboard/bookings",
+  "width": 390,
+  "finalPath": "/dashboard/bookings",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 2360,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-vehicles",
+  "colorScheme": "light",
+  "route": "/dashboard/vehicles",
+  "width": 1440,
+  "finalPath": "/dashboard/vehicles",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 900,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-vehicles",
+  "colorScheme": "light",
+  "route": "/dashboard/vehicles",
+  "width": 1024,
+  "finalPath": "/dashboard/vehicles",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 768,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-vehicles",
+  "colorScheme": "light",
+  "route": "/dashboard/vehicles",
+  "width": 768,
+  "finalPath": "/dashboard/vehicles",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1024,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-vehicles",
+  "colorScheme": "light",
+  "route": "/dashboard/vehicles",
+  "width": 390,
+  "finalPath": "/dashboard/vehicles",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 951,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-profile",
+  "colorScheme": "light",
+  "route": "/dashboard/profile",
+  "width": 1440,
+  "finalPath": "/dashboard/profile",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1154,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-profile",
+  "colorScheme": "light",
+  "route": "/dashboard/profile",
+  "width": 1024,
+  "finalPath": "/dashboard/profile",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1173,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-profile",
+  "colorScheme": "light",
+  "route": "/dashboard/profile",
+  "width": 768,
+  "finalPath": "/dashboard/profile",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1374,
+  "consoleErrors": []
+ },
+ {
+  "name": "customer-profile",
+  "colorScheme": "light",
+  "route": "/dashboard/profile",
+  "width": 390,
+  "finalPath": "/dashboard/profile",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1489,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-apply",
+  "colorScheme": "light",
+  "route": "/vendor/apply",
+  "width": 1440,
+  "finalPath": "/vendor/apply",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1051,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-apply",
+  "colorScheme": "light",
+  "route": "/vendor/apply",
+  "width": 1024,
+  "finalPath": "/vendor/apply",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1048,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-apply",
+  "colorScheme": "light",
+  "route": "/vendor/apply",
+  "width": 768,
+  "finalPath": "/vendor/apply",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1043,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-apply",
+  "colorScheme": "light",
+  "route": "/vendor/apply",
+  "width": 390,
+  "finalPath": "/vendor/apply",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1349,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-status-pending",
+  "colorScheme": "light",
+  "route": "/vendor/status",
+  "width": 1440,
+  "finalPath": "/vendor/status",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 900,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-status-pending",
+  "colorScheme": "light",
+  "route": "/vendor/status",
+  "width": 1024,
+  "finalPath": "/vendor/status",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 768,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-status-pending",
+  "colorScheme": "light",
+  "route": "/vendor/status",
+  "width": 768,
+  "finalPath": "/vendor/status",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1024,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-status-pending",
+  "colorScheme": "light",
+  "route": "/vendor/status",
+  "width": 390,
+  "finalPath": "/vendor/status",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 844,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-dashboard",
+  "colorScheme": "light",
+  "route": "/vendor",
+  "width": 1440,
+  "finalPath": "/vendor",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 900,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-dashboard",
+  "colorScheme": "light",
+  "route": "/vendor",
+  "width": 1024,
+  "finalPath": "/vendor",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1009,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-dashboard",
+  "colorScheme": "light",
+  "route": "/vendor",
+  "width": 768,
+  "finalPath": "/vendor",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1153,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-dashboard",
+  "colorScheme": "light",
+  "route": "/vendor",
+  "width": 390,
+  "finalPath": "/vendor",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1615,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-locations",
+  "colorScheme": "light",
+  "route": "/vendor/locations",
+  "width": 1440,
+  "finalPath": "/vendor/locations",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 900,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-locations",
+  "colorScheme": "light",
+  "route": "/vendor/locations",
+  "width": 1024,
+  "finalPath": "/vendor/locations",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1011,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-locations",
+  "colorScheme": "light",
+  "route": "/vendor/locations",
+  "width": 768,
+  "finalPath": "/vendor/locations",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1024,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-locations",
+  "colorScheme": "light",
+  "route": "/vendor/locations",
+  "width": 390,
+  "finalPath": "/vendor/locations",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1349,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-location-new",
+  "colorScheme": "light",
+  "route": "/vendor/locations/new",
+  "width": 1440,
+  "finalPath": "/vendor/locations/new",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 911,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-location-new",
+  "colorScheme": "light",
+  "route": "/vendor/locations/new",
+  "width": 1024,
+  "finalPath": "/vendor/locations/new",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 952,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-location-new",
+  "colorScheme": "light",
+  "route": "/vendor/locations/new",
+  "width": 768,
+  "finalPath": "/vendor/locations/new",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1024,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-location-new",
+  "colorScheme": "light",
+  "route": "/vendor/locations/new",
+  "width": 390,
+  "finalPath": "/vendor/locations/new",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 944,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-location-edit",
+  "colorScheme": "light",
+  "route": "/vendor/locations/6acb4a579aed63a39da365ce/edit",
+  "width": 1440,
+  "finalPath": "/vendor/locations/6acb4a579aed63a39da365ce/edit",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 911,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-location-edit",
+  "colorScheme": "light",
+  "route": "/vendor/locations/6acb4a579aed63a39da365ce/edit",
+  "width": 1024,
+  "finalPath": "/vendor/locations/6acb4a579aed63a39da365ce/edit",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 976,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-location-edit",
+  "colorScheme": "light",
+  "route": "/vendor/locations/6acb4a579aed63a39da365ce/edit",
+  "width": 768,
+  "finalPath": "/vendor/locations/6acb4a579aed63a39da365ce/edit",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1024,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-location-edit",
+  "colorScheme": "light",
+  "route": "/vendor/locations/6acb4a579aed63a39da365ce/edit",
+  "width": 390,
+  "finalPath": "/vendor/locations/6acb4a579aed63a39da365ce/edit",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1000,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-slots",
+  "colorScheme": "light",
+  "route": "/vendor/slots",
+  "width": 1440,
+  "finalPath": "/vendor/slots",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1141,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-slots",
+  "colorScheme": "light",
+  "route": "/vendor/slots",
+  "width": 1024,
+  "finalPath": "/vendor/slots",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1587,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-slots",
+  "colorScheme": "light",
+  "route": "/vendor/slots",
+  "width": 768,
+  "finalPath": "/vendor/slots",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1583,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-slots",
+  "colorScheme": "light",
+  "route": "/vendor/slots",
+  "width": 390,
+  "finalPath": "/vendor/slots",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 2928,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-bookings",
+  "colorScheme": "light",
+  "route": "/vendor/bookings",
+  "width": 1440,
+  "finalPath": "/vendor/bookings",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 900,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-bookings",
+  "colorScheme": "light",
+  "route": "/vendor/bookings",
+  "width": 1024,
+  "finalPath": "/vendor/bookings",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 768,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-bookings",
+  "colorScheme": "light",
+  "route": "/vendor/bookings",
+  "width": 768,
+  "finalPath": "/vendor/bookings",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1024,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-bookings",
+  "colorScheme": "light",
+  "route": "/vendor/bookings",
+  "width": 390,
+  "finalPath": "/vendor/bookings",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1892,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-profile",
+  "colorScheme": "light",
+  "route": "/vendor/profile",
+  "width": 1440,
+  "finalPath": "/vendor/profile",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 900,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-profile",
+  "colorScheme": "light",
+  "route": "/vendor/profile",
+  "width": 1024,
+  "finalPath": "/vendor/profile",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 875,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-profile",
+  "colorScheme": "light",
+  "route": "/vendor/profile",
+  "width": 768,
+  "finalPath": "/vendor/profile",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1024,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-profile",
+  "colorScheme": "light",
+  "route": "/vendor/profile",
+  "width": 390,
+  "finalPath": "/vendor/profile",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1153,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-transactions",
+  "colorScheme": "light",
+  "route": "/vendor/transactions",
+  "width": 1440,
+  "finalPath": "/vendor/transactions",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 900,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-transactions",
+  "colorScheme": "light",
+  "route": "/vendor/transactions",
+  "width": 1024,
+  "finalPath": "/vendor/transactions",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 768,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-transactions",
+  "colorScheme": "light",
+  "route": "/vendor/transactions",
+  "width": 768,
+  "finalPath": "/vendor/transactions",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1024,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-transactions",
+  "colorScheme": "light",
+  "route": "/vendor/transactions",
+  "width": 390,
+  "finalPath": "/vendor/transactions",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 844,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-earnings",
+  "colorScheme": "light",
+  "route": "/vendor/earnings",
+  "width": 1440,
+  "finalPath": "/vendor/earnings",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 900,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-earnings",
+  "colorScheme": "light",
+  "route": "/vendor/earnings",
+  "width": 1024,
+  "finalPath": "/vendor/earnings",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 768,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-earnings",
+  "colorScheme": "light",
+  "route": "/vendor/earnings",
+  "width": 768,
+  "finalPath": "/vendor/earnings",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1024,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-earnings",
+  "colorScheme": "light",
+  "route": "/vendor/earnings",
+  "width": 390,
+  "finalPath": "/vendor/earnings",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 844,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-settings",
+  "colorScheme": "light",
+  "route": "/vendor/settings",
+  "width": 1440,
+  "finalPath": "/vendor/settings",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 900,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-settings",
+  "colorScheme": "light",
+  "route": "/vendor/settings",
+  "width": 1024,
+  "finalPath": "/vendor/settings",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 768,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-settings",
+  "colorScheme": "light",
+  "route": "/vendor/settings",
+  "width": 768,
+  "finalPath": "/vendor/settings",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 1024,
+  "consoleErrors": []
+ },
+ {
+  "name": "vendor-settings",
+  "colorScheme": "light",
+  "route": "/vendor/settings",
+  "width": 390,
+  "finalPath": "/vendor/settings",
+  "horizontalOverflowPx": 0,
+  "pageHeight": 844,
+  "consoleErrors": []
+ },
+ {
+  "name": "extra-reduced-motion-customer-dashboard",
+  "width": 390,
+  "mobileNavRect": null
+ }
+]
