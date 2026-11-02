@@ -12,7 +12,7 @@ const { deprecatedAlias } = require('./platform/http/versioning');
 const { buildOpenApiDocument } = require('./platform/openapi');
 const { healthRouter } = require('./platform/health');
 const { pingMongo } = require('./platform/db');
-const { pingRedis } = require('./platform/redis');
+const { getRedis, pingRedis } = require('./platform/redis');
 
 /**
  * MongoDB is critical. Redis, when configured, is reported but not
@@ -34,12 +34,18 @@ const defaultHealthChecks = (config) => ({
  *   config?: import('./config/env').Config,
  *   logger?: import('pino').Logger,
  *   healthChecks?: Parameters<typeof healthRouter>[0],
+ *   redis?: import('ioredis').Redis | null,
  * }} [options]
  * @returns {import('express').Express}
  */
-function createApp({ config = getConfig(), logger = defaultLogger, healthChecks = defaultHealthChecks(config) } = {}) {
+function createApp({
+  config = getConfig(),
+  logger = defaultLogger,
+  healthChecks = defaultHealthChecks(config),
+  redis = config.redis.url ? getRedis() : null,
+} = {}) {
   const app = express();
-  const security = securityMiddleware(config.http);
+  const security = securityMiddleware(config.http, { redis, keyPrefix: config.redis.keyPrefix, logger });
   app.set('trust proxy', config.http.trustProxy);
 
   app.use(requestLogger(logger));

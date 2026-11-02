@@ -6,7 +6,12 @@ const { createApp } = require('../src/app');
 const { parseEnv } = require('../src/config/env');
 const { createLogger } = require('../src/platform/logger');
 const express = require('express');
-const { securityMiddleware, stripMongoOperators, AUTH_RATE_LIMITED_PATHS } = require('../src/platform/http/security');
+const {
+  securityMiddleware,
+  stripMongoOperators,
+  rateLimitLogger,
+  AUTH_RATE_LIMITED_PATHS,
+} = require('../src/platform/http/security');
 const { errorHandler } = require('../src/platform/http/errorHandler');
 
 const silent = createLogger({ level: 'silent' });
@@ -89,4 +94,31 @@ test('trust proxy follows the environment: one hop in production, loopback elsew
   assert.equal(parseEnv({ ...production, TRUST_PROXY: '2' }).http.trustProxy, 2);
   assert.equal(parseEnv({ NODE_ENV: 'test' }).http.trustProxy, 'loopback');
   assert.equal(parseEnv({ NODE_ENV: 'test', TRUST_PROXY: 'false' }).http.trustProxy, false);
+});
+
+test('rate-limit store errors are logged at most once a minute, with a count of the rest', () => {
+  const lines = [];
+  const logger = createLogger({ level: 'warn' }, { write: (line) => lines.push(JSON.parse(line)) });
+  let clock = 0;
+  const log = rateLimitLogger(logger, { now: () => clock });
+  const error = new Error('Connection is closed.');
+
+  log.error(error, 'express-rate-limit: error from store, allowing request without rate-limiting.');
+  clock = 30_000;
+  log.error(error);
+  log.error(error);
+  clock = 61_000;
+  log.error(error, 'again');
+
+  assert.deepEqual(
+    lines.map(({ alert, suppressed, msg }) => ({ alert, suppressed, msg })),
+    [
+      {
+        alert: 'rate-limit-store',
+        suppressed: 0,
+        msg: 'express-rate-limit: error from store, allowing request without rate-limiting.',
+      },
+      { alert: 'rate-limit-store', suppressed: 2, msg: 'again' },
+    ],
+  );
 });
