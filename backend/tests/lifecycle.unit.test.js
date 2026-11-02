@@ -43,6 +43,33 @@ test('readiness reports each dependency as up or down, and 503 when any is down'
   assert.equal(JSON.stringify(down.body).includes('secret'), false, 'no internals leak');
 });
 
+test('a non-critical dependency that is down leaves the app ready but degraded', async () => {
+  const redisDown = { mongo: async () => true, redis: { check: async () => false, critical: false } };
+  const degraded = await request(appWithChecks(redisDown)).get('/health/ready');
+  assert.equal(degraded.status, 200);
+  assert.deepEqual(degraded.body, { status: 'degraded', checks: { mongo: 'up', redis: 'down' } });
+
+  const allUp = { mongo: async () => true, redis: { check: async () => true, critical: false } };
+  const ok = await request(appWithChecks(allUp)).get('/health/ready');
+  assert.deepEqual(ok.body, { status: 'ok', checks: { mongo: 'up', redis: 'up' } });
+
+  const mongoDown = { mongo: async () => false, redis: { check: async () => false, critical: false } };
+  assert.equal((await request(appWithChecks(mongoDown)).get('/health/ready')).status, 503);
+});
+
+test('readiness lists Redis only when REDIS_URL is set', async () => {
+  const withoutRedis = createApp({ config: parseEnv({ NODE_ENV: 'test' }), logger: silent });
+  const plain = await request(withoutRedis).get('/health/ready');
+  assert.deepEqual(Object.keys(plain.body.checks), ['mongo']);
+
+  const withRedis = createApp({
+    config: parseEnv({ NODE_ENV: 'test', REDIS_URL: 'redis://127.0.0.1:1' }),
+    logger: silent,
+  });
+  const report = await request(withRedis).get('/health/ready');
+  assert.deepEqual(Object.keys(report.body.checks), ['mongo', 'redis']);
+});
+
 const fakeServer = () => {
   const server = { listening: true, events: [] };
   server.close = (callback) => {

@@ -89,3 +89,18 @@ test('the bootstrap super-admin list is read when asked, not cached', () => {
   if (previous === undefined) delete process.env.BETTER_AUTH_SUPER_ADMIN_USER_IDS;
   else process.env.BETTER_AUTH_SUPER_ADMIN_USER_IDS = previous;
 });
+
+test('Redis is optional and validated when set', () => {
+  assert.deepEqual(parseEnv({ NODE_ENV: 'test' }).redis, { url: undefined, keyPrefix: 'ps' });
+  const config = parseEnv({
+    NODE_ENV: 'test',
+    REDIS_URL: 'rediss://default:pw@cache.example.com:6380',
+    REDIS_KEY_PREFIX: 'ps-staging',
+  });
+  assert.deepEqual(config.redis, { url: 'rediss://default:pw@cache.example.com:6380', keyPrefix: 'ps-staging' });
+  assert.throws(
+    () => parseEnv({ NODE_ENV: 'test', REDIS_URL: 'http://cache' }),
+    /REDIS_URL: must be a redis:\/\/ or rediss:\/\/ URL/,
+  );
+  assert.throws(() => parseEnv({ NODE_ENV: 'test', REDIS_KEY_PREFIX: 'PS:prod' }), /REDIS_KEY_PREFIX/);
+});

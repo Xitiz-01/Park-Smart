@@ -19,6 +19,7 @@ try {
 }
 const { logger: rootLogger } = require('./src/platform/logger');
 const { connectMongo, disconnectMongo, pingMongo } = require('./src/platform/db');
+const { getRedis, pingRedis, closeRedis } = require('./src/platform/redis');
 const { healthRouter } = require('./src/platform/health');
 const { createShutdown, installProcessHandlers } = require('./src/platform/lifecycle');
 
@@ -29,7 +30,11 @@ const processors = {};
 
 const app = express();
 app.disable('x-powered-by');
-app.use('/health', healthRouter({ mongo: pingMongo }));
+// Redis isn't critical yet: no queue runs on it until Phase 8.
+app.use(
+  '/health',
+  healthRouter({ mongo: pingMongo, ...(config.redis.url && { redis: { check: pingRedis, critical: false } }) }),
+);
 app.use((req, res) => res.status(404).json({ status: 'not_found' }));
 const server = http.createServer(app);
 
@@ -37,10 +42,14 @@ if (require.main === module) {
   const shutdown = createShutdown({
     server,
     logger,
-    closers: [{ name: 'mongodb', close: disconnectMongo }],
+    closers: [
+      { name: 'mongodb', close: disconnectMongo },
+      { name: 'redis', close: closeRedis },
+    ],
   });
   installProcessHandlers({ shutdown, logger });
 
+  getRedis();
   connectMongo({ logger })
     .then(() => {
       server.listen(config.workerPort, () => {

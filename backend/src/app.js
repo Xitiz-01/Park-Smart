@@ -12,6 +12,18 @@ const { deprecatedAlias } = require('./platform/http/versioning');
 const { buildOpenApiDocument } = require('./platform/openapi');
 const { healthRouter } = require('./platform/health');
 const { pingMongo } = require('./platform/db');
+const { pingRedis } = require('./platform/redis');
+
+/**
+ * MongoDB is critical. Redis, when configured, is reported but not
+ * critical: the cache and rate limits fail open, so the API still serves
+ * without it. Queues make it critical for the worker in Phase 8.
+ * @param {import('./config/env').Config} config
+ */
+const defaultHealthChecks = (config) => ({
+  mongo: pingMongo,
+  ...(config.redis.url && { redis: { check: pingRedis, critical: false } }),
+});
 
 /**
  * Build the ParkSmart Express app. It opens no sockets and connects to no
@@ -21,11 +33,11 @@ const { pingMongo } = require('./platform/db');
  * @param {{
  *   config?: import('./config/env').Config,
  *   logger?: import('pino').Logger,
- *   healthChecks?: Record<string, () => Promise<boolean>>,
+ *   healthChecks?: Parameters<typeof healthRouter>[0],
  * }} [options]
  * @returns {import('express').Express}
  */
-function createApp({ config = getConfig(), logger = defaultLogger, healthChecks = { mongo: pingMongo } } = {}) {
+function createApp({ config = getConfig(), logger = defaultLogger, healthChecks = defaultHealthChecks(config) } = {}) {
   const app = express();
   const security = securityMiddleware(config.http);
   app.set('trust proxy', config.http.trustProxy);

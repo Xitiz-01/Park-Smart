@@ -55,6 +55,21 @@ const schema = z.object({
       .optional(),
   ),
 
+  // Optional. Without it the cache is bypassed and rate limits are counted
+  // in memory (per instance). redis:// or rediss:// (TLS).
+  REDIS_URL: optionalString.pipe(
+    z
+      .string()
+      .regex(/^rediss?:\/\//, 'must be a redis:// or rediss:// URL')
+      .optional(),
+  ),
+  // First segment of every Redis key: <prefix>:v<n>:<domain>:<id>.
+  REDIS_KEY_PREFIX: z
+    .string()
+    .trim()
+    .regex(/^[a-z0-9-]{1,20}$/, 'must be 1-20 lowercase letters, digits or dashes')
+    .default('ps'),
+
   // Browser origins allowed to call the API with credentials. CLIENT_URL and
   // BETTER_AUTH_TRUSTED_ORIGINS are added to this list.
   CORS_ORIGINS: z.string().default('http://localhost:3000,https://park-smart-eight.vercel.app'),
@@ -155,6 +170,7 @@ const deepFreeze = (value) => {
  * @property {number} workerPort
  * @property {{ level: string, pretty: boolean, slowRequestMs: number }} log
  * @property {string} mongodbUri
+ * @property {{ url?: string, keyPrefix: string }} redis
  * @property {{ trustProxy: boolean|number|string, jsonBodyLimit: string, rateLimit: { windowMs: number, max: number, authMax: number } }} http
  * @property {string[]} allowedOrigins browser origins for CORS, Socket.IO and Better Auth
  * @property {{ secret?: string, url: string, crossSiteCookies: boolean, mongoTransactions: boolean }} auth
@@ -198,6 +214,7 @@ function parseEnv(source) {
       slowRequestMs: env.SLOW_REQUEST_MS,
     },
     mongodbUri: env.MONGODB_URI || TEST_MONGODB_URI,
+    redis: { url: env.REDIS_URL, keyPrefix: env.REDIS_KEY_PREFIX },
     http: {
       trustProxy: parseTrustProxy(env.TRUST_PROXY, env.NODE_ENV),
       jsonBodyLimit: env.JSON_BODY_LIMIT.toLowerCase(),

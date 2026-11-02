@@ -30,7 +30,7 @@ flowchart LR
 | Job | What it does | Fails when |
 |---|---|---|
 | `frontend-ci` | `npm ci` → ESLint → Vitest → `vite build` → size-limit budget → uploads `frontend-build` | a lint error or more than the allowed warnings, a failing test, a broken build, or a bundle over budget |
-| `backend-ci` | `npm ci` → ESLint → unit tests → starts a single-node MongoDB replica set → all tests under c8 → uploads `backend-coverage` | a lint error, a failing test, or coverage under the floor |
+| `backend-ci` | `npm ci` → ESLint → unit tests → starts a single-node MongoDB replica set (Redis runs as a service container) → all tests under c8 → uploads `backend-coverage` | a lint error, a failing test, or coverage under the floor |
 | `security` | tests the audit check → `npm audit` of production dependencies → gitleaks over the full history → dependency review (PRs only) | a high or critical advisory that isn't allow-listed (or whose entry expired), a secret in any commit, or a PR adding a high-severity dependency |
 | `format` | `npm ci` at the root → `prettier --check .` | a JS, JSX, CSS, JSON or YAML file that isn't Prettier-formatted (run `npm run format` to fix) |
 | `codeql (javascript-typescript)`, `codeql (actions)` | CodeQL analysis of the app code and of the workflows, uploaded to code scanning | the analysis can't run. New alerts show up as GitHub's separate code-scanning check on the PR; a ruleset makes that check blocking (see the checklist) |
@@ -48,7 +48,7 @@ Settings shared by every job:
 
 ### Why the backend starts MongoDB itself
 
-Transactions (needed from Phase 7) only work on a replica set. GitHub service containers can't pass `--replSet` to `mongod`, so `scripts/start-mongo-replset.sh` runs `mongo:7.0` in Docker with `--replSet rs0` and initiates it. The member advertises `127.0.0.1:27028`, so the tests' plain `mongodb://127.0.0.1:27028` connection string finds the primary with no extra options. Redis joins CI in Phase 3, when the backend first uses it.
+Transactions (needed from Phase 7) only work on a replica set. GitHub service containers can't pass `--replSet` to `mongod`, so `scripts/start-mongo-replset.sh` runs `mongo:7.0` in Docker with `--replSet rs0` and initiates it. The member advertises `127.0.0.1:27028`, so the tests' plain `mongodb://127.0.0.1:27028` connection string finds the primary with no extra options. Redis needs no special arguments, so `backend-ci` runs it as a service container on port 6390 (`TEST_REDIS_URL`).
 
 ### Thresholds and how to ratchet them
 
@@ -84,7 +84,8 @@ cd ../backend && npm ci
 npm run lint
 npm run test:unit              # no database needed
 ../scripts/start-mongo-replset.sh   # needs Docker; or run mongod --replSet rs0 yourself
-TEST_MONGODB_URI=mongodb://127.0.0.1:27028 npm run test:coverage
+docker run -d --rm --name parksmart-test-redis -p 127.0.0.1:6390:6379 redis:8-alpine   # or: redis-server --port 6390
+TEST_MONGODB_URI=mongodb://127.0.0.1:27028 TEST_REDIS_URL=redis://127.0.0.1:6390 npm run test:coverage
 
 cd ..
 npm run format:check                         # Prettier (npm run format fixes)

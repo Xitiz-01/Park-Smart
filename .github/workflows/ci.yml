@@ -66,6 +66,18 @@ jobs:
     name: backend-ci
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      # For the Redis integration tests (cache, rate limits). No custom
+      # arguments needed, unlike MongoDB, so a service container works.
+      redis:
+        image: redis:8-alpine@sha256:21090af93f8324db2f0f0f4f38a7c60369d47d917e000c3423d89d2ae2883537
+        ports:
+          - 6390:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
     defaults:
       run:
         working-directory: backend
@@ -99,6 +111,7 @@ jobs:
         run: npm run test:coverage
         env:
           TEST_MONGODB_URI: mongodb://127.0.0.1:27028
+          TEST_REDIS_URL: redis://127.0.0.1:6390
 
       - name: Upload coverage report
         if: ${{ !cancelled() }}
