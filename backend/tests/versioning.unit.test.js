@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const request = require('supertest');
 
-const { createApp } = require('../src/app');
+const { createApp, V1_RESOURCES } = require('../src/app');
 const { parseEnv } = require('../src/config/env');
 const { createLogger } = require('../src/platform/logger');
 const { deprecatedUsage } = require('../src/platform/http/versioning');
@@ -25,6 +25,18 @@ test('/api/v1 routes are current; /api routes still work but are marked deprecat
   assert.equal(legacy.headers.deprecation, 'true');
   assert.equal(legacy.headers.link, '</api/v1/slots/a/b>; rel="successor-version"');
   assert.equal(deprecatedUsage()['/api/slots'], before + 1, 'each legacy use is counted');
+});
+
+test('every versioned resource has the deprecated alias, and nothing else does', async () => {
+  const app = testApp();
+  for (const resource of V1_RESOURCES) {
+    const legacy = await request(app).get(`/api/${resource}/no/such/route`);
+    assert.equal(legacy.headers.deprecation, 'true', `/api/${resource}`);
+    assert.equal(legacy.headers.link, `</api/v1/${resource}/no/such/route>; rel="successor-version"`);
+  }
+  const unknown = await request(app).get('/api/nothing-here');
+  assert.equal(unknown.status, 404);
+  assert.equal(unknown.headers.deprecation, undefined);
 });
 
 test('the OpenAPI document is generated from the request schemas', () => {

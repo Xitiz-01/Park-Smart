@@ -224,9 +224,10 @@ const getAllSlots = async (req, res) => {
   try {
     const { zone, type, status } = req.query;
     const filter = {};
-    if (zone) filter.zone = zone;
-    if (type) filter.type = type;
-    if (status) filter.status = status;
+    // Only plain strings reach the query: ?status[$ne]=x arrives as an object.
+    if (typeof zone === 'string' && zone) filter.zone = zone;
+    if (typeof type === 'string' && type) filter.type = type;
+    if (typeof status === 'string' && status) filter.status = status;
 
     const slots = await ParkingSlot.find(filter).populate('currentBooking').populate('parkingLocation', 'name address status');
     const totalSlots = await ParkingSlot.countDocuments();
@@ -261,9 +262,10 @@ const getNearbySlots = async (req, res) => {
     }
 
     const filter = {};
-    if (zone) filter.zone = zone;
-    if (type) filter.type = type;
-    if (status) filter.status = status;
+    // Only plain strings reach the query: ?status[$ne]=x arrives as an object.
+    if (typeof zone === 'string' && zone) filter.zone = zone;
+    if (typeof type === 'string' && type) filter.type = type;
+    if (typeof status === 'string' && status) filter.status = status;
 
     const slots = await ParkingSlot.find(filter).populate('currentBooking').populate('parkingLocation', 'name address status');
     const nearby = slots

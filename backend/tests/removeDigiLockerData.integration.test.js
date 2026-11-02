@@ -20,7 +20,7 @@ test('DigiLocker clean-up reports leftovers and drops only the OAuth state colle
   await db.collection('verificationoauthstates').insertOne({ provider: 'DIGILOCKER', stateHash: 'x' });
   await db.collection('verificationdocuments').insertOne({ provider: 'MANUAL', documentType: 'PAN' });
   const dry = await removeDigiLockerData({ db, logger: quiet });
-  assert.equal(dry.oauthStates, 1);
+  assert.equal(dry.stateRecords, 1);
   assert.equal(dry.droppedStateCollection, false, 'a dry run changes nothing');
   const applied = await removeDigiLockerData({ db, apply: true, logger: quiet });
   assert.equal(applied.droppedStateCollection, true);
