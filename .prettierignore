@@ -7,3 +7,8 @@ backend/private-verification-storage
 claude
 docs/redesign/baseline
 docs/redesign/screens
+
+# Markdown keeps its hand-written layout (tables, line breaks).
+*.md
+# HTML is outside the JS/JSX/CSS formatting scope.
+*.html

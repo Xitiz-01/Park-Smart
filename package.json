@@ -8,8 +8,8 @@
   "scripts": {
     "prepare": "husky",
     "commitlint": "commitlint",
-    "format": "prettier --write",
-    "format:check": "prettier --check"
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.4",

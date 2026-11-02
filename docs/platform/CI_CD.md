@@ -9,12 +9,14 @@ flowchart LR
   pr[Pull request / push to main] --> fe[frontend-ci]
   pr --> be[backend-ci]
   pr --> sec[security]
+  pr --> fmt[format]
   pr --> cq[codeql]
   pr --> ch[commit-hygiene]
   pr --> e2e[e2e]
   fe --> gate{ci-gate}
   be --> gate
   sec --> gate
+  fmt --> gate
   cq --> gate
   ch --> gate
   e2e --> gate
@@ -30,6 +32,7 @@ flowchart LR
 | `frontend-ci` | `npm ci` → ESLint → Vitest → `vite build` → size-limit budget → uploads `frontend-build` | a lint error or more than the allowed warnings, a failing test, a broken build, or a bundle over budget |
 | `backend-ci` | `npm ci` → ESLint → unit tests → starts a single-node MongoDB replica set → all tests under c8 → uploads `backend-coverage` | a lint error, a failing test, or coverage under the floor |
 | `security` | tests the audit check → `npm audit` of production dependencies → gitleaks over the full history → dependency review (PRs only) | a high or critical advisory that isn't allow-listed (or whose entry expired), a secret in any commit, or a PR adding a high-severity dependency |
+| `format` | `npm ci` at the root → `prettier --check .` | a JS, JSX, CSS, JSON or YAML file that isn't Prettier-formatted (run `npm run format` to fix) |
 | `codeql (javascript-typescript)`, `codeql (actions)` | CodeQL analysis of the app code and of the workflows, uploaded to code scanning | the analysis can't run. New alerts show up as GitHub's separate code-scanning check on the PR; a ruleset makes that check blocking (see the checklist) |
 | `commit-hygiene` | AI-attribution trailer scan and commitlint over every commit in the PR (or the pushed range) | a forbidden trailer or a non-conventional message |
 | `e2e` | placeholder; the Playwright suite lands in Phase 6 | never (yet) |
@@ -84,6 +87,7 @@ npm run test:unit              # no database needed
 TEST_MONGODB_URI=mongodb://127.0.0.1:27028 npm run test:coverage
 
 cd ..
+npm run format:check                         # Prettier (npm run format fixes)
 node --test scripts/                         # tests for the audit check
 node scripts/audit-prod-deps.mjs             # production dependency audit
 gitleaks git --redact .                      # if you have gitleaks installed
@@ -104,10 +108,10 @@ Stop the Docker one with `docker stop parksmart-test-mongo` (it removes itself).
 
 `npm install` at the repo root runs Husky, which points `core.hooksPath` at `.husky/_` for this clone.
 
-- **pre-commit** runs lint-staged. Each package has its own `.lintstagedrc.json`, and a staged file uses the closest one: ESLint `--fix` on JavaScript, Prettier on JSON and YAML. A lint error stops the commit.
+- **pre-commit** runs lint-staged. Each package has its own `.lintstagedrc.json`, and a staged file uses the closest one: ESLint `--fix` then Prettier on JavaScript, Prettier on CSS, JSON and YAML. A lint error stops the commit.
 - **commit-msg** runs `scripts/strip-ai-trailers.sh`, which removes AI attribution lines (patterns in `scripts/commit-hygiene-patterns.txt`; real `Co-authored-by` lines are kept), then commitlint.
 
-Prettier is configured (`.prettierrc.json`: single quotes, 120 columns) but doesn't yet run on JS/JSX/CSS, because most source files predate it and formatting a whole file on its first touch would bury the real change. A one-time format commit would switch that on (see the Phase 1 report). It stays off Markdown on purpose: it pads tables to equal widths, so a one-cell edit rewrites the whole table.
+Prettier (`.prettierrc.json`: single quotes, 120 columns) formats JS, JSX, CSS, JSON and YAML, in the hook and in CI's `format` job. The whole codebase was formatted once in Phase 3; that commit is listed in `.git-blame-ignore-revs`, which GitHub's blame view skips automatically. Run `git config blame.ignoreRevsFile .git-blame-ignore-revs` once to get the same from `git blame`. Markdown stays out on purpose: Prettier pads tables to equal widths, so a one-cell edit rewrites the whole table. HTML is out too.
 
 `git worktree` checkouts don't get the hooks until you run `npm install` inside them, because `core.hooksPath` is relative.
 
