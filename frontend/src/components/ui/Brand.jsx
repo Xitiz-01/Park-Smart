@@ -1,4 +1,3 @@
-import React from 'react';
 import { ParkingCircle } from 'lucide-react';
 
 export default function Brand({ compact = false }) {

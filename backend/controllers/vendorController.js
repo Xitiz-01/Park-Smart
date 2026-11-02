@@ -94,7 +94,7 @@ const getMyVendorProfile = async (req, res) => {
     const vendorProfile = await VendorProfile.findOne({ userId: req.user._id }).populate('approvedBy', 'name email');
     if (!vendorProfile) return res.status(404).json({ success: false, message: 'Vendor profile not found' });
     res.json({ success: true, vendorProfile });
-  } catch (error) {
+  } catch {
     res.status(500).json({ success: false, message: 'Unable to load vendor profile' });
   }
 };
@@ -118,7 +118,7 @@ const updateMyVendorProfile = async (req, res) => {
     );
     if (!vendorProfile) return res.status(404).json({ success: false, message: 'Vendor profile not found' });
     res.json({ success: true, message: 'Vendor profile updated', vendorProfile });
-  } catch (error) {
+  } catch {
     res.status(500).json({ success: false, message: 'Unable to update vendor profile' });
   }
 };
@@ -158,7 +158,7 @@ const getVendorDashboard = async (req, res) => {
       },
       vendorStatus: req.vendorProfile.vendorStatus,
     });
-  } catch (error) {
+  } catch {
     res.status(500).json({ success: false, message: 'Unable to load vendor dashboard' });
   }
 };

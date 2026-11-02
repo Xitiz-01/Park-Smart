@@ -1,5 +1,3 @@
-import React from 'react';
-
 const tones = {
   approved: 'success', active: 'success', available: 'success', paid: 'success', verified: 'success',
   pending: 'warning', under_review: 'warning', upcoming: 'info', reserved: 'warning', maintenance: 'warning', draft: 'neutral', not_started: 'neutral',

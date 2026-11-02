@@ -1,0 +1,16 @@
+{
+  "advisories": [
+    {
+      "id": "GHSA-965c-763c-88jm",
+      "package": "better-auth",
+      "reason": "OAuth state reused as a magic link. ParkSmart uses email/password and the admin plugin only, with no OAuth or magic-link sign-in. better-auth is removed when Clerk lands (Phase 4).",
+      "expires": "2026-12-31"
+    },
+    {
+      "id": "GHSA-r4xp-prcw-77qf",
+      "package": "better-auth",
+      "reason": "OAuth Proxy plugin sign-in as another user. The plugin isn't enabled. better-auth is removed when Clerk lands (Phase 4).",
+      "expires": "2026-12-31"
+    }
+  ]
+}

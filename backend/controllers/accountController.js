@@ -21,7 +21,7 @@ const getProfile = async (req, res) => {
       getVendorProfile(req.user._id),
     ]);
     res.json({ success: true, user: publicUser(user), vendorProfile });
-  } catch (error) {
+  } catch {
     res.status(500).json({ success: false, message: 'Unable to load account profile' });
   }
 };
@@ -41,7 +41,7 @@ const updateProfile = async (req, res) => {
       { new: true, runValidators: true }
     );
     return res.json({ success: true, user: publicUser(user) });
-  } catch (error) {
+  } catch {
     return res.status(500).json({ success: false, message: 'Unable to update account profile' });
   }
 };

@@ -64,8 +64,9 @@ app.use('/api/location', require('./routes/locationRoutes'));
 app.get('/', (req, res) => {
   res.json({ message: 'Parking System API is running' });
 });
-// Error handler
-app.use((err, req, res, next) => {
+// Error handler. Express only treats a four-parameter function as one, so
+// _next stays even though it isn't called.
+app.use((err, req, res, _next) => {
   const isUploadError = err.name === 'MulterError';
   const statusCode = err.statusCode || (err.code === 'LIMIT_FILE_SIZE' ? 413 : isUploadError ? 400 : 500);
   const safeMessage = err.code === 'LIMIT_FILE_SIZE'

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { ChevronRight, LogOut, Menu, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -17,7 +17,7 @@ export default function AppShell({ navItems, roleLabel, identity, accent = 'emer
       await logout();
       toast.success('Signed out securely');
       navigate('/login');
-    } catch (error) {
+    } catch {
       toast.error('Unable to sign out. Please try again.');
     }
   };

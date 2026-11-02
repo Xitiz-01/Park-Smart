@@ -16,6 +16,7 @@ frontend/node_modules/
 # BUILD FILES
 # ======================
 frontend/build/
+backend/coverage/
 
 # ======================
 # LOG FILES

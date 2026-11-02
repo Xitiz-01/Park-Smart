@@ -2,7 +2,6 @@ const path = require('path');
 const VerificationDocument = require('../models/VerificationDocument');
 const ParkingAuthorization = require('../models/ParkingAuthorization');
 const ParkingLocation = require('../models/ParkingLocation');
-const VendorVerification = require('../models/VendorVerification');
 const { DOCUMENT_CATEGORIES, DOCUMENT_TYPES, AUTHORIZATION_DOCUMENT_TYPES } = require('../constants/verification');
 const { createStorageService } = require('../services/storageService');
 const {
