@@ -33,7 +33,7 @@
     "hpp": "^0.2.3",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.21.0",
-    "mongoose": "^8.4.1",
+    "mongoose": "^9.11.4",
     "multer": "^2.0.2",
     "pino": "^10.4.0",
     "pino-http": "^11.0.0",
