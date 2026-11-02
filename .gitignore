@@ -47,3 +47,9 @@ dist/
 # ======================
 *.local
 backend/private-verification-storage/
+
+# ======================
+# LOCAL TOOLING
+# ======================
+# MCP server config can hold API keys.
+.mcp.json

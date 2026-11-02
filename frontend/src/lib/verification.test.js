@@ -6,6 +6,7 @@ test('acronyms survive (audit M2)', () => {
   expect(verificationLabel('NOC')).toBe('NOC');
   expect(verificationLabel('DRIVING_LICENCE')).toBe('Driving licence');
   expect(verificationLabel('IDENTITY')).toBe('Identity');
+  expect(verificationLabel('BANK_ACCOUNT')).toBe('Bank account');
 });
 
 test('unknown values fall back to sentence case with acronyms kept', () => {
@@ -15,11 +16,12 @@ test('unknown values fall back to sentence case with acronyms kept', () => {
   expect(verificationLabel('')).toBe('');
 });
 
-test('providers are plain data with unique ids', () => {
+test('providers are plain data with unique ids, and DigiLocker is gone', () => {
+  expect(VERIFICATION_PROVIDERS.map((provider) => provider.id)).toEqual(['cashfree']);
   const ids = VERIFICATION_PROVIDERS.map((provider) => provider.id);
   expect(new Set(ids).size).toBe(ids.length);
   for (const provider of VERIFICATION_PROVIDERS) {
-    expect(['redirect', 'checks']).toContain(provider.kind);
+    expect(provider.checks.length).toBeGreaterThan(0);
     expect(provider.consent).toBeTruthy();
   }
 });
@@ -30,4 +32,8 @@ test('file metadata reads naturally', () => {
   expect(metadataValue('size', 125)).toBe('125 bytes');
   expect(metadataValue('size', 2048)).toBe('2 KB');
   expect(metadataValue('originalName', 'pan.pdf')).toBe('pan.pdf');
+  expect(verificationLabel('ifsc')).toBe('IFSC');
+  expect(verificationLabel('nameAtBank')).toBe('Name at bank');
+  expect(metadataValue('nameMatchResult', 'GOOD_PARTIAL_MATCH')).toBe('Good partial match');
+  expect(metadataValue('accountStatusCode', 'ACCOUNT_IS_VALID')).toBe('Account is valid');
 });

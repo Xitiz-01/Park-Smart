@@ -7,16 +7,20 @@ const NAMES = {
   // vendor documents
   PAN: 'PAN', DRIVING_LICENCE: 'Driving licence', OTHER_IDENTITY: 'Other identity proof',
   GSTIN: 'GSTIN', CIN: 'CIN', BUSINESS_REGISTRATION: 'Business registration',
-  BANK_PROOF: 'Bank proof', CANCELLED_CHEQUE: 'Cancelled cheque',
+  BANK_PROOF: 'Bank proof', CANCELLED_CHEQUE: 'Cancelled cheque', BANK_ACCOUNT: 'Bank account',
   // parking authorisation
   OWNERSHIP_PROOF: 'Ownership proof', LEASE: 'Lease', NOC: 'NOC',
   AUTHORIZATION_LETTER: 'Authorisation letter', OTHER: 'Other',
   // providers
-  MANUAL: 'Manual upload', DIGILOCKER: 'DigiLocker', CASHFREE: 'Cashfree',
+  MANUAL: 'Manual upload', CASHFREE: 'Cashfree',
   // evidence kinds
   document: 'Vendor document', authorization: 'Parking authorisation',
   // file metadata
   originalName: 'File name', mimeType: 'File type', size: 'File size',
+  // provider check details
+  maskedIdentifier: 'Number', ifsc: 'IFSC', bankName: 'Bank', nameAtBank: 'Name at bank',
+  nameMatchResult: 'Name match', accountStatusCode: 'Account status',
+  registeredName: 'Registered name', legalName: 'Legal name', tradeName: 'Trade name',
 };
 
 const FILE_TYPES = { 'application/pdf': 'PDF', 'image/jpeg': 'JPEG image', 'image/png': 'PNG image' };
@@ -28,10 +32,12 @@ export function metadataValue(key, value) {
     return bytes < 1024 ? `${bytes} bytes` : `${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 1 }).format(bytes / 1024)} KB`;
   }
   if (key === 'mimeType') return FILE_TYPES[value] || String(value);
+  // Provider result codes such as DIRECT_MATCH or ACCOUNT_IS_VALID.
+  if (key === 'nameMatchResult' || key === 'accountStatusCode') return verificationLabel(value);
   return String(value);
 }
 
-const ACRONYMS = new Set(['PAN', 'GSTIN', 'CIN', 'NOC', 'ID', 'KYC']);
+const ACRONYMS = new Set(['PAN', 'GSTIN', 'CIN', 'NOC', 'ID', 'KYC', 'IFSC']);
 
 export function verificationLabel(value) {
   if (value === undefined || value === null || value === '') return '';
@@ -61,34 +67,22 @@ export const AUTHORIZATION_TYPES = ['OWNERSHIP_PROOF', 'LEASE', 'NOC', 'AUTHORIZ
 export const VENDOR_CHECKS = [
   { key: 'identityStatus', label: 'Identity', copy: 'PAN, driving licence or another supported identity proof.' },
   { key: 'businessStatus', label: 'Business', copy: 'GSTIN, CIN or business registration evidence.' },
-  { key: 'bankStatus', label: 'Bank', copy: 'Bank proof or a cancelled cheque, for future payouts.' },
+  { key: 'bankStatus', label: 'Bank', copy: 'A bank account check, bank proof or a cancelled cheque, for future payouts.' },
 ];
 
-// Verified-provider options shown to vendors. Each entry is self-contained, so
-// adding or removing a provider is one edit here: `availability` is the key in
-// the API's providerAvailability, `kind` picks how the card works.
-//   redirect: consent, then a start call that returns a URL to leave for
-//   checks:   consent, then a form that runs one of `checks` in place
+// Verified-provider options shown to vendors, as data: adding or removing a
+// provider is one edit here. `availability` is the key in the API's
+// providerAvailability; `checks` are what it can verify in place (the API's
+// capabilities list narrows them further).
 export const VERIFICATION_PROVIDERS = [
-  {
-    id: 'digilocker',
-    name: 'DigiLocker',
-    availability: 'digilocker',
-    kind: 'redirect',
-    summary: 'Fetch verified identity and business documents from your DigiLocker account.',
-    consent: 'I consent to ParkSmart requesting only permitted identity and business document metadata from DigiLocker for vendor verification.',
-    unavailable: 'Not available yet: ParkSmart’s DigiLocker access is still being set up.',
-    action: 'Continue to DigiLocker',
-  },
   {
     id: 'cashfree',
     name: 'Cashfree Secure ID',
     availability: 'cashfree',
-    kind: 'checks',
-    checks: ['PAN', 'GSTIN'],
-    summary: 'Check a PAN or GSTIN against official records straight away.',
+    checks: ['PAN', 'GSTIN', 'BANK_ACCOUNT'],
+    summary: 'Check a PAN, GSTIN or bank account against official records straight away.',
     consent: 'I consent to this verification request.',
-    unavailable: 'Not available yet: PAN and GSTIN checks will appear here once they are switched on.',
+    unavailable: 'Not available yet: PAN, GSTIN and bank account checks will appear here once they are switched on.',
     action: 'Run check',
   },
 ];

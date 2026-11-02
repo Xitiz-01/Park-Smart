@@ -12,6 +12,7 @@
     "migrate:hybrid-parking": "node scripts/migrateHybridParking.js",
     "migrate:vehicle-fuel-type": "node scripts/migrateVehicleFuelType.js",
     "migrate:vehicle-body-style": "node scripts/migrateVehicleBodyStyle.js",
+    "migrate:remove-digilocker": "node scripts/removeDigiLockerData.js",
     "test:integration": "node --test --test-concurrency=1 tests/*.integration.test.js"
   },
   "dependencies": {

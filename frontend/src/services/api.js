@@ -110,7 +110,6 @@ export const verificationAPI = {
   getMine: () => API.get('/vendor-verification'),
   submitDocument: (formData) => API.post('/vendor-verification/documents', formData),
   submitParkingAuthorization: (locationId, formData) => API.post(`/vendor-verification/parking-authorizations/${locationId}`, formData),
-  startDigiLocker: (consent) => API.post('/vendor-verification/digilocker/start', { consent }),
   verifyExternal: (kind, data) => API.post(`/vendor-verification/external/${kind}`, data),
 };
 
