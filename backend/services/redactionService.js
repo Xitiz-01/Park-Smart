@@ -10,10 +10,9 @@ const maskIdentifier = (value) => {
 const redactSensitive = (value) => {
   if (Array.isArray(value)) return value.map(redactSensitive);
   if (!value || typeof value !== 'object') return value;
-  return Object.fromEntries(Object.entries(value).map(([key, item]) => [
-    key,
-    SENSITIVE_KEYS.test(key) ? '[REDACTED]' : redactSensitive(item),
-  ]));
+  return Object.fromEntries(
+    Object.entries(value).map(([key, item]) => [key, SENSITIVE_KEYS.test(key) ? '[REDACTED]' : redactSensitive(item)]),
+  );
 };
 
 module.exports = { maskIdentifier, redactSensitive };

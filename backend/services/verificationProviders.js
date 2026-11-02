@@ -10,8 +10,12 @@ class ProviderUnavailableError extends Error {
 }
 
 class ManualVerificationProvider {
-  isConfigured() { return true; }
-  normalizeSubmission() { return { provider: 'MANUAL', status: 'UNDER_REVIEW' }; }
+  isConfigured() {
+    return true;
+  }
+  normalizeSubmission() {
+    return { provider: 'MANUAL', status: 'UNDER_REVIEW' };
+  }
 }
 
 class CashfreeVerificationProvider {
@@ -24,14 +28,20 @@ class CashfreeVerificationProvider {
     this.fetch = options.fetch ?? global.fetch;
   }
 
-  isConfigured() { return Boolean(this.enabled && this.clientId && this.clientSecret); }
+  isConfigured() {
+    return Boolean(this.enabled && this.clientId && this.clientSecret);
+  }
 
   async request(endpoint, payload) {
     if (!this.isConfigured()) throw new ProviderUnavailableError('Cashfree verification is not configured');
     try {
       const response = await this.fetch(`${this.baseUrl}/${endpoint}`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json', 'x-client-id': this.clientId, 'x-client-secret': this.clientSecret },
+        headers: {
+          'content-type': 'application/json',
+          'x-client-id': this.clientId,
+          'x-client-secret': this.clientSecret,
+        },
         body: JSON.stringify(payload),
       });
       const result = await response.json().catch(() => ({}));
@@ -46,10 +56,17 @@ class CashfreeVerificationProvider {
   async verifyPan({ identifier, name }) {
     const result = await this.request('pan', { pan: identifier, name });
     return {
-      provider: 'CASHFREE', documentType: 'PAN', category: 'IDENTITY',
+      provider: 'CASHFREE',
+      documentType: 'PAN',
+      category: 'IDENTITY',
       status: result.valid === true ? 'VERIFIED' : 'REJECTED',
       providerReference: String(result.reference_id || ''),
-      safeMetadata: { maskedIdentifier: maskIdentifier(identifier), registeredName: result.registered_name, panType: result.type, nameMatch: result.name_match_result },
+      safeMetadata: {
+        maskedIdentifier: maskIdentifier(identifier),
+        registeredName: result.registered_name,
+        panType: result.type,
+        nameMatch: result.name_match_result,
+      },
     };
   }
 
@@ -57,10 +74,17 @@ class CashfreeVerificationProvider {
     const result = await this.request('gstin', { GSTIN: identifier, business_name: businessName });
     const valid = result.valid === true || result.status === 'VALID' || result.gstin_status === 'Active';
     return {
-      provider: 'CASHFREE', documentType: 'GSTIN', category: 'BUSINESS',
+      provider: 'CASHFREE',
+      documentType: 'GSTIN',
+      category: 'BUSINESS',
       status: valid ? 'VERIFIED' : 'REJECTED',
       providerReference: String(result.reference_id || ''),
-      safeMetadata: { maskedIdentifier: maskIdentifier(identifier), legalName: result.legal_name_of_business, tradeName: result.trade_name_of_business, gstinStatus: result.gstin_status },
+      safeMetadata: {
+        maskedIdentifier: maskIdentifier(identifier),
+        legalName: result.legal_name_of_business,
+        tradeName: result.trade_name_of_business,
+        gstinStatus: result.gstin_status,
+      },
     };
   }
 
@@ -77,7 +101,9 @@ class CashfreeVerificationProvider {
     const valid = result.account_status === 'VALID';
     const nameMatched = ['DIRECT_MATCH', 'GOOD_PARTIAL_MATCH'].includes(result.name_match_result);
     return {
-      provider: 'CASHFREE', documentType: 'BANK_ACCOUNT', category: 'BANK',
+      provider: 'CASHFREE',
+      documentType: 'BANK_ACCOUNT',
+      category: 'BANK',
       status: !valid ? 'REJECTED' : nameMatched ? 'VERIFIED' : 'UNDER_REVIEW',
       providerReference: String(result.reference_id || ''),
       safeMetadata: {

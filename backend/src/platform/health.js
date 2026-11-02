@@ -18,7 +18,10 @@ function healthRouter(checks) {
     const results = await Promise.all(names.map((name) => checks[name]().catch(() => false)));
     const report = Object.fromEntries(names.map((name, index) => [name, results[index] ? 'up' : 'down']));
     const ready = results.every(Boolean);
-    res.set('Cache-Control', 'no-store').status(ready ? 200 : 503).json({ status: ready ? 'ok' : 'unavailable', checks: report });
+    res
+      .set('Cache-Control', 'no-store')
+      .status(ready ? 200 : 503)
+      .json({ status: ready ? 'ok' : 'unavailable', checks: report });
   });
   return router;
 }

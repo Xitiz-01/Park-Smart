@@ -35,13 +35,18 @@ export function ErrorState({ title = 'This didn’t load', description, onRetry,
   return (
     <Empty role="alert" className={cn('border border-dashed border-danger/40 bg-card', className)}>
       <EmptyHeader>
-        <EmptyMedia variant="icon" className="bg-danger-soft text-danger"><AlertTriangle /></EmptyMedia>
+        <EmptyMedia variant="icon" className="bg-danger-soft text-danger">
+          <AlertTriangle />
+        </EmptyMedia>
         <EmptyTitle className="font-display text-lg">{title}</EmptyTitle>
         {description && <EmptyDescription>{description}</EmptyDescription>}
       </EmptyHeader>
       {onRetry && (
         <EmptyContent>
-          <Button variant="outline" onClick={onRetry}><RefreshCw data-icon="inline-start" />Try again</Button>
+          <Button variant="outline" onClick={onRetry}>
+            <RefreshCw data-icon="inline-start" />
+            Try again
+          </Button>
         </EmptyContent>
       )}
     </Empty>

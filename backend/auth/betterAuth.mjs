@@ -115,11 +115,9 @@ const getSession = (headers) => auth.api.getSession({ headers: fromNodeHeaders(h
 const setAuthUserRole = async ({ userId, role }) => {
   if (!['user', 'admin'].includes(role)) throw new Error('Unsupported Better Auth role transition');
   const id = ObjectId.isValid(userId) ? new ObjectId(userId) : userId;
-  const result = await authDb.collection('user').findOneAndUpdate(
-    { _id: id },
-    { $set: { role, updatedAt: new Date() } },
-    { returnDocument: 'after' }
-  );
+  const result = await authDb
+    .collection('user')
+    .findOneAndUpdate({ _id: id }, { $set: { role, updatedAt: new Date() } }, { returnDocument: 'after' });
   if (!result) throw new Error('Better Auth user not found');
   return result;
 };
@@ -131,36 +129,33 @@ const setAuthAccountActive = async (authUserId, isActive, reason = null) => {
     {
       $set: {
         banned: !isActive,
-        banReason: isActive ? null : (reason || 'Account deactivated by ParkSmart administration'),
+        banReason: isActive ? null : reason || 'Account deactivated by ParkSmart administration',
         banExpires: null,
         updatedAt: new Date(),
       },
-    }
+    },
   );
   if (!isActive) await authDb.collection('session').deleteMany({ userId: id });
 };
 
 const promoteBootstrapIdentity = async (authUserId) => {
   const id = ObjectId.isValid(authUserId) ? new ObjectId(authUserId) : authUserId;
-  await authDb.collection('user').updateOne(
-    { _id: id },
-    { $set: { role: 'super_admin', updatedAt: new Date() } }
-  );
+  await authDb.collection('user').updateOne({ _id: id }, { $set: { role: 'super_admin', updatedAt: new Date() } });
 };
 
 const syncAuthIdentityRole = async (authUserId, domainRole) => {
   const id = ObjectId.isValid(authUserId) ? new ObjectId(authUserId) : authUserId;
   const role = ['admin', 'super_admin'].includes(domainRole) ? domainRole : 'user';
-  await authDb.collection('user').updateOne(
-    { _id: id, role: { $ne: role } },
-    { $set: { role, updatedAt: new Date() } }
-  );
+  await authDb
+    .collection('user')
+    .updateOne({ _id: id, role: { $ne: role } }, { $set: { role, updatedAt: new Date() } });
 };
 
-const updateCurrentAuthUser = ({ headers, data }) => auth.api.updateUser({
-  headers: fromNodeHeaders(headers),
-  body: data,
-});
+const updateCurrentAuthUser = ({ headers, data }) =>
+  auth.api.updateUser({
+    headers: fromNodeHeaders(headers),
+    body: data,
+  });
 
 const close = async () => mongoClient.close();
 

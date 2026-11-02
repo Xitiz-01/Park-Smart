@@ -33,7 +33,9 @@ export default function Faq() {
     <section id="faq" aria-labelledby="faq-title" className="scroll-mt-16 border-t bg-surface-raised">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:px-8 lg:py-28">
         <div>
-          <h2 id="faq-title" className="font-display text-display-xl font-semibold text-balance">Questions, answered.</h2>
+          <h2 id="faq-title" className="font-display text-display-xl font-semibold text-balance">
+            Questions, answered.
+          </h2>
           <p className="mt-4 max-w-md text-lg text-text-muted">The short version of how ParkSmart works today.</p>
         </div>
         <Accordion type="single" collapsible className="w-full">

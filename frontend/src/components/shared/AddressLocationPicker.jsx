@@ -7,12 +7,30 @@ import StateSelect from './StateSelect';
 import { normalizeIndianState } from '../../data/indianStates';
 
 export const emptyAddressSelection = {
-  search: '', formattedAddress: '', addressLine1: '', city: '', district: '', state: '', pincode: '',
-  country: 'India', latitude: null, longitude: null, provider: '', providerPlaceId: '', selectionToken: '', verified: false,
+  search: '',
+  formattedAddress: '',
+  addressLine1: '',
+  city: '',
+  district: '',
+  state: '',
+  pincode: '',
+  country: 'India',
+  latitude: null,
+  longitude: null,
+  provider: '',
+  providerPlaceId: '',
+  selectionToken: '',
+  verified: false,
 };
 
 export default function AddressLocationPicker({ value, onChange }) {
-  const selectSuggestion = (suggestion) => onChange({ ...suggestion, state: normalizeIndianState(suggestion.state), search: suggestion.formattedAddress, verified: true });
+  const selectSuggestion = (suggestion) =>
+    onChange({
+      ...suggestion,
+      state: normalizeIndianState(suggestion.state),
+      search: suggestion.formattedAddress,
+      verified: true,
+    });
   const changeSearch = (search) => onChange({ ...value, search, verified: false, selectionToken: '' });
 
   return (
@@ -31,12 +49,18 @@ export default function AddressLocationPicker({ value, onChange }) {
       </FormField>
       {value.verified && (
         <p role="status" className="-mt-3 flex items-center gap-1.5 text-sm text-slot-available">
-          <CheckCircle2 aria-hidden="true" className="size-4 shrink-0" />Address verified. Drag the pin to the entrance if it’s off.
+          <CheckCircle2 aria-hidden="true" className="size-4 shrink-0" />
+          Address verified. Drag the pin to the entrance if it’s off.
         </p>
       )}
       <div className="grid gap-5 sm:grid-cols-3">
         <FormField label="City" required>
-          <Input name="city" autoComplete="address-level2" value={value.city || ''} onChange={(e) => onChange({ ...value, city: e.target.value })} />
+          <Input
+            name="city"
+            autoComplete="address-level2"
+            value={value.city || ''}
+            onChange={(e) => onChange({ ...value, city: e.target.value })}
+          />
         </FormField>
         <FormField label="State" required>
           <StateSelect value={value.state} onChange={(state) => onChange({ ...value, state })} />
@@ -62,7 +86,8 @@ export default function AddressLocationPicker({ value, onChange }) {
             onMove={({ latitude, longitude }) => onChange({ ...value, latitude, longitude })}
           />
           <p className="mt-1.5 text-right font-mono text-xs text-text-muted">
-            <span className="sr-only">Pin position: </span>{Number(value.latitude).toFixed(6)}, {Number(value.longitude).toFixed(6)}
+            <span className="sr-only">Pin position: </span>
+            {Number(value.latitude).toFixed(6)}, {Number(value.longitude).toFixed(6)}
           </p>
         </div>
       )}

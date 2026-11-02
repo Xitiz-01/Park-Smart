@@ -35,14 +35,21 @@ test('the OpenAPI document is generated from the request schemas', () => {
   assert.deepEqual(schema.required, ['vehicleId']);
   assert.deepEqual(schema.properties.bookingType.enum, ['ev', 'regular']);
   const cancel = doc.paths['/api/v1/bookings/{id}/cancel'].put;
-  assert.deepEqual(cancel.parameters.map((p) => [p.name, p.in, p.required]), [['id', 'path', true]]);
-  const upload = doc.paths['/api/v1/vendor-verification/documents'].post.requestBody.content['multipart/form-data'].schema;
+  assert.deepEqual(
+    cancel.parameters.map((p) => [p.name, p.in, p.required]),
+    [['id', 'path', true]],
+  );
+  const upload =
+    doc.paths['/api/v1/vendor-verification/documents'].post.requestBody.content['multipart/form-data'].schema;
   assert.equal(upload.properties.document.format, 'binary');
   assert.deepEqual(doc.paths['/health/live'].get.security, [], 'health needs no session');
   assert.ok(doc.components.schemas.ErrorEnvelope);
   const ids = Object.values(doc.paths).flatMap((item) => Object.values(item).map((op) => op.operationId));
   assert.equal(new Set(ids).size, ids.length, 'operation ids are unique');
-  assert.equal(doc.paths['/api/v1/vendors/parking-locations/{id}/slots'].post.operationId, 'postVendorsParkingLocationsByIdSlots');
+  assert.equal(
+    doc.paths['/api/v1/vendors/parking-locations/{id}/slots'].post.operationId,
+    'postVendorsParkingLocationsByIdSlots',
+  );
 });
 
 test('the docs are served outside production only', async () => {
@@ -50,7 +57,12 @@ test('the docs are served outside production only', async () => {
   assert.equal(served.status, 200);
   assert.equal(served.body.info.title, 'ParkSmart API');
 
-  const production = parseEnv({ NODE_ENV: 'production', MONGODB_URI: 'mongodb://db/x', BETTER_AUTH_SECRET: 'x'.repeat(32), ADDRESS_SELECTION_SECRET: 'y' });
+  const production = parseEnv({
+    NODE_ENV: 'production',
+    MONGODB_URI: 'mongodb://db/x',
+    BETTER_AUTH_SECRET: 'x'.repeat(32),
+    ADDRESS_SELECTION_SECRET: 'y',
+  });
   const hidden = await request(createApp({ config: production, logger: silent })).get('/api/docs');
   assert.equal(hidden.status, 404);
 });

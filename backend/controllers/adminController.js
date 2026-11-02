@@ -16,7 +16,8 @@ const getDashboardStats = async (req, res) => {
     const reservedSlots = await ParkingSlot.countDocuments({ status: 'reserved' });
     const totalBookings = await Booking.countDocuments();
     const activeBookings = await Booking.countDocuments({ status: 'active' });
-    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
     const todayBookings = await Booking.countDocuments({ createdAt: { $gte: todayStart } });
 
     // Revenue
@@ -73,7 +74,9 @@ const toggleUserStatus = async (req, res) => {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
     if (user.role === 'super_admin') {
-      return res.status(400).json({ success: false, message: 'Bootstrap SUPER_ADMIN accounts cannot be deactivated here' });
+      return res
+        .status(400)
+        .json({ success: false, message: 'Bootstrap SUPER_ADMIN accounts cannot be deactivated here' });
     }
     if (user.role === 'admin' && req.user.role !== 'super_admin') {
       return res.status(403).json({ success: false, message: 'Only a SUPER_ADMIN can modify ADMIN accounts' });
@@ -99,19 +102,26 @@ const setUserAdminRole = async (req, res) => {
     if (!['customer', 'admin'].includes(nextRole)) {
       return res.status(400).json({
         success: false,
-        message: 'Only CUSTOMER and ADMIN are valid here. Vendor access requires approval and SUPER_ADMIN is bootstrap-only.',
+        message:
+          'Only CUSTOMER and ADMIN are valid here. Vendor access requires approval and SUPER_ADMIN is bootstrap-only.',
       });
     }
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
     if (!user.authUserId) {
-      return res.status(409).json({ success: false, message: 'Migrate this user to Better Auth before changing its role' });
+      return res
+        .status(409)
+        .json({ success: false, message: 'Migrate this user to Better Auth before changing its role' });
     }
     if (user.role === 'super_admin') {
-      return res.status(400).json({ success: false, message: 'Bootstrap SUPER_ADMIN role cannot be changed in the dashboard' });
+      return res
+        .status(400)
+        .json({ success: false, message: 'Bootstrap SUPER_ADMIN role cannot be changed in the dashboard' });
     }
     if (user.role === 'vendor') {
-      return res.status(400).json({ success: false, message: 'Vendor roles are managed through the vendor approval workflow' });
+      return res
+        .status(400)
+        .json({ success: false, message: 'Vendor roles are managed through the vendor approval workflow' });
     }
     if (user._id.equals(req.user._id)) {
       return res.status(400).json({ success: false, message: 'You cannot change your own administrative role' });

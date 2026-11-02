@@ -24,7 +24,9 @@ afterEach(() => vi.useRealTimers());
 
 test('does not search when the field still holds the verified address (audit U)', async () => {
   render(<Harness initial="FC Road, Pune" selected="FC Road, Pune" onSelect={vi.fn()} />);
-  await act(async () => { vi.advanceTimersByTime(800); });
+  await act(async () => {
+    vi.advanceTimersByTime(800);
+  });
   expect(locationAPI.autocomplete).not.toHaveBeenCalled();
   expect(screen.getByRole('combobox')).toHaveAttribute('aria-expanded', 'false');
 });
@@ -34,7 +36,9 @@ test('arrow keys move through suggestions and Enter picks one', async () => {
   render(<Harness onSelect={onSelect} />);
   const input = screen.getByRole('combobox');
   fireEvent.change(input, { target: { value: 'FC Ro' } });
-  await act(async () => { vi.advanceTimersByTime(600); });
+  await act(async () => {
+    vi.advanceTimersByTime(600);
+  });
   expect(locationAPI.autocomplete).toHaveBeenCalledWith('FC Ro');
   expect(input).toHaveAttribute('aria-expanded', 'true');
   expect(screen.getAllByRole('option')).toHaveLength(2);
@@ -55,7 +59,9 @@ test('Escape closes the list without picking', async () => {
   render(<Harness onSelect={onSelect} />);
   const input = screen.getByRole('combobox');
   fireEvent.change(input, { target: { value: 'Pune' } });
-  await act(async () => { vi.advanceTimersByTime(600); });
+  await act(async () => {
+    vi.advanceTimersByTime(600);
+  });
   fireEvent.keyDown(input, { key: 'Escape' });
   expect(input).toHaveAttribute('aria-expanded', 'false');
   expect(onSelect).not.toHaveBeenCalled();

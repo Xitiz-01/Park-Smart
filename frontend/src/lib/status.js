@@ -4,17 +4,37 @@
 
 export const STATUS_TONES = {
   // bookings
-  upcoming: 'info', active: 'success', completed: 'neutral', cancelled: 'danger',
+  upcoming: 'info',
+  active: 'success',
+  completed: 'neutral',
+  cancelled: 'danger',
   // payments
-  paid: 'success', pending: 'warning', refunded: 'neutral', failed: 'danger',
+  paid: 'success',
+  pending: 'warning',
+  refunded: 'neutral',
+  failed: 'danger',
   // slots
-  available: 'success', reserved: 'warning', occupied: 'danger', maintenance: 'neutral', unavailable: 'neutral',
+  available: 'success',
+  reserved: 'warning',
+  occupied: 'danger',
+  maintenance: 'neutral',
+  unavailable: 'neutral',
   // vendors, locations, accounts
-  approved: 'success', rejected: 'danger', suspended: 'danger', draft: 'neutral', inactive: 'neutral',
+  approved: 'success',
+  rejected: 'danger',
+  suspended: 'danger',
+  draft: 'neutral',
+  inactive: 'neutral',
   // verification
-  not_started: 'neutral', under_review: 'warning', verified: 'success', resubmission_required: 'danger',
+  not_started: 'neutral',
+  under_review: 'warning',
+  verified: 'success',
+  resubmission_required: 'danger',
   // roles
-  customer: 'neutral', vendor: 'info', admin: 'info', super_admin: 'info',
+  customer: 'neutral',
+  vendor: 'info',
+  admin: 'info',
+  super_admin: 'info',
 };
 
 // Labels the generic rule ("UNDER_REVIEW" → "Under review") would get wrong.
@@ -25,7 +45,10 @@ const LABELS = {
 };
 
 export function normalizeStatus(status) {
-  return String(status || 'unknown').trim().toLowerCase().replace(/[\s-]+/g, '_');
+  return String(status || 'unknown')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
 }
 
 export function statusTone(status) {

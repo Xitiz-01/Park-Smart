@@ -1,6 +1,18 @@
 import {
-  CalendarDays, CarFront, IndianRupee, LayoutDashboard, MapPin, Navigation, ParkingSquare, Plus,
-  Receipt, Settings, ShieldCheck, Store, UserRound, Users,
+  CalendarDays,
+  CarFront,
+  IndianRupee,
+  LayoutDashboard,
+  MapPin,
+  Navigation,
+  ParkingSquare,
+  Plus,
+  Receipt,
+  Settings,
+  ShieldCheck,
+  Store,
+  UserRound,
+  Users,
 } from 'lucide-react';
 
 // One navigation source for the sidebar, the mobile tab bar, breadcrumbs and
@@ -9,10 +21,10 @@ import {
 export function customerWorkspace(user) {
   const vendorItem = user?.vendorProfile
     ? {
-      to: user.role === 'vendor' && user.vendorProfile.vendorStatus === 'active' ? '/vendor' : '/vendor/status',
-      icon: Store,
-      label: user.role === 'vendor' ? 'Operator workspace' : 'Operator application',
-    }
+        to: user.role === 'vendor' && user.vendorProfile.vendorStatus === 'active' ? '/vendor' : '/vendor/status',
+        icon: Store,
+        label: user.role === 'vendor' ? 'Operator workspace' : 'Operator application',
+      }
     : { to: '/vendor/apply', icon: Store, label: 'List your parking' };
 
   return {
@@ -94,7 +106,8 @@ export function adminWorkspace({ isSuperAdmin = false } = {}) {
   };
 }
 
-const matches = (item, pathname) => (item.end ? pathname === item.to : pathname === item.to || pathname.startsWith(`${item.to}/`));
+const matches = (item, pathname) =>
+  item.end ? pathname === item.to : pathname === item.to || pathname.startsWith(`${item.to}/`);
 
 // Breadcrumb trail for a path: workspace home, then the nav item, then a
 // sub-page label when the path is deeper than the nav.

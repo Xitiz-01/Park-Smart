@@ -16,7 +16,7 @@ API.interceptors.response.use(
       }
     }
     return Promise.reject(err);
-  }
+  },
 );
 
 // Auth
@@ -81,8 +81,10 @@ export const adminAPI = {
   suspendVendor: (id) => API.patch(`/admin/vendors/${id}/suspend`),
   getVerificationCases: (params) => API.get('/admin/vendor-verifications', { params }),
   getVerificationCase: (vendorId) => API.get(`/admin/vendor-verifications/${vendorId}`),
-  reviewVerificationEvidence: (type, id, action, reason) => API.patch(`/admin/vendor-verifications/${type}/${id}/${action}`, { reason }),
-  getVerificationDocument: (type, id) => API.get(`/admin/vendor-verifications/${type}/${id}/content`, { responseType: 'blob' }),
+  reviewVerificationEvidence: (type, id, action, reason) =>
+    API.patch(`/admin/vendor-verifications/${type}/${id}/${action}`, { reason }),
+  getVerificationDocument: (type, id) =>
+    API.get(`/admin/vendor-verifications/${type}/${id}/content`, { responseType: 'blob' }),
 };
 
 // Vendors
@@ -109,7 +111,8 @@ export const vendorsAPI = {
 export const verificationAPI = {
   getMine: () => API.get('/vendor-verification'),
   submitDocument: (formData) => API.post('/vendor-verification/documents', formData),
-  submitParkingAuthorization: (locationId, formData) => API.post(`/vendor-verification/parking-authorizations/${locationId}`, formData),
+  submitParkingAuthorization: (locationId, formData) =>
+    API.post(`/vendor-verification/parking-authorizations/${locationId}`, formData),
   verifyExternal: (kind, data) => API.post(`/vendor-verification/external/${kind}`, data),
 };
 

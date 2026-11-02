@@ -56,7 +56,11 @@ function securityMiddleware(http) {
     headers: helmet(),
     compression: compression(),
     apiRateLimit: limiter({ windowMs, limit: max, message: 'Too many requests. Try again in a few minutes.' }),
-    authRateLimit: limiter({ windowMs, limit: authMax, message: 'Too many sign-in attempts. Try again in a few minutes.' }),
+    authRateLimit: limiter({
+      windowMs,
+      limit: authMax,
+      message: 'Too many sign-in attempts. Try again in a few minutes.',
+    }),
     parameterPollution: hpp(),
     sanitizeInput,
   };

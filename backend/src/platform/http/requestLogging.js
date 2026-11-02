@@ -45,7 +45,10 @@ function slowRequestWarning(thresholdMs) {
     res.on('finish', () => {
       const durationMs = Number(process.hrtime.bigint() - started) / 1e6;
       if (durationMs > thresholdMs) {
-        req.log.warn({ durationMs: Math.round(durationMs), thresholdMs, method: req.method, url: req.originalUrl }, 'slow request');
+        req.log.warn(
+          { durationMs: Math.round(durationMs), thresholdMs, method: req.method, url: req.originalUrl },
+          'slow request',
+        );
       }
     });
     next();

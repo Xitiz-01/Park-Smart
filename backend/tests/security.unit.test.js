@@ -10,7 +10,11 @@ const { securityMiddleware, stripMongoOperators, AUTH_RATE_LIMITED_PATHS } = req
 const { errorHandler } = require('../src/platform/http/errorHandler');
 
 const silent = createLogger({ level: 'silent' });
-const appWith = (env = {}) => createApp({ config: parseEnv({ NODE_ENV: 'test', CORS_ORIGINS: 'https://app.example.com', ...env }), logger: silent });
+const appWith = (env = {}) =>
+  createApp({
+    config: parseEnv({ NODE_ENV: 'test', CORS_ORIGINS: 'https://app.example.com', ...env }),
+    logger: silent,
+  });
 
 test('security headers are set and the framework is not advertised', async () => {
   const response = await request(appWith()).get('/api');
@@ -56,18 +60,31 @@ test('sign-in and sign-up have their own, tighter limit', async () => {
 
 test('oversized JSON bodies are refused', async () => {
   const app = appWith({ JSON_BODY_LIMIT: '1kb' });
-  const response = await request(app).post('/api/bookings').set('Content-Type', 'application/json').send(JSON.stringify({ note: 'x'.repeat(2048) }));
+  const response = await request(app)
+    .post('/api/bookings')
+    .set('Content-Type', 'application/json')
+    .send(JSON.stringify({ note: 'x'.repeat(2048) }));
   assert.equal(response.status, 413);
   assert.equal(response.body.error.code, 'PAYLOAD_TOO_LARGE');
 });
 
 test('operator and dotted keys are removed from input at any depth', () => {
-  const input = { email: 'a@example.com', password: { $ne: '' }, filters: [{ 'owner.role': 'admin', city: 'Pune' }], $where: 'sleep(1000)' };
+  const input = {
+    email: 'a@example.com',
+    password: { $ne: '' },
+    filters: [{ 'owner.role': 'admin', city: 'Pune' }],
+    $where: 'sleep(1000)',
+  };
   assert.deepEqual(stripMongoOperators(input), { email: 'a@example.com', password: {}, filters: [{ city: 'Pune' }] });
 });
 
 test('trust proxy follows the environment: one hop in production, loopback elsewhere', () => {
-  const production = { NODE_ENV: 'production', MONGODB_URI: 'mongodb://db/x', BETTER_AUTH_SECRET: 'x'.repeat(32), ADDRESS_SELECTION_SECRET: 'y' };
+  const production = {
+    NODE_ENV: 'production',
+    MONGODB_URI: 'mongodb://db/x',
+    BETTER_AUTH_SECRET: 'x'.repeat(32),
+    ADDRESS_SELECTION_SECRET: 'y',
+  };
   assert.equal(parseEnv(production).http.trustProxy, 1);
   assert.equal(parseEnv({ ...production, TRUST_PROXY: '2' }).http.trustProxy, 2);
   assert.equal(parseEnv({ NODE_ENV: 'test' }).http.trustProxy, 'loopback');

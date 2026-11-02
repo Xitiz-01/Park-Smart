@@ -76,7 +76,7 @@ const bookingSchema = new mongoose.Schema(
       unique: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Generate unique booking code before save

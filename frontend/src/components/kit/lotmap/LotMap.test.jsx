@@ -5,8 +5,12 @@ import CapacityTimeline from './CapacityTimeline';
 import { timelineStarts } from './useCapacityTimeline';
 
 const slot = (id, number, status, kw = 22) => ({
-  _id: id, slotNumber: number, chargerPowerKw: kw, connectorType: 'CCS2',
-  availabilityStatus: status, available: status === 'available',
+  _id: id,
+  slotNumber: number,
+  chargerPowerKw: kw,
+  connectorType: 'CCS2',
+  availabilityStatus: status,
+  available: status === 'available',
 });
 
 const slots = [
@@ -29,7 +33,8 @@ describe('EV mode', () => {
     expect(screen.getByRole('option', { name: 'EV02, 60 kilowatt, Reserved' })).toBeDisabled();
     expect(screen.getByRole('option', { name: 'EV06, 11 kilowatt, Unavailable' })).toBeDisabled();
     // every state is written out, not just coloured
-    for (const text of ['Available', 'Reserved', 'Maintenance', 'Occupied', 'Unavailable']) expect(listbox.textContent).toContain(text);
+    for (const text of ['Available', 'Reserved', 'Maintenance', 'Occupied', 'Unavailable'])
+      expect(listbox.textContent).toContain(text);
 
     fireEvent.click(screen.getByRole('option', { name: /EV03/ }));
     expect(onSelect).toHaveBeenCalledWith('c');
@@ -62,7 +67,11 @@ describe('EV mode', () => {
   test('a live update changes the bay state and shows the message', () => {
     const { rerender } = render(<EvLotMap slots={slots} selectedId="c" onSelect={() => {}} />);
     const taken = slots.map((s) => (s._id === 'c' ? slot('c', 'EV03', 'reserved') : s));
-    act(() => { rerender(<EvLotMap slots={taken} selectedId="" onSelect={() => {}} notice="EV03 was just taken. Pick another bay." />); });
+    act(() => {
+      rerender(
+        <EvLotMap slots={taken} selectedId="" onSelect={() => {}} notice="EV03 was just taken. Pick another bay." />,
+      );
+    });
     expect(screen.getByRole('option', { name: 'EV03, 22 kilowatt, Reserved' })).toBeDisabled();
     expect(screen.getByRole('status')).toHaveTextContent('EV03 was just taken');
     expect(screen.queryByRole('option', { selected: true })).toBeNull();
@@ -113,7 +122,11 @@ describe('Capacity mode', () => {
 describe('Capacity timeline', () => {
   test('does not call out a window when all are equal', () => {
     const at = (h) => new Date(`2026-10-11T${String(h).padStart(2, '0')}:00:00`);
-    render(<CapacityTimeline windows={[10, 11].map((h) => ({ start: at(h), end: at(h + 2), available: 5, total: 5, isOpen: true }))} />);
+    render(
+      <CapacityTimeline
+        windows={[10, 11].map((h) => ({ start: at(h), end: at(h + 2), available: 5, total: 5, isOpen: true }))}
+      />,
+    );
     expect(screen.queryByText('Most free')).toBeNull();
   });
 

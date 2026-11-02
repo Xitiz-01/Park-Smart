@@ -34,10 +34,12 @@ function createApp({ config = getConfig(), logger = defaultLogger, healthChecks 
   app.use(slowRequestWarning(config.log.slowRequestMs));
   app.use(security.headers);
   app.use('/health', healthRouter(healthChecks));
-  app.use(cors({
-    origin: config.allowedOrigins,
-    credentials: true,
-  }));
+  app.use(
+    cors({
+      origin: config.allowedOrigins,
+      credentials: true,
+    }),
+  );
   app.use(security.compression);
   app.use('/api', security.apiRateLimit);
   app.use(AUTH_RATE_LIMITED_PATHS, security.authRateLimit);

@@ -32,16 +32,25 @@ export default function Hero({ primary, secondary }) {
             Parking, without the searching.
           </h1>
           <p className="mt-6 max-w-[34rem] text-lg text-pretty text-text-muted">
-            See which bays are free near you, reserve one for the time you need, and drive straight in.
-            Driving electric? Pick the exact charging bay.
+            See which bays are free near you, reserve one for the time you need, and drive straight in. Driving
+            electric? Pick the exact charging bay.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Button asChild size="lg"><Link to={primary.to}>{primary.label}</Link></Button>
-            {secondary && <Button asChild size="lg" variant="outline"><Link to={secondary.to}>{secondary.label}</Link></Button>}
+            <Button asChild size="lg">
+              <Link to={primary.to}>{primary.label}</Link>
+            </Button>
+            {secondary && (
+              <Button asChild size="lg" variant="outline">
+                <Link to={secondary.to}>{secondary.label}</Link>
+              </Button>
+            )}
           </div>
           <ul className="mt-8 flex flex-wrap gap-2" aria-label="What ParkSmart does">
             {proof.map(({ icon: Icon, label }) => (
-              <li key={label} className="inline-flex items-center gap-2 rounded-lg border bg-surface-raised px-3 py-1.5 text-sm text-foreground shadow-hairline">
+              <li
+                key={label}
+                className="inline-flex items-center gap-2 rounded-lg border bg-surface-raised px-3 py-1.5 text-sm text-foreground shadow-hairline"
+              >
                 <Icon aria-hidden="true" className="size-4 text-brand" />
                 {label}
               </li>

@@ -9,7 +9,10 @@ const quiet = { log() {} };
 test('DigiLocker clean-up reports leftovers and drops only the OAuth state collection', async (t) => {
   const client = await MongoClient.connect(mongoBase);
   const db = client.db('parksmart-digilocker-cleanup-test');
-  t.after(async () => { await db.dropDatabase(); await client.close(); });
+  t.after(async () => {
+    await db.dropDatabase();
+    await client.close();
+  });
   await db.dropDatabase();
 
   // Nothing there: a dry run and an apply are both no-ops.

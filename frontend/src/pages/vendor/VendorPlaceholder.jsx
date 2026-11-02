@@ -26,8 +26,12 @@ const SECTIONS = {
     title: 'Settings',
     icon: Settings,
     summary: 'There are no account settings to change here yet.',
-    today: 'Your business name, type and phone are on Business profile; each location’s prices and hours are in its editor.',
-    links: [['/vendor/profile', 'Business profile'], ['/vendor/locations', 'Parking locations']],
+    today:
+      'Your business name, type and phone are on Business profile; each location’s prices and hours are in its editor.',
+    links: [
+      ['/vendor/profile', 'Business profile'],
+      ['/vendor/locations', 'Parking locations'],
+    ],
   },
 };
 
@@ -39,7 +43,9 @@ export default function VendorPlaceholder() {
     return (
       <>
         <PageHeader eyebrow="Operator" title="Page not found" description="There’s no operator page at this address." />
-        <Button asChild><Link to="/vendor">Go to the overview</Link></Button>
+        <Button asChild>
+          <Link to="/vendor">Go to the overview</Link>
+        </Button>
       </>
     );
   }
@@ -50,15 +56,25 @@ export default function VendorPlaceholder() {
       <PageHeader eyebrow="Operator" title={page.title} />
       <section aria-labelledby="soon-title" className="max-w-2xl rounded-2xl border border-dashed bg-card p-6 sm:p-8">
         <div className="flex items-start gap-4">
-          <span aria-hidden="true" className="grid size-12 shrink-0 place-items-center rounded-xl bg-surface-sunken text-text-muted"><Icon className="size-6" /></span>
+          <span
+            aria-hidden="true"
+            className="grid size-12 shrink-0 place-items-center rounded-xl bg-surface-sunken text-text-muted"
+          >
+            <Icon className="size-6" />
+          </span>
           <div className="min-w-0">
             <StatusBadge tone="neutral">Not available yet</StatusBadge>
-            <h2 id="soon-title" className="mt-3 font-display text-xl font-semibold text-balance">{page.summary}</h2>
+            <h2 id="soon-title" className="mt-3 font-display text-xl font-semibold text-balance">
+              {page.summary}
+            </h2>
             <p className="mt-2 text-text-muted">{page.today}</p>
             <div className="mt-6 flex flex-wrap gap-2">
               {page.links.map(([to, label], index) => (
                 <Button key={to} asChild variant={index === 0 ? 'default' : 'outline'}>
-                  <Link to={to}>{label}{index === 0 && <ArrowRight data-icon="inline-end" />}</Link>
+                  <Link to={to}>
+                    {label}
+                    {index === 0 && <ArrowRight data-icon="inline-end" />}
+                  </Link>
                 </Button>
               ))}
             </div>

@@ -16,11 +16,12 @@ class AppError extends Error {
   }
 }
 
-const define = (status, code, fallbackMessage) => class extends AppError {
-  constructor(message = fallbackMessage, options = {}) {
-    super(message, { status, code, ...options });
-  }
-};
+const define = (status, code, fallbackMessage) =>
+  class extends AppError {
+    constructor(message = fallbackMessage, options = {}) {
+      super(message, { status, code, ...options });
+    }
+  };
 
 class ValidationError extends define(400, 'VALIDATION_FAILED', 'The request is not valid') {}
 class UnauthorizedError extends define(401, 'UNAUTHENTICATED', 'Sign in to continue') {}

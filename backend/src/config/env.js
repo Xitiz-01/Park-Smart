@@ -6,66 +6,86 @@ const dotenv = require('dotenv');
 const { z } = require('zod');
 
 const TEST_MONGODB_URI = 'mongodb://127.0.0.1:27028/parksmart-test';
-const list = (value) => String(value || '').split(',').map((entry) => entry.trim()).filter(Boolean);
+const list = (value) =>
+  String(value || '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
 const flag = (fallback) => z.stringbool().default(fallback);
-const optionalString = z.string().trim().optional().transform((value) => value || undefined);
+const optionalString = z
+  .string()
+  .trim()
+  .optional()
+  .transform((value) => value || undefined);
 const optionalUrl = optionalString.pipe(z.url().optional());
 
-const schema = z
-  .object({
-    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-    PORT: z.coerce.number().int().min(1).max(65535).default(5000),
-    // Defaults: debug in development, silent under test, info in production.
-    LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).optional(),
-    SLOW_REQUEST_MS: z.coerce.number().int().min(1).default(1500),
+const schema = z.object({
+  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  PORT: z.coerce.number().int().min(1).max(65535).default(5000),
+  // Defaults: debug in development, silent under test, info in production.
+  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).optional(),
+  SLOW_REQUEST_MS: z.coerce.number().int().min(1).default(1500),
 
-    // HTTP hardening. TRUST_PROXY is Express's "trust proxy" setting: a hop
-    // count, true/false, or a named range such as "loopback". It defaults to
-    // 1 in production (one load balancer in front, as on Render, Railway or
-    // Fly) and to loopback elsewhere.
-    TRUST_PROXY: optionalString,
-    JSON_BODY_LIMIT: z.string().trim().regex(/^\d+(b|kb|mb)$/i, 'must look like 100kb or 1mb').default('100kb'),
-    RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1000).default(15 * 60 * 1000),
-    RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(600),
-    AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(30),
+  // HTTP hardening. TRUST_PROXY is Express's "trust proxy" setting: a hop
+  // count, true/false, or a named range such as "loopback". It defaults to
+  // 1 in production (one load balancer in front, as on Render, Railway or
+  // Fly) and to loopback elsewhere.
+  TRUST_PROXY: optionalString,
+  JSON_BODY_LIMIT: z
+    .string()
+    .trim()
+    .regex(/^\d+(b|kb|mb)$/i, 'must look like 100kb or 1mb')
+    .default('100kb'),
+  RATE_LIMIT_WINDOW_MS: z.coerce
+    .number()
+    .int()
+    .min(1000)
+    .default(15 * 60 * 1000),
+  RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(600),
+  AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(30),
 
-    // Required everywhere except NODE_ENV=test, where the suites that need a
-    // database set their own and pure unit tests need none.
-    MONGODB_URI: optionalString.pipe(z.string().regex(/^mongodb(\+srv)?:\/\//, 'must be a mongodb:// or mongodb+srv:// URI').optional()),
+  // Required everywhere except NODE_ENV=test, where the suites that need a
+  // database set their own and pure unit tests need none.
+  MONGODB_URI: optionalString.pipe(
+    z
+      .string()
+      .regex(/^mongodb(\+srv)?:\/\//, 'must be a mongodb:// or mongodb+srv:// URI')
+      .optional(),
+  ),
 
-    // Browser origins allowed to call the API with credentials. CLIENT_URL and
-    // BETTER_AUTH_TRUSTED_ORIGINS are added to this list.
-    CORS_ORIGINS: z.string().default('http://localhost:3000,https://park-smart-eight.vercel.app'),
-    CLIENT_URL: optionalUrl,
+  // Browser origins allowed to call the API with credentials. CLIENT_URL and
+  // BETTER_AUTH_TRUSTED_ORIGINS are added to this list.
+  CORS_ORIGINS: z.string().default('http://localhost:3000,https://park-smart-eight.vercel.app'),
+  CLIENT_URL: optionalUrl,
 
-    BETTER_AUTH_SECRET: optionalString,
-    BETTER_AUTH_URL: optionalUrl,
-    BETTER_AUTH_TRUSTED_ORIGINS: z.string().default(''),
-    BETTER_AUTH_CROSS_SITE_COOKIES: flag(false),
-    BETTER_AUTH_MONGO_TRANSACTIONS: flag(false),
+  BETTER_AUTH_SECRET: optionalString,
+  BETTER_AUTH_URL: optionalUrl,
+  BETTER_AUTH_TRUSTED_ORIGINS: z.string().default(''),
+  BETTER_AUTH_CROSS_SITE_COOKIES: flag(false),
+  BETTER_AUTH_MONGO_TRANSACTIONS: flag(false),
 
-    // Signs the address picked in the location form. JWT_SECRET is the legacy name.
-    ADDRESS_SELECTION_SECRET: optionalString,
-    JWT_SECRET: optionalString,
+  // Signs the address picked in the location form. JWT_SECRET is the legacy name.
+  ADDRESS_SELECTION_SECRET: optionalString,
+  JWT_SECRET: optionalString,
 
-    EXTERNAL_PARKING_CACHE_TTL_MS: z.coerce.number().int().min(0).default(120000),
-    GEOCODING_PROVIDER: z.string().trim().toLowerCase().default('geoapify'),
-    GEOCODING_API_KEY: optionalString,
-    API_NINJAS_API_KEY: optionalString,
+  EXTERNAL_PARKING_CACHE_TTL_MS: z.coerce.number().int().min(0).default(120000),
+  GEOCODING_PROVIDER: z.string().trim().toLowerCase().default('geoapify'),
+  GEOCODING_API_KEY: optionalString,
+  API_NINJAS_API_KEY: optionalString,
 
-    VERIFICATION_STORAGE_PROVIDER: z.string().trim().toLowerCase().default('local'),
-    VERIFICATION_STORAGE_LOCAL_PATH: optionalString,
+  VERIFICATION_STORAGE_PROVIDER: z.string().trim().toLowerCase().default('local'),
+  VERIFICATION_STORAGE_LOCAL_PATH: optionalString,
 
-    CASHFREE_VERIFY_ENABLED: flag(false),
-    CASHFREE_CLIENT_ID: optionalString,
-    CASHFREE_CLIENT_SECRET: optionalString,
-    CASHFREE_VERIFY_BASE_URL: z.url().default('https://sandbox.cashfree.com/verification'),
+  CASHFREE_VERIFY_ENABLED: flag(false),
+  CASHFREE_CLIENT_ID: optionalString,
+  CASHFREE_CLIENT_SECRET: optionalString,
+  CASHFREE_VERIFY_BASE_URL: z.url().default('https://sandbox.cashfree.com/verification'),
 
-    // Feature flags for work that lands in later phases. All off by default.
-    CLERK_ENABLED: flag(false),
-    PAYMENTS_ENABLED: flag(false),
-    PASSES_ENABLED: flag(false),
-  });
+  // Feature flags for work that lands in later phases. All off by default.
+  CLERK_ENABLED: flag(false),
+  PAYMENTS_ENABLED: flag(false),
+  PASSES_ENABLED: flag(false),
+});
 
 // Rules that depend on more than one variable. They read the raw strings so
 // they're reported together with the per-variable problems above (zod skips
@@ -83,7 +103,11 @@ const crossFieldProblems = (source) => {
       problems.push({ key: 'ADDRESS_SELECTION_SECRET', message: 'is required in production' });
     }
   }
-  if (String(source.CASHFREE_VERIFY_ENABLED ?? '').trim().toLowerCase() === 'true') {
+  if (
+    String(source.CASHFREE_VERIFY_ENABLED ?? '')
+      .trim()
+      .toLowerCase() === 'true'
+  ) {
     for (const key of ['CASHFREE_CLIENT_ID', 'CASHFREE_CLIENT_SECRET']) {
       if (!has(key)) problems.push({ key, message: 'is required when CASHFREE_VERIFY_ENABLED=true' });
     }
@@ -94,7 +118,9 @@ const crossFieldProblems = (source) => {
 class EnvValidationError extends Error {
   /** @param {{ key: string, message: string }[]} problems */
   constructor(problems) {
-    super(`Invalid environment configuration:\n${problems.map(({ key, message }) => `  - ${key}: ${message}`).join('\n')}`);
+    super(
+      `Invalid environment configuration:\n${problems.map(({ key, message }) => `  - ${key}: ${message}`).join('\n')}`,
+    );
     this.name = 'EnvValidationError';
     this.problems = problems;
   }
@@ -146,7 +172,9 @@ const deepFreeze = (value) => {
 function parseEnv(source) {
   const result = schema.safeParse(source);
   const problems = [
-    ...(result.success ? [] : result.error.issues.map((issue) => ({ key: issue.path.join('.') || '(root)', message: issue.message }))),
+    ...(result.success
+      ? []
+      : result.error.issues.map((issue) => ({ key: issue.path.join('.') || '(root)', message: issue.message }))),
     ...crossFieldProblems(source),
   ];
   if (problems.length) throw new EnvValidationError(problems);
@@ -167,7 +195,9 @@ function parseEnv(source) {
       jsonBodyLimit: env.JSON_BODY_LIMIT.toLowerCase(),
       rateLimit: { windowMs: env.RATE_LIMIT_WINDOW_MS, max: env.RATE_LIMIT_MAX, authMax: env.AUTH_RATE_LIMIT_MAX },
     },
-    allowedOrigins: [...new Set([env.CLIENT_URL, ...list(env.CORS_ORIGINS), ...list(env.BETTER_AUTH_TRUSTED_ORIGINS)].filter(Boolean))],
+    allowedOrigins: [
+      ...new Set([env.CLIENT_URL, ...list(env.CORS_ORIGINS), ...list(env.BETTER_AUTH_TRUSTED_ORIGINS)].filter(Boolean)),
+    ],
     auth: {
       secret: env.BETTER_AUTH_SECRET,
       url: env.BETTER_AUTH_URL || `http://localhost:${env.PORT}`,
@@ -178,7 +208,10 @@ function parseEnv(source) {
     externalParkingCacheTtlMs: env.EXTERNAL_PARKING_CACHE_TTL_MS,
     geocoding: { provider: env.GEOCODING_PROVIDER, apiKey: env.GEOCODING_API_KEY },
     vehicleCatalog: { apiNinjasApiKey: env.API_NINJAS_API_KEY },
-    verificationStorage: { provider: env.VERIFICATION_STORAGE_PROVIDER, localPath: env.VERIFICATION_STORAGE_LOCAL_PATH },
+    verificationStorage: {
+      provider: env.VERIFICATION_STORAGE_PROVIDER,
+      localPath: env.VERIFICATION_STORAGE_LOCAL_PATH,
+    },
     cashfree: {
       enabled: env.CASHFREE_VERIFY_ENABLED,
       clientId: env.CASHFREE_CLIENT_ID,

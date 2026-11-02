@@ -15,25 +15,38 @@ const listVerificationCases = async (req, res, next) => {
     if (req.query.type === 'document') query.vendor = { $in: await VerificationDocument.distinct('vendor') };
     if (req.query.type === 'authorization') query.vendor = { $in: await ParkingAuthorization.distinct('vendor') };
     const verifications = await VendorVerification.find(query)
-      .populate({ path: 'vendor', select: 'businessName businessEmail userId', populate: { path: 'userId', select: 'name email' } })
+      .populate({
+        path: 'vendor',
+        select: 'businessName businessEmail userId',
+        populate: { path: 'userId', select: 'name email' },
+      })
       .sort({ updatedAt: -1 });
     const filtered = req.query.vendor
-      ? verifications.filter((item) => `${item.vendor?.businessName || ''} ${item.vendor?.userId?.name || ''} ${item.vendor?.userId?.email || ''}`.toLowerCase().includes(String(req.query.vendor).toLowerCase()))
+      ? verifications.filter((item) =>
+          `${item.vendor?.businessName || ''} ${item.vendor?.userId?.name || ''} ${item.vendor?.userId?.email || ''}`
+            .toLowerCase()
+            .includes(String(req.query.vendor).toLowerCase()),
+        )
       : verifications;
     return res.json({ success: true, cases: filtered });
-  } catch (error) { return next(error); }
+  } catch (error) {
+    return next(error);
+  }
 };
 
 const getVerificationCase = async (req, res, next) => {
   try {
-    if (!mongoose.isValidObjectId(req.params.vendorId)) return res.status(400).json({ success: false, message: 'Invalid vendor ID' });
+    if (!mongoose.isValidObjectId(req.params.vendorId))
+      return res.status(400).json({ success: false, message: 'Invalid vendor ID' });
     const [summary, vendor] = await Promise.all([
       getVerificationSummary(req.params.vendorId),
       VendorProfile.findById(req.params.vendorId).populate('userId', 'name email phone'),
     ]);
     if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found' });
     return res.json({ success: true, vendor, ...summary });
-  } catch (error) { return next(error); }
+  } catch (error) {
+    return next(error);
+  }
 };
 
 const getReviewTarget = async (type, id, includeStorage = false) => {
@@ -50,8 +63,11 @@ const reviewEvidence = async (req, res, next) => {
     const action = String(req.params.action || '').toLowerCase();
     const transitions = { approve: 'VERIFIED', reject: 'REJECTED', resubmit: 'RESUBMISSION_REQUIRED' };
     if (!transitions[action]) return res.status(400).json({ success: false, message: 'Invalid review action' });
-    const reason = String(req.body.reason || '').trim().slice(0, 500);
-    if (action !== 'approve' && !reason) return res.status(400).json({ success: false, message: 'A reason is required' });
+    const reason = String(req.body.reason || '')
+      .trim()
+      .slice(0, 500);
+    if (action !== 'approve' && !reason)
+      return res.status(400).json({ success: false, message: 'A reason is required' });
     const target = await getReviewTarget(req.params.type, req.params.id);
     if (!target) return res.status(404).json({ success: false, message: 'Verification evidence not found' });
     const previousStatus = target.status;
@@ -62,10 +78,16 @@ const reviewEvidence = async (req, res, next) => {
     target.rejectionReason = action === 'reject' ? reason : undefined;
     target.resubmissionReason = action === 'resubmit' ? reason : undefined;
     await target.save();
-    if (req.params.type === 'document') await recomputeVerification(target.vendor, { reviewer: req.user._id, rejectionReason: target.rejectionReason, resubmissionReason: target.resubmissionReason });
+    if (req.params.type === 'document')
+      await recomputeVerification(target.vendor, {
+        reviewer: req.user._id,
+        rejectionReason: target.rejectionReason,
+        resubmissionReason: target.resubmissionReason,
+      });
     await audit({
       vendor: target.vendor,
-      action: action === 'approve' ? 'ADMIN_APPROVED' : action === 'reject' ? 'ADMIN_REJECTED' : 'RESUBMISSION_REQUESTED',
+      action:
+        action === 'approve' ? 'ADMIN_APPROVED' : action === 'reject' ? 'ADMIN_REJECTED' : 'RESUBMISSION_REQUESTED',
       previousStatus,
       newStatus: target.status,
       reviewer: req.user._id,
@@ -74,8 +96,14 @@ const reviewEvidence = async (req, res, next) => {
       parkingAuthorization: req.params.type === 'authorization' ? target._id : undefined,
       note: reason || undefined,
     });
-    return res.json({ success: true, message: `Evidence marked ${target.status.toLowerCase().replaceAll('_', ' ')}`, evidence: target });
-  } catch (error) { return next(error); }
+    return res.json({
+      success: true,
+      message: `Evidence marked ${target.status.toLowerCase().replaceAll('_', ' ')}`,
+      evidence: target,
+    });
+  } catch (error) {
+    return next(error);
+  }
 };
 
 const readEvidence = async (req, res, next) => {
@@ -83,11 +111,19 @@ const readEvidence = async (req, res, next) => {
     const target = await getReviewTarget(req.params.type, req.params.id, true);
     if (!target?.storageKey) return res.status(404).json({ success: false, message: 'Private document not found' });
     const content = await storage.read(target.storageKey);
-    await audit({ vendor: target.vendor, action: 'DOCUMENT_VIEWED', reviewer: req.user._id, provider: req.params.type === 'document' ? target.provider : 'MANUAL', document: req.params.type === 'document' ? target._id : undefined, parkingAuthorization: req.params.type === 'authorization' ? target._id : undefined });
+    await audit({
+      vendor: target.vendor,
+      action: 'DOCUMENT_VIEWED',
+      reviewer: req.user._id,
+      provider: req.params.type === 'document' ? target.provider : 'MANUAL',
+      document: req.params.type === 'document' ? target._id : undefined,
+      parkingAuthorization: req.params.type === 'authorization' ? target._id : undefined,
+    });
     res.set('Cache-Control', 'no-store, private');
     res.set('Content-Security-Policy', "default-src 'none'; sandbox");
     res.set('X-Content-Type-Options', 'nosniff');
-    const extension = { 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png' }[target.safeMetadata?.mimeType] || 'bin';
+    const extension =
+      { 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png' }[target.safeMetadata?.mimeType] || 'bin';
     res.set('Content-Disposition', `attachment; filename="verification-document.${extension}"`);
     res.type(target.safeMetadata?.mimeType || 'application/octet-stream');
     return res.send(content);

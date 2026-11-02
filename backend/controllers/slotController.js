@@ -127,7 +127,7 @@ out center tags;
           body: `data=${encodeURIComponent(query)}`,
         },
         10000,
-        endpoint
+        endpoint,
       );
 
       return {
@@ -177,7 +177,7 @@ const fetchFromNominatim = async ({ userLat, userLng, radiusMeters, maxResults }
       },
     },
     9000,
-    'Nominatim'
+    'Nominatim',
   );
 
   if (!Array.isArray(data)) {
@@ -228,7 +228,9 @@ const getAllSlots = async (req, res) => {
     if (type) filter.type = type;
     if (status) filter.status = status;
 
-    const slots = await ParkingSlot.find(filter).populate('currentBooking').populate('parkingLocation', 'name address status');
+    const slots = await ParkingSlot.find(filter)
+      .populate('currentBooking')
+      .populate('parkingLocation', 'name address status');
     const totalSlots = await ParkingSlot.countDocuments();
     const availableSlots = await ParkingSlot.countDocuments({ status: 'available' });
 
@@ -265,7 +267,9 @@ const getNearbySlots = async (req, res) => {
     if (type) filter.type = type;
     if (status) filter.status = status;
 
-    const slots = await ParkingSlot.find(filter).populate('currentBooking').populate('parkingLocation', 'name address status');
+    const slots = await ParkingSlot.find(filter)
+      .populate('currentBooking')
+      .populate('parkingLocation', 'name address status');
     const nearby = slots
       .filter((slot) => Number.isFinite(slot.location?.lat) && Number.isFinite(slot.location?.lng))
       .map((slot) => {
@@ -388,7 +392,9 @@ const getExternalNearbyParking = async (req, res) => {
 // @route   GET /api/slots/:id
 const getSlotById = async (req, res) => {
   try {
-    const slot = await ParkingSlot.findById(req.params.id).populate('currentBooking').populate('parkingLocation', 'name address status');
+    const slot = await ParkingSlot.findById(req.params.id)
+      .populate('currentBooking')
+      .populate('parkingLocation', 'name address status');
     if (!slot) return res.status(404).json({ success: false, message: 'Slot not found' });
     res.json({ success: true, slot });
   } catch (error) {
@@ -446,7 +452,7 @@ const seedSlots = async (req, res) => {
     const zones = ['A', 'B', 'C', 'D'];
     const floors = ['G', '1', '2'];
     const zoneCenters = {
-      A: { lat: 28.6130, lng: 77.2080, label: 'Zone A - North' },
+      A: { lat: 28.613, lng: 77.208, label: 'Zone A - North' },
       B: { lat: 28.6122, lng: 77.2093, label: 'Zone B - East' },
       C: { lat: 28.6137, lng: 77.2104, label: 'Zone C - South' },
       D: { lat: 28.6146, lng: 77.2089, label: 'Zone D - West' },
@@ -458,8 +464,8 @@ const seedSlots = async (req, res) => {
         for (let i = 1; i <= 5; i++) {
           const type = i === 1 ? 'disabled' : i === 5 ? 'ev' : i % 2 === 0 ? 'compact' : 'standard';
           const zoneCenter = zoneCenters[zone];
-          const latJitter = (floorIndex * 0.00015) + (i * 0.00002);
-          const lngJitter = (zoneIndex * 0.00009) + (i * 0.00002);
+          const latJitter = floorIndex * 0.00015 + i * 0.00002;
+          const lngJitter = zoneIndex * 0.00009 + i * 0.00002;
           slots.push({
             slotNumber: `${zone}${floor}${String(i).padStart(2, '0')}`,
             floor,

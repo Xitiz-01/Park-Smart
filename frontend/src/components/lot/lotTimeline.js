@@ -24,7 +24,14 @@ export const DEFAULT_TARGET = 'B4';
 export const LEAVING_BAY = 'C2';
 
 // Which how-it-works step each beat belongs to (Find → Reserve → Park).
-export const STEP_FOR_BEAT = { intro: 'find', locate: 'find', route: 'find', reserve: 'reserve', park: 'park', release: 'park' };
+export const STEP_FOR_BEAT = {
+  intro: 'find',
+  locate: 'find',
+  route: 'find',
+  reserve: 'reserve',
+  park: 'park',
+  release: 'park',
+};
 // The beat each step shows when the scroll story selects it.
 export const BEAT_FOR_STEP = { find: 'route', reserve: 'reserve', park: 'park' };
 

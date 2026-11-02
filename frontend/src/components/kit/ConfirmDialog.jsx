@@ -1,7 +1,13 @@
 import { createContext, useCallback, useContext, useRef, useState } from 'react';
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
-  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
 const ConfirmContext = createContext(null);
@@ -20,12 +26,16 @@ export function ConfirmProvider({ children }) {
   // focus and hand it back on close.
   const returnFocusTo = useRef(null);
 
-  const confirm = useCallback((options) => new Promise((resolve) => {
-    resolver.current?.(false);
-    resolver.current = resolve;
-    returnFocusTo.current = document.activeElement;
-    setRequest({ cancelLabel: 'Keep it', confirmLabel: 'Confirm', tone: 'default', ...options });
-  }), []);
+  const confirm = useCallback(
+    (options) =>
+      new Promise((resolve) => {
+        resolver.current?.(false);
+        resolver.current = resolve;
+        returnFocusTo.current = document.activeElement;
+        setRequest({ cancelLabel: 'Keep it', confirmLabel: 'Confirm', tone: 'default', ...options });
+      }),
+    [],
+  );
 
   const settle = (answer) => {
     resolver.current?.(answer);
@@ -36,7 +46,12 @@ export function ConfirmProvider({ children }) {
   return (
     <ConfirmContext.Provider value={confirm}>
       {children}
-      <AlertDialog open={Boolean(request)} onOpenChange={(open) => { if (!open) settle(false); }}>
+      <AlertDialog
+        open={Boolean(request)}
+        onOpenChange={(open) => {
+          if (!open) settle(false);
+        }}
+      >
         <AlertDialogContent
           onCloseAutoFocus={(event) => {
             event.preventDefault();

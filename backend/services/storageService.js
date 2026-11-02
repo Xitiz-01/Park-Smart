@@ -11,7 +11,11 @@ class LocalPrivateStorage {
   }
 
   async put(buffer, metadata = {}) {
-    const extension = metadata.extension ? `.${String(metadata.extension).replace(/[^a-z0-9]/gi, '').slice(0, 8)}` : '';
+    const extension = metadata.extension
+      ? `.${String(metadata.extension)
+          .replace(/[^a-z0-9]/gi, '')
+          .slice(0, 8)}`
+      : '';
     const key = `${new Date().toISOString().slice(0, 7)}/${crypto.randomUUID()}${extension}`;
     const destination = this.resolve(key);
     await fs.mkdir(path.dirname(destination), { recursive: true, mode: 0o700 });
