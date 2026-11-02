@@ -21,9 +21,13 @@ jobs:
   ci:
     name: ci
     uses: ./.github/workflows/ci.yml
+    # A reused workflow may only ask for what the caller grants.
+    # packages: write is for ci.yml's publish-image job, which is skipped on
+    # tags (it runs only for pushes to main).
     permissions:
       contents: read
       security-events: write
+      packages: write
 
   publish:
     name: publish
