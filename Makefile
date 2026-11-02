@@ -17,8 +17,8 @@ up: env ## Build and start the stack (dev images, hot reload) and wait until hea
 up-prod: env ## Start the stack with the production images (no override)
 	$(COMPOSE) -f docker-compose.yml up --build --detach --wait
 
-down: ## Stop the stack (data volumes are kept)
-	$(COMPOSE) down
+down: ## Stop the stack, tools included (data volumes are kept)
+	$(COMPOSE) --profile tools down
 
 logs: ## Follow the API and worker logs
 	$(COMPOSE) logs --follow api worker
@@ -32,8 +32,11 @@ seed: ## Seed the local database (fails if it already has users)
 reset-db: ## Drop the local database and seed it again
 	$(COMPOSE) run --rm seed node scripts/seed.js --reset
 
-test: ## Run the backend tests in a container against the stack's MongoDB
-	$(COMPOSE) run --rm --no-deps -e NODE_ENV=test -e TEST_MONGODB_URI=mongodb://mongo:27017 api npm test
+# The service's MONGODB_URI and REDIS_URL are cleared: tests pick their own
+# databases from TEST_MONGODB_URI and TEST_REDIS_URL.
+test: ## Run the backend tests in a container against the stack's MongoDB and Redis
+	$(COMPOSE) run --rm --no-deps -e NODE_ENV=test -e MONGODB_URI= -e REDIS_URL= \
+		-e TEST_MONGODB_URI=mongodb://mongo:27017 -e TEST_REDIS_URL=redis://redis:6379 api npm test
 
 tools: env ## Start mongo-express (8081) and Redis Insight (5540) as well
 	$(COMPOSE) --profile tools up --detach --wait
