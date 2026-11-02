@@ -252,10 +252,7 @@ jobs:
 
   compose-smoke:
     name: compose-smoke
-    # Pinned below Ubuntu 26: MongoDB 8 refuses to start on Linux 6.19 and
-    # newer (SERVER-121912), and ubuntu-latest now has such a kernel. Move
-    # back to ubuntu-latest once a MongoDB 8.0 release runs there.
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - name: Check out repository
@@ -264,6 +261,11 @@ jobs:
           persist-credentials: false
 
       - name: Start the stack with the production images
+        env:
+          # MongoDB 8 refuses to start on the runners' Linux 6.19+ kernel
+          # (SERVER-121912, no fixed release yet). The stack itself defaults to
+          # 8.0; this job checks its wiring with 7.0, as backend-ci's tests do.
+          MONGO_IMAGE: mongo:7.0@sha256:8bb4442761a63a8dda452744082cdac9644b429807eb977b42324a63cef59ca4
         run: |
           cp .env.example .env
           docker compose -f docker-compose.yml up --build --detach --wait --wait-timeout 300 2>&1 | tee compose-up.log

@@ -16,7 +16,7 @@ Or `make up`, which creates `.env` if it's missing. The first build takes a few 
 | `web` | http://localhost:8080 | The production frontend build behind nginx, which proxies `/api` and `/socket.io` to the API |
 | `api` | http://localhost:5001 | The Express API (`node server.js`); `/health/ready`, `/api/docs` |
 | `worker` | (internal, port 5002) | The worker process (`node worker.js`): health only until the Phase 8 queues |
-| `mongo` | `mongodb://127.0.0.1:27018/parksmart?directConnection=true` | MongoDB 8.0, single-node replica set `rs0` |
+| `mongo` | `mongodb://127.0.0.1:27018/parksmart?directConnection=true` | MongoDB 8.0 (override with `MONGO_IMAGE`), single-node replica set `rs0` |
 | `redis` | `redis://127.0.0.1:6380` | Redis 8 with append-only persistence |
 | `seed` | (runs once and exits) | Seeds an empty database |
 
@@ -88,7 +88,7 @@ REDIS_URL=redis://127.0.0.1:6380
 | `Bind for 127.0.0.1:8080 failed: port is already allocated` | Something else uses the port. Change `WEB_PORT` (or `API_PORT`, `MONGO_PORT`, `REDIS_PORT`) in `.env`. |
 | `docker compose up --wait` ends with `seed exited with code 1` | `docker compose logs seed`. Usually a database with users plus a plain `seed` call; the stack itself uses `--if-empty`. |
 | `mongo` stays `starting` | First boot initiates the replica set; give it 30 s. `docker compose logs mongo`. If the volume came from another replica set config, `make clean` and start again. |
-| `mongo` exits at once with "Linux kernel versions 6.19 and newer has a known incompatibility" | MongoDB 8 doesn't run on Linux 6.19+ yet ([SERVER-121912](https://jira.mongodb.org/browse/SERVER-121912)). Docker Desktop's VM kernel is older, so this hits Linux hosts. Until a fixed 8.0 release exists, run the stack on an older kernel, or locally change the `mongo` image to `mongo:7.0` (don't commit that: Atlas runs 8.0). CI's `compose-smoke` runs on `ubuntu-24.04` for this reason. |
+| `mongo` exits at once with "Linux kernel versions 6.19 and newer has a known incompatibility" | MongoDB 8 doesn't run on Linux 6.19+ yet ([SERVER-121912](https://jira.mongodb.org/browse/SERVER-121912)). Docker Desktop's VM kernel is older, so this hits Linux hosts. Until a fixed 8.0 release exists, set `MONGO_IMAGE=mongo:7.0` in `.env` (the app needs nothing newer). CI's `compose-smoke` does the same, because GitHub's runners have such a kernel. |
 | `/health/ready` says `degraded` with `redis: down` | Redis is unreachable. The API keeps serving (cache misses, rate limits not enforced). `docker compose start redis`; it reconnects by itself. |
 | `MongoServerSelectionError` from a tool on your machine | Add `directConnection=true` to the URI (see above). |
 | Sign-in works on :3000 but not on :8080 (or the reverse) | Both origins must be in `CORS_ORIGINS`; compose sets `http://localhost:${WEB_PORT}` and `http://localhost:3000`. If you changed `WEB_PORT`, restart with `make up`. |
