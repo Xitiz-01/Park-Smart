@@ -11,7 +11,14 @@ import { cn } from '@/lib/utils';
 // still says exactly that, nothing is searched: opening the location editor
 // used to fire a geocoding request and open a dropdown over the form (audit U).
 export default function AddressAutocomplete({
-  value, selected = '', onChange, onSelect, id, required = true, 'aria-describedby': describedBy, 'aria-invalid': invalid,
+  value,
+  selected = '',
+  onChange,
+  onSelect,
+  id,
+  required = true,
+  'aria-describedby': describedBy,
+  'aria-invalid': invalid,
 }) {
   const listId = useId();
   const [suggestions, setSuggestions] = useState([]);
@@ -22,8 +29,16 @@ export default function AddressAutocomplete({
 
   useEffect(() => {
     const query = value.trim();
-    if (selected && query === selected.trim()) { setSuggestions([]); setMessage(''); return undefined; }
-    if (query.length < 3) { setSuggestions([]); setMessage(''); return undefined; }
+    if (selected && query === selected.trim()) {
+      setSuggestions([]);
+      setMessage('');
+      return undefined;
+    }
+    if (query.length < 3) {
+      setSuggestions([]);
+      setMessage('');
+      return undefined;
+    }
     const timer = setTimeout(async () => {
       setLoading(true);
       setMessage('');
@@ -76,7 +91,10 @@ export default function AddressAutocomplete({
   return (
     <div className="relative">
       <div className="relative">
-        <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-text-muted" />
+        <Search
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-text-muted"
+        />
         <input
           id={id}
           role="combobox"
@@ -88,7 +106,10 @@ export default function AddressAutocomplete({
           aria-invalid={invalid}
           className="h-10 w-full min-w-0 rounded-lg border border-input bg-surface-raised py-1 pr-9 pl-9 text-base outline-none placeholder:text-text-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive md:text-sm pointer-coarse:h-11"
           value={value}
-          onChange={(event) => { onChange(event.target.value); setOpen(true); }}
+          onChange={(event) => {
+            onChange(event.target.value);
+            setOpen(true);
+          }}
           onKeyDown={onKeyDown}
           onBlur={() => setOpen(false)}
           onFocus={() => suggestions.length && setOpen(true)}
@@ -97,10 +118,18 @@ export default function AddressAutocomplete({
           spellCheck={false}
           required={required}
         />
-        {loading && <Spinner aria-hidden="true" className="absolute top-1/2 right-3 -translate-y-1/2 text-text-muted" />}
+        {loading && (
+          <Spinner aria-hidden="true" className="absolute top-1/2 right-3 -translate-y-1/2 text-text-muted" />
+        )}
       </div>
-      <p aria-live="polite" className="sr-only">{loading ? 'Searching addresses…' : expanded ? `${suggestions.length} suggestions` : ''}</p>
-      {message && <p id={statusId} className="mt-1.5 text-sm text-slot-reserved">{message}</p>}
+      <p aria-live="polite" className="sr-only">
+        {loading ? 'Searching addresses…' : expanded ? `${suggestions.length} suggestions` : ''}
+      </p>
+      {message && (
+        <p id={statusId} className="mt-1.5 text-sm text-slot-reserved">
+          {message}
+        </p>
+      )}
       <ul
         id={listId}
         role="listbox"
@@ -117,7 +146,10 @@ export default function AddressAutocomplete({
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => choose(suggestion)}
             onMouseMove={() => setActive(index)}
-            className={cn('flex cursor-pointer gap-2.5 rounded-lg px-3 py-2.5 text-sm leading-snug', index === active && 'bg-accent text-accent-foreground')}
+            className={cn(
+              'flex cursor-pointer gap-2.5 rounded-lg px-3 py-2.5 text-sm leading-snug',
+              index === active && 'bg-accent text-accent-foreground',
+            )}
           >
             <MapPin aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-brand" />
             <span>{suggestion.formattedAddress}</span>

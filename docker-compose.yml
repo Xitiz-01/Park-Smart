@@ -1,0 +1,187 @@
+# The whole ParkSmart stack on one machine:
+#
+#   cp .env.example .env && docker compose up --wait
+#
+# web http://localhost:8080 · API http://localhost:5001 · MongoDB 27018 · Redis 6380
+# (all published on 127.0.0.1 only). docker-compose.override.yml is applied
+# automatically and swaps in hot-reloading dev images; run
+# `docker compose -f docker-compose.yml up --wait` for the production images.
+# Optional profiles: `--profile tools` adds mongo-express and Redis Insight.
+# See docs/platform/LOCAL_DEV.md.
+name: parksmart
+
+# seed, api and worker run one image. Only api builds it (parallel builds of
+# the same tag collide); the others reuse it and never try to pull it.
+x-backend: &backend
+  image: parksmart-api:local
+  pull_policy: never
+  restart: unless-stopped
+  environment: &backend-env
+    NODE_ENV: ${NODE_ENV:-development}
+    LOG_LEVEL: ${LOG_LEVEL:-info}
+    PORT: 5000
+    WORKER_PORT: 5002
+    # The member advertises mongo:27017, which resolves inside this network.
+    MONGODB_URI: mongodb://mongo:27017/${MONGO_DB:-parksmart}?replicaSet=rs0
+    REDIS_URL: redis://redis:6379
+    # nginx (web) and Docker's gateway sit on private addresses.
+    TRUST_PROXY: uniquelocal
+    CLIENT_URL: http://localhost:${WEB_PORT:-8080}
+    CORS_ORIGINS: http://localhost:${WEB_PORT:-8080},http://localhost:3000
+    BETTER_AUTH_URL: http://localhost:${API_PORT:-5001}
+    BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET in .env (copy .env.example)}
+    ADDRESS_SELECTION_SECRET: ${ADDRESS_SELECTION_SECRET:?set ADDRESS_SELECTION_SECRET in .env (copy .env.example)}
+    GEOCODING_API_KEY: ${GEOCODING_API_KEY:-}
+    API_NINJAS_API_KEY: ${API_NINJAS_API_KEY:-}
+    SEED_PASSWORD: ${SEED_PASSWORD:?set SEED_PASSWORD in .env (copy .env.example)}
+
+services:
+  mongo:
+    # 8.0 matches Atlas. MONGO_IMAGE overrides it where MongoDB 8 can't start
+    # (Linux 6.19+ kernels, SERVER-121912); CI's compose-smoke uses 7.0.
+    image: ${MONGO_IMAGE:-mongo:8.0@sha256:b9924c330a8bbc5800fe9c69f04a84e221eca7b28fd049a0354147d9908fa142}
+    # A single-node replica set: transactions (bookings, the reservation
+    # ledger, later payments) need one.
+    command: ['--replSet', 'rs0', '--bind_ip_all']
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${MONGO_PORT:-27018}:27017'
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      # Initiates the replica set on first boot, then reports healthy once
+      # this member is a writable primary.
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - >-
+          try { rs.status() } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongo:27017' }] }) }
+          quit(db.hello().isWritablePrimary ? 0 : 1)
+      interval: 5s
+      timeout: 10s
+      start_period: 30s
+      start_interval: 1s
+      retries: 10
+
+  redis:
+    image: redis:8-alpine@sha256:21090af93f8324db2f0f0f4f38a7c60369d47d917e000c3423d89d2ae2883537
+    # Append-only file so rate-limit windows and (later) queues survive a restart.
+    command: ['redis-server', '--appendonly', 'yes', '--appendfsync', 'everysec']
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${REDIS_PORT:-6380}:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      start_period: 10s
+      start_interval: 1s
+      retries: 10
+
+  # One-shot: seeds the local accounts and data when the database is empty.
+  seed:
+    <<: *backend
+    restart: 'no'
+    command: ['node', 'scripts/seed.js', '--if-empty']
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  api:
+    <<: *backend
+    build:
+      context: ./backend
+    pull_policy: build
+    ports:
+      - '127.0.0.1:${API_PORT:-5001}:5000'
+    volumes:
+      - verification-docs:/app/private-verification-storage
+    healthcheck:
+      test: ['CMD', 'node', 'scripts/healthcheck.js']
+      interval: 10s
+      timeout: 3s
+      start_period: 30s
+      start_interval: 1s
+      retries: 3
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      seed:
+        condition: service_completed_successfully
+
+  worker:
+    <<: *backend
+    command: ['node', 'worker.js']
+    environment:
+      <<: *backend-env
+      HEALTHCHECK_PORT: 5002
+    healthcheck:
+      test: ['CMD', 'node', 'scripts/healthcheck.js']
+      interval: 10s
+      timeout: 3s
+      start_period: 30s
+      start_interval: 1s
+      retries: 3
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # The production frontend build behind nginx, proxying /api and /socket.io
+  # to the API. Vercel stays the production host; this is for local parity.
+  web:
+    build:
+      context: ./frontend
+    image: parksmart-web:local
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${WEB_PORT:-8080}:8080'
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:8080/healthz']
+      interval: 10s
+      timeout: 3s
+      start_period: 10s
+      start_interval: 1s
+      retries: 3
+
+  mongo-express:
+    profiles: [tools]
+    image: mongo-express:1.0.2-20-alpine3.19
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${MONGO_EXPRESS_PORT:-8081}:8081'
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/?replicaSet=rs0
+      ME_CONFIG_BASICAUTH_USERNAME: ${TOOLS_USERNAME:-parksmart}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${TOOLS_PASSWORD:?set TOOLS_PASSWORD in .env to use the tools profile}
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  redis-insight:
+    profiles: [tools]
+    image: redis/redisinsight:2.70
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${REDIS_INSIGHT_PORT:-5540}:5540'
+    volumes:
+      - redis-insight-data:/data
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  mongo-data:
+  redis-data:
+  verification-docs:
+  redis-insight-data:

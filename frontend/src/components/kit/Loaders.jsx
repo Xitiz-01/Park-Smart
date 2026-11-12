@@ -8,7 +8,9 @@ function LoadingRegion({ label = 'Loading…', className, children }) {
   return (
     <div role="status" aria-live="polite" className={className}>
       <span className="sr-only">{label}</span>
-      <div aria-hidden="true" className="contents">{children}</div>
+      <div aria-hidden="true" className="contents">
+        {children}
+      </div>
     </div>
   );
 }
@@ -49,11 +51,15 @@ export function TableSkeleton({ rows = 5, columns = 4, className }) {
   return (
     <LoadingRegion className={cn('overflow-hidden rounded-xl border bg-card', className)}>
       <div className="flex gap-4 border-b bg-surface-sunken px-4 py-3">
-        {Array.from({ length: columns }, (_, i) => <Skeleton key={i} className="h-3 flex-1" />)}
+        {Array.from({ length: columns }, (_, i) => (
+          <Skeleton key={i} className="h-3 flex-1" />
+        ))}
       </div>
       {Array.from({ length: rows }, (_, r) => (
         <div key={r} className="flex gap-4 border-b px-4 py-4 last:border-0">
-          {Array.from({ length: columns }, (_, c) => <Skeleton key={c} className={cn('h-4 flex-1', c === 0 && 'max-w-32')} />)}
+          {Array.from({ length: columns }, (_, c) => (
+            <Skeleton key={c} className={cn('h-4 flex-1', c === 0 && 'max-w-32')} />
+          ))}
         </div>
       ))}
     </LoadingRegion>

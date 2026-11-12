@@ -5,9 +5,25 @@ const { getConfig } = require('../config/env');
 // cover log calls that pass these at the top level or one object deep, plus
 // the request and response headers pino-http records.
 const SENSITIVE_KEYS = [
-  'password', 'currentPassword', 'newPassword', 'token', 'accessToken', 'refreshToken', 'idToken',
-  'secret', 'clientSecret', 'apiKey', 'authorization', 'cookie',
-  'pan', 'gstin', 'aadhaar', 'accountNumber', 'bankAccount', 'bank_account', 'identifier',
+  'password',
+  'currentPassword',
+  'newPassword',
+  'token',
+  'accessToken',
+  'refreshToken',
+  'idToken',
+  'secret',
+  'clientSecret',
+  'apiKey',
+  'authorization',
+  'cookie',
+  'pan',
+  'gstin',
+  'aadhaar',
+  'accountNumber',
+  'bankAccount',
+  'bank_account',
+  'identifier',
 ];
 const REDACT_PATHS = [
   'req.headers.authorization',
@@ -42,7 +58,10 @@ function createLogger({ level, pretty = false }, stream) {
     redact: { paths: REDACT_PATHS, censor: '[REDACTED]' },
   };
   if (!stream && pretty && canPrettyPrint()) {
-    options.transport = { target: 'pino-pretty', options: { translateTime: 'SYS:HH:MM:ss', ignore: 'pid,hostname,service' } };
+    options.transport = {
+      target: 'pino-pretty',
+      options: { translateTime: 'SYS:HH:MM:ss', ignore: 'pid,hostname,service' },
+    };
   }
   return stream ? pino(options, stream) : pino(options);
 }

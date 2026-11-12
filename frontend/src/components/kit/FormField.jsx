@@ -19,13 +19,32 @@ export default function FormField({ label, description, error, required = false,
   return (
     <div data-invalid={Boolean(error) || undefined} className={cn('grid content-start gap-2', className)}>
       <label htmlFor={id} className="text-sm font-medium text-foreground">
-        {label}{required && <span aria-hidden="true" className="text-text-muted"> *</span>}
+        {label}
+        {required && (
+          <span aria-hidden="true" className="text-text-muted">
+            {' '}
+            *
+          </span>
+        )}
       </label>
-      <Slot.Root id={id} aria-describedby={describedBy} aria-invalid={Boolean(error) || undefined} required={required || undefined}>
+      <Slot.Root
+        id={id}
+        aria-describedby={describedBy}
+        aria-invalid={Boolean(error) || undefined}
+        required={required || undefined}
+      >
         {children}
       </Slot.Root>
-      {descriptionId && <p id={descriptionId} className="text-sm text-text-muted">{description}</p>}
-      {error && <p id={errorId} className="text-sm text-danger">{error}</p>}
+      {descriptionId && (
+        <p id={descriptionId} className="text-sm text-text-muted">
+          {description}
+        </p>
+      )}
+      {error && (
+        <p id={errorId} className="text-sm text-danger">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

@@ -1,12 +1,15 @@
 const mongoose = require('mongoose');
 
-const geoPointSchema = new mongoose.Schema({
-  type: { type: String, enum: ['Point'], default: 'Point' },
-  coordinates: {
-    type: [Number],
-    validate: { validator: (value) => value?.length === 2, message: 'Business coordinates are invalid' },
+const geoPointSchema = new mongoose.Schema(
+  {
+    type: { type: String, enum: ['Point'], default: 'Point' },
+    coordinates: {
+      type: [Number],
+      validate: { validator: (value) => value?.length === 2, message: 'Business coordinates are invalid' },
+    },
   },
-}, { _id: false });
+  { _id: false },
+);
 
 const vendorProfileSchema = new mongoose.Schema(
   {
@@ -54,7 +57,7 @@ const vendorProfileSchema = new mongoose.Schema(
     rejectedAt: Date,
     suspendedAt: Date,
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 vendorProfileSchema.index({ vendorStatus: 1, createdAt: -1 });

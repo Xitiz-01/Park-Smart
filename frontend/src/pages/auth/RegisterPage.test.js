@@ -7,7 +7,14 @@ test('accepts matching passwords of 8+ characters', () => {
 });
 
 test('keeps the existing rules: at least 8 characters, and both passwords match', () => {
-  expect(validateRegistration({ ...base, password: 'short', confirmPassword: 'short' })).toEqual({ password: expect.any(String) });
-  expect(validateRegistration({ ...base, confirmPassword: 'different1' })).toEqual({ confirmPassword: expect.any(String) });
-  expect(Object.keys(validateRegistration({ ...base, password: 'short', confirmPassword: 'other' }))).toEqual(['password', 'confirmPassword']);
+  expect(validateRegistration({ ...base, password: 'short', confirmPassword: 'short' })).toEqual({
+    password: expect.any(String),
+  });
+  expect(validateRegistration({ ...base, confirmPassword: 'different1' })).toEqual({
+    confirmPassword: expect.any(String),
+  });
+  expect(Object.keys(validateRegistration({ ...base, password: 'short', confirmPassword: 'other' }))).toEqual([
+    'password',
+    'confirmPassword',
+  ]);
 });

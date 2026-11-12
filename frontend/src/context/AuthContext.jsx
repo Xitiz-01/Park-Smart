@@ -64,18 +64,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const value = useMemo(() => ({
-    user,
-    authSession,
-    login,
-    register,
-    logout,
-    refreshUser,
-    loading: sessionPending || profilePending,
-    isAdmin: ['admin', 'super_admin'].includes(user?.role),
-    isSuperAdmin: user?.role === 'super_admin',
-    isApprovedVendor: user?.role === 'vendor' && user?.vendorProfile?.vendorStatus === 'active',
-  }), [user, authSession, sessionPending, profilePending]);
+  const value = useMemo(
+    () => ({
+      user,
+      authSession,
+      login,
+      register,
+      logout,
+      refreshUser,
+      loading: sessionPending || profilePending,
+      isAdmin: ['admin', 'super_admin'].includes(user?.role),
+      isSuperAdmin: user?.role === 'super_admin',
+      isApprovedVendor: user?.role === 'vendor' && user?.vendorProfile?.vendorStatus === 'active',
+    }),
+    [user, authSession, sessionPending, profilePending],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

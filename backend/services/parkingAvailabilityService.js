@@ -38,7 +38,11 @@ const isOpenForWindow = (location, startTime, endTime) => {
   const startParts = localDateParts(new Date(startTime.getTime() - 24 * 60 * 60 * 1000));
   const endParts = localDateParts(endTime);
   const intervals = [];
-  for (let cursor = localMidnightUtc(startParts); cursor <= localMidnightUtc(endParts) + 24 * 60 * 60 * 1000; cursor += 24 * 60 * 60 * 1000) {
+  for (
+    let cursor = localMidnightUtc(startParts);
+    cursor <= localMidnightUtc(endParts) + 24 * 60 * 60 * 1000;
+    cursor += 24 * 60 * 60 * 1000
+  ) {
     const shifted = new Date(cursor + IST_OFFSET_MS);
     const schedule = location.operatingHours[DAY_NAMES[shifted.getUTCDay()]];
     if (!schedule?.open) continue;
@@ -74,7 +78,9 @@ const getAvailability = async (location, vehicleType, startTime, endTime) => {
       evCompatible: true,
     }).lean();
     const isOpen = isOpenForWindow(location, startTime, endTime);
-    const ledgers = await ReservationLedger.find({ resourceKey: { $in: slots.map((slot) => `ev:${slot._id}`) } }).lean();
+    const ledgers = await ReservationLedger.find({
+      resourceKey: { $in: slots.map((slot) => `ev:${slot._id}`) },
+    }).lean();
     const ledgerMap = new Map(ledgers.map((ledger) => [ledger.resourceKey, ledger]));
     const legacyConflicts = await Booking.find({
       slot: { $in: slots.map((slot) => slot._id) },

@@ -12,11 +12,12 @@ const {
   inventoryAliasesFor,
 } = require('../utils/vehicleClassification');
 
-const populateBooking = (query) => query
-  .populate('parkingLocation', 'name address location pricing capacity operatingHours amenities evSupported')
-  .populate({ path: 'slot', populate: { path: 'parkingLocation', select: 'name address' } })
-  .populate('vehicle')
-  .populate('user', 'name email phone');
+const populateBooking = (query) =>
+  query
+    .populate('parkingLocation', 'name address location pricing capacity operatingHours amenities evSupported')
+    .populate({ path: 'slot', populate: { path: 'parkingLocation', select: 'name address' } })
+    .populate('vehicle')
+    .populate('user', 'name email phone');
 
 const emitAvailabilityChanged = async (req, booking) => {
   const io = req.app.get('io');
@@ -34,16 +35,26 @@ const emitAvailabilityChanged = async (req, booking) => {
 const createLegacyBooking = async ({ req, slot, vehicle, startTime, endTime }) => {
   if (slot.status !== 'available') throw Object.assign(new Error('Slot is not available'), { statusCode: 409 });
   const conflict = await Booking.exists({
-    slot: slot._id, status: { $in: ['upcoming', 'active'] },
-    startTime: { $lt: endTime }, expectedEndTime: { $gt: startTime },
+    slot: slot._id,
+    status: { $in: ['upcoming', 'active'] },
+    startTime: { $lt: endTime },
+    expectedEndTime: { $gt: startTime },
   });
   if (conflict) throw Object.assign(new Error('Slot is not available for the selected time'), { statusCode: 409 });
   const hours = Math.ceil((endTime - startTime) / 3600000);
   const booking = await Booking.create({
-    user: req.user._id, slot: slot._id, parkingLocation: slot.parkingLocation || null,
-    bookingType: 'legacy', vehicleType: physicalVehicleType(vehicle), vehicle: vehicle._id,
-    startTime, expectedEndTime: endTime, hourlyRate: slot.pricePerHour,
-    totalAmount: hours * slot.pricePerHour, status: 'upcoming', paymentStatus: 'pending',
+    user: req.user._id,
+    slot: slot._id,
+    parkingLocation: slot.parkingLocation || null,
+    bookingType: 'legacy',
+    vehicleType: physicalVehicleType(vehicle),
+    vehicle: vehicle._id,
+    startTime,
+    expectedEndTime: endTime,
+    hourlyRate: slot.pricePerHour,
+    totalAmount: hours * slot.pricePerHour,
+    status: 'upcoming',
+    paymentStatus: 'pending',
   });
   slot.status = 'reserved';
   slot.currentBooking = booking._id;
@@ -64,7 +75,13 @@ const createBooking = async (req, res) => {
     if (!parkingLocationId) {
       const legacySlot = await ParkingSlot.findById(slotId);
       if (!legacySlot) return res.status(404).json({ success: false, message: 'Slot not found' });
-      const booking = await createLegacyBooking({ req, slot: legacySlot, vehicle, startTime: window.startTime, endTime: window.endTime });
+      const booking = await createLegacyBooking({
+        req,
+        slot: legacySlot,
+        vehicle,
+        startTime: window.startTime,
+        endTime: window.endTime,
+      });
       await emitAvailabilityChanged(req, booking);
       return res.status(201).json({ success: true, booking: await populateBooking(Booking.findById(booking._id)) });
     }
@@ -88,45 +105,84 @@ const createBooking = async (req, res) => {
     let capacity = regularCapacityFor(location, vehicleType);
     if (bookingType === 'ev') {
       slot = await ParkingSlot.findOne({
-        _id: slotId, parkingLocation: location._id, vehicleType: 'ev', evCompatible: true,
+        _id: slotId,
+        parkingLocation: location._id,
+        vehicleType: 'ev',
+        evCompatible: true,
         status: 'available',
       });
-      if (!slot) return res.status(400).json({ success: false, message: 'Select an available EV charging slot at this location' });
+      if (!slot)
+        return res
+          .status(400)
+          .json({ success: false, message: 'Select an available EV charging slot at this location' });
       const existingConflict = await Booking.exists({
-        slot: slot._id, status: { $in: ['upcoming', 'active'] },
-        startTime: { $lt: window.endTime }, expectedEndTime: { $gt: window.startTime },
+        slot: slot._id,
+        status: { $in: ['upcoming', 'active'] },
+        startTime: { $lt: window.endTime },
+        expectedEndTime: { $gt: window.startTime },
       });
-      if (existingConflict) return res.status(409).json({ success: false, message: 'This EV slot is already reserved for the selected time' });
+      if (existingConflict)
+        return res
+          .status(409)
+          .json({ success: false, message: 'This EV slot is already reserved for the selected time' });
       capacity = 1;
     } else if (slotId) {
-      return res.status(400).json({ success: false, message: 'Regular bookings use location capacity and do not accept a slot' });
+      return res
+        .status(400)
+        .json({ success: false, message: 'Regular bookings use location capacity and do not accept a slot' });
     }
     if (bookingType === 'regular') {
       const unmigratedReservations = await Booking.countDocuments({
-        parkingLocation: location._id, vehicleType: { $in: inventoryAliasesFor(vehicleType) }, bookingType: { $ne: 'regular' }, reservationToken: null,
-        status: { $in: ['upcoming', 'active'] }, startTime: { $lt: window.endTime }, expectedEndTime: { $gt: window.startTime },
+        parkingLocation: location._id,
+        vehicleType: { $in: inventoryAliasesFor(vehicleType) },
+        bookingType: { $ne: 'regular' },
+        reservationToken: null,
+        status: { $in: ['upcoming', 'active'] },
+        startTime: { $lt: window.endTime },
+        expectedEndTime: { $gt: window.startTime },
       });
       capacity = Math.max(0, capacity - unmigratedReservations);
     }
-    if (capacity < 1) return res.status(409).json({ success: false, message: 'No capacity is available for this vehicle type and time' });
+    if (capacity < 1)
+      return res
+        .status(409)
+        .json({ success: false, message: 'No capacity is available for this vehicle type and time' });
 
     reservation = await acquireReservation({
-      bookingType, parkingLocationId: location._id, vehicleType, slotId: slot?._id,
-      userId: req.user._id, startTime: window.startTime, endTime: window.endTime, capacity,
+      bookingType,
+      parkingLocationId: location._id,
+      vehicleType,
+      slotId: slot?._id,
+      userId: req.user._id,
+      startTime: window.startTime,
+      endTime: window.endTime,
+      capacity,
     });
-    if (!reservation) return res.status(409).json({ success: false, message: 'Parking is sold out for the selected time' });
+    if (!reservation)
+      return res.status(409).json({ success: false, message: 'Parking is sold out for the selected time' });
 
     const hourlyRate = Number(
-      inventoryAliasesFor(inventoryType).map((type) => location.pricing?.[type]).find((value) => value !== undefined)
-      ?? slot?.pricePerHour
-      ?? 0
+      inventoryAliasesFor(inventoryType)
+        .map((type) => location.pricing?.[type])
+        .find((value) => value !== undefined) ??
+        slot?.pricePerHour ??
+        0,
     );
     const hours = Math.ceil((window.endTime - window.startTime) / 3600000);
     const booking = await Booking.create({
-      user: req.user._id, parkingLocation: location._id, slot: slot?._id || null,
-      vehicle: vehicle._id, vehicleType, bookingType, startTime: window.startTime,
-      expectedEndTime: window.endTime, hourlyRate, totalAmount: hours * hourlyRate,
-      status: 'upcoming', paymentStatus: 'pending', reservationToken: reservation.token,
+      user: req.user._id,
+      parkingLocation: location._id,
+      slot: slot?._id || null,
+      vehicle: vehicle._id,
+      vehicleType,
+      bookingType,
+      startTime: window.startTime,
+      expectedEndTime: window.endTime,
+      hourlyRate,
+      totalAmount: hours * hourlyRate,
+      status: 'upcoming',
+      paymentStatus: 'pending',
+      reservationToken: reservation.token,
     });
     createdBooking = booking;
     await attachBooking(reservation.token, booking._id);
@@ -143,7 +199,9 @@ const getMyBookings = async (req, res) => {
   try {
     const bookings = await populateBooking(Booking.find({ user: req.user._id }).sort({ createdAt: -1 }));
     res.json({ success: true, bookings });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 const getBookingById = async (req, res) => {
@@ -154,7 +212,9 @@ const getBookingById = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
     res.json({ success: true, booking });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 const cancelBookingRecord = async (req, booking) => {
@@ -180,21 +240,26 @@ const cancelBooking = async (req, res) => {
     }
     await cancelBookingRecord(req, booking);
     res.json({ success: true, message: 'Booking cancelled successfully', booking });
-  } catch (error) { res.status(error.statusCode || 500).json({ success: false, message: error.message }); }
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ success: false, message: error.message });
+  }
 };
 
 const checkInRecord = async (req, booking) => {
-  if (booking.status !== 'upcoming') throw Object.assign(new Error('Only upcoming bookings can be checked in'), { statusCode: 400 });
+  if (booking.status !== 'upcoming')
+    throw Object.assign(new Error('Only upcoming bookings can be checked in'), { statusCode: 400 });
   booking.status = 'active';
   booking.checkInTime = new Date();
   await booking.save();
-  if (booking.slot) await ParkingSlot.findByIdAndUpdate(booking.slot, { status: 'occupied', currentBooking: booking._id });
+  if (booking.slot)
+    await ParkingSlot.findByIdAndUpdate(booking.slot, { status: 'occupied', currentBooking: booking._id });
   await emitAvailabilityChanged(req, booking);
   return booking;
 };
 
 const checkOutRecord = async (req, booking) => {
-  if (booking.status !== 'active') throw Object.assign(new Error('Only active bookings can be checked out'), { statusCode: 400 });
+  if (booking.status !== 'active')
+    throw Object.assign(new Error('Only active bookings can be checked out'), { statusCode: 400 });
   const checkOutTime = new Date();
   const billableStart = booking.checkInTime || booking.startTime;
   const hours = Math.max(1, Math.ceil((checkOutTime - billableStart) / 3600000));
@@ -215,7 +280,9 @@ const checkIn = async (req, res) => {
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
     await checkInRecord(req, booking);
     res.json({ success: true, message: 'Check-in successful', booking });
-  } catch (error) { res.status(error.statusCode || 500).json({ success: false, message: error.message }); }
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ success: false, message: error.message });
+  }
 };
 
 const checkOut = async (req, res) => {
@@ -224,7 +291,9 @@ const checkOut = async (req, res) => {
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
     await checkOutRecord(req, booking);
     res.json({ success: true, message: 'Check-out successful', booking });
-  } catch (error) { res.status(error.statusCode || 500).json({ success: false, message: error.message }); }
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ success: false, message: error.message });
+  }
 };
 
 const getAllBookings = async (req, res) => {
@@ -232,14 +301,29 @@ const getAllBookings = async (req, res) => {
     const { status, page = 1, limit = 20 } = req.query;
     // Only a plain string reaches the query: ?status[$ne]=x arrives as an object.
     const filter = typeof status === 'string' && status ? { status } : {};
-    const bookings = await populateBooking(Booking.find(filter).sort({ createdAt: -1 })
-      .skip((Number(page) - 1) * Number(limit)).limit(Math.min(100, Number(limit))));
+    const bookings = await populateBooking(
+      Booking.find(filter)
+        .sort({ createdAt: -1 })
+        .skip((Number(page) - 1) * Number(limit))
+        .limit(Math.min(100, Number(limit))),
+    );
     const total = await Booking.countDocuments(filter);
     res.json({ success: true, bookings, total, page: Number(page), pages: Math.ceil(total / Number(limit)) });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 module.exports = {
-  createBooking, getMyBookings, getBookingById, cancelBooking, checkIn, checkOut, getAllBookings,
-  cancelBookingRecord, checkInRecord, checkOutRecord, populateBooking,
+  createBooking,
+  getMyBookings,
+  getBookingById,
+  cancelBooking,
+  checkIn,
+  checkOut,
+  getAllBookings,
+  cancelBookingRecord,
+  checkInRecord,
+  checkOutRecord,
+  populateBooking,
 };

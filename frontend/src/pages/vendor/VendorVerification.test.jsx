@@ -12,7 +12,9 @@ test('an unavailable provider shows why and offers no form', () => {
 
 test('the bank account check asks for account number, IFSC and holder name, after consent', async () => {
   const onCheck = vi.fn().mockResolvedValue(true);
-  render(<ProviderCard provider={cashfree} available checks={['PAN', 'BANK_ACCOUNT']} busy={false} onCheck={onCheck} />);
+  render(
+    <ProviderCard provider={cashfree} available checks={['PAN', 'BANK_ACCOUNT']} busy={false} onCheck={onCheck} />,
+  );
 
   expect(screen.getByLabelText(/PAN number/)).toBeInTheDocument();
   fireEvent.change(screen.getByLabelText('Check'), { target: { value: 'BANK_ACCOUNT' } });
@@ -25,7 +27,12 @@ test('the bank account check asks for account number, IFSC and holder name, afte
   fireEvent.click(screen.getByRole('checkbox'));
   fireEvent.click(submit);
 
-  expect(onCheck).toHaveBeenCalledWith('BANK_ACCOUNT', { accountNumber: '50100123456789', ifsc: 'HDFC0001234', name: 'Sample Parking', consent: true });
+  expect(onCheck).toHaveBeenCalledWith('BANK_ACCOUNT', {
+    accountNumber: '50100123456789',
+    ifsc: 'HDFC0001234',
+    name: 'Sample Parking',
+    consent: true,
+  });
 });
 
 test('checks are limited to what the API has enabled', () => {

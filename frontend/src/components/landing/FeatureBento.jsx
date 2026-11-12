@@ -43,8 +43,16 @@ function Availability() {
                 <div className="min-w-0">
                   <p className="font-medium">{loc.name}</p>
                   <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-sm text-text-muted">
-                    <span className="inline-flex items-center gap-1"><MapPin aria-hidden="true" className="size-3.5" />{loc.distance}</span>
-                    {loc.ev && <span className="inline-flex items-center gap-1 text-slot-ev"><Zap aria-hidden="true" className="size-3.5" />EV bays</span>}
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin aria-hidden="true" className="size-3.5" />
+                      {loc.distance}
+                    </span>
+                    {loc.ev && (
+                      <span className="inline-flex items-center gap-1 text-slot-ev">
+                        <Zap aria-hidden="true" className="size-3.5" />
+                        EV bays
+                      </span>
+                    )}
                   </p>
                 </div>
                 <p className="shrink-0 text-right">
@@ -56,7 +64,10 @@ function Availability() {
                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-sunken" aria-hidden="true">
                   <div className={cn('h-full rounded-full', tone)} style={{ width: `${share * 100}%` }} />
                 </div>
-                <p className="text-sm"><span className="font-mono font-semibold">{loc.free}</span> of <span className="font-mono">{loc.total}</span> free</p>
+                <p className="text-sm">
+                  <span className="font-mono font-semibold">{loc.free}</span> of{' '}
+                  <span className="font-mono">{loc.total}</span> free
+                </p>
               </div>
             </li>
           );
@@ -93,7 +104,10 @@ function MiniMap() {
         {pins.map((pin) => (
           <span
             key={`${pin.x}-${pin.y}`}
-            className={cn('absolute -translate-x-1/2 -translate-y-1/2 rounded-full px-2 py-0.5 font-mono text-xs font-semibold shadow-raised', pinTone[pin.tone])}
+            className={cn(
+              'absolute -translate-x-1/2 -translate-y-1/2 rounded-full px-2 py-0.5 font-mono text-xs font-semibold shadow-raised',
+              pinTone[pin.tone],
+            )}
             style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
           >
             ₹{pin.price}
@@ -119,7 +133,13 @@ function EvBays() {
       <Illustrative />
       <SlotBoard label="Sample EV charging bays" onValueChange={setSelected} className="sm:grid-cols-2 xl:grid-cols-4">
         {sampleBays.map((bay) => (
-          <SlotTile key={bay.value} {...bay} ev detail={`${bay.powerKw} kW`} state={bay.state === 'available' && bay.value === selected ? 'selected' : bay.state} />
+          <SlotTile
+            key={bay.value}
+            {...bay}
+            ev
+            detail={`${bay.powerKw} kW`}
+            state={bay.state === 'available' && bay.value === selected ? 'selected' : bay.state}
+          />
         ))}
       </SlotBoard>
     </div>
@@ -137,12 +157,24 @@ function VehicleAware() {
   const current = vehicles[vehicle];
   return (
     <div>
-      <ToggleGroup type="single" variant="outline" value={vehicle} onValueChange={(value) => value && setVehicle(value)} aria-label="Vehicle" className="flex-wrap">
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        value={vehicle}
+        onValueChange={(value) => value && setVehicle(value)}
+        aria-label="Vehicle"
+        className="flex-wrap"
+      >
         {Object.entries(vehicles).map(([key, { label, icon: Icon }]) => (
-          <ToggleGroupItem key={key} value={key}><Icon aria-hidden="true" />{label}</ToggleGroupItem>
+          <ToggleGroupItem key={key} value={key}>
+            <Icon aria-hidden="true" />
+            {label}
+          </ToggleGroupItem>
         ))}
       </ToggleGroup>
-      <p className="mt-4 rounded-xl border bg-surface p-4 text-foreground" aria-live="polite">{current.result}</p>
+      <p className="mt-4 rounded-xl border bg-surface p-4 text-foreground" aria-live="polite">
+        {current.result}
+      </p>
     </div>
   );
 }
@@ -159,8 +191,13 @@ function LiveUpdates() {
       <Illustrative />
       <ol className="grid gap-2">
         {events.map((event) => (
-          <li key={event.bay} className="flex items-center justify-between gap-3 rounded-lg border bg-surface px-3 py-2.5 text-sm">
-            <span className="min-w-0"><span className="font-mono font-semibold">{event.bay}</span> {event.text}</span>
+          <li
+            key={event.bay}
+            className="flex items-center justify-between gap-3 rounded-lg border bg-surface px-3 py-2.5 text-sm"
+          >
+            <span className="min-w-0">
+              <span className="font-mono font-semibold">{event.bay}</span> {event.text}
+            </span>
             <StatusBadge status={event.status} />
           </li>
         ))}
@@ -172,7 +209,12 @@ function LiveUpdates() {
 function Operators() {
   return (
     <div className="flex items-center gap-4 rounded-xl border bg-surface p-4">
-      <span aria-hidden="true" className="grid size-11 shrink-0 place-items-center rounded-lg bg-slot-available-soft text-slot-available"><ShieldCheck className="size-5" /></span>
+      <span
+        aria-hidden="true"
+        className="grid size-11 shrink-0 place-items-center rounded-lg bg-slot-available-soft text-slot-available"
+      >
+        <ShieldCheck className="size-5" />
+      </span>
       <div className="min-w-0">
         <p className="font-medium">Each location is authorised separately</p>
         <p className="text-sm text-text-muted">Operators prove they can run a site before it takes bookings.</p>
@@ -186,25 +228,53 @@ export default function FeatureBento() {
   return (
     <section id="features" aria-labelledby="features-title" className="scroll-mt-16">
       <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
-        <h2 id="features-title" className="max-w-2xl font-display text-display-xl font-semibold text-balance">Know what’s free before you leave.</h2>
-        <p className="mt-4 max-w-2xl text-lg text-text-muted">Live counts, real bays, and the right kind of space for the vehicle you’re driving.</p>
+        <h2 id="features-title" className="max-w-2xl font-display text-display-xl font-semibold text-balance">
+          Know what’s free before you leave.
+        </h2>
+        <p className="mt-4 max-w-2xl text-lg text-text-muted">
+          Live counts, real bays, and the right kind of space for the vehicle you’re driving.
+        </p>
         <div className="mt-12 grid gap-4 lg:grid-cols-6">
-          <Cell className="lg:col-span-4" title="Live availability" body="Every location shows how many spaces are free for your time window and what it costs per hour.">
+          <Cell
+            className="lg:col-span-4"
+            title="Live availability"
+            body="Every location shows how many spaces are free for your time window and what it costs per hour."
+          >
             <Availability />
           </Cell>
-          <Cell className="lg:col-span-2" title="On the map" body="Browse what’s around you, or around where you’re going.">
+          <Cell
+            className="lg:col-span-2"
+            title="On the map"
+            body="Browse what’s around you, or around where you’re going."
+          >
             <MiniMap />
           </Cell>
-          <Cell className="lg:col-span-3" title="Choose your charging bay" body="EV drivers see each charger’s power and connector, and reserve that exact bay.">
+          <Cell
+            className="lg:col-span-3"
+            title="Choose your charging bay"
+            body="EV drivers see each charger’s power and connector, and reserve that exact bay."
+          >
             <EvBays />
           </Cell>
-          <Cell className="lg:col-span-3" title="Matched to your vehicle" body="Your vehicle decides how you book, so you never reserve a space that doesn’t fit.">
+          <Cell
+            className="lg:col-span-3"
+            title="Matched to your vehicle"
+            body="Your vehicle decides how you book, so you never reserve a space that doesn’t fit."
+          >
             <VehicleAware />
           </Cell>
-          <Cell className="lg:col-span-3" title="Updates as it happens" body="Bookings, check-ins and check-outs update open pages straight away, without a refresh.">
+          <Cell
+            className="lg:col-span-3"
+            title="Updates as it happens"
+            body="Bookings, check-ins and check-outs update open pages straight away, without a refresh."
+          >
             <LiveUpdates />
           </Cell>
-          <Cell className="lg:col-span-3" title="Verified operators" body="Operators are reviewed by ParkSmart before any of their locations go live.">
+          <Cell
+            className="lg:col-span-3"
+            title="Verified operators"
+            body="Operators are reviewed by ParkSmart before any of their locations go live."
+          >
             <Operators />
           </Cell>
         </div>

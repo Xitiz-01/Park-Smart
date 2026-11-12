@@ -13,7 +13,8 @@ const CODE_FOR_STATUS = {
   503: 'SERVICE_UNAVAILABLE',
 };
 
-const issuesFrom = (zodError) => zodError.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message }));
+const issuesFrom = (zodError) =>
+  zodError.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message }));
 
 /**
  * Map any thrown value to { status, code, message, details }. Only messages
@@ -38,9 +39,15 @@ function describeError(err) {
     return { status: 400, code: 'INVALID_ID', message: `Invalid ${err.path}` };
   }
   if (err?.code === 11000) {
-    return { status: 409, code: 'DUPLICATE', message: 'A record with these details already exists', details: { fields: Object.keys(err.keyPattern || {}) } };
+    return {
+      status: 409,
+      code: 'DUPLICATE',
+      message: 'A record with these details already exists',
+      details: { fields: Object.keys(err.keyPattern || {}) },
+    };
   }
-  if (err?.name === 'TokenExpiredError') return { status: 401, code: 'TOKEN_EXPIRED', message: 'This link or token has expired' };
+  if (err?.name === 'TokenExpiredError')
+    return { status: 401, code: 'TOKEN_EXPIRED', message: 'This link or token has expired' };
   if (err?.name === 'JsonWebTokenError' || err?.name === 'NotBeforeError') {
     return { status: 401, code: 'INVALID_TOKEN', message: 'This link or token is not valid' };
   }
@@ -49,12 +56,18 @@ function describeError(err) {
       ? { status: 413, code: 'FILE_TOO_LARGE', message: 'Document must be 5 MB or smaller' }
       : { status: 400, code: 'UPLOAD_REJECTED', message: err.message };
   }
-  if (err?.type === 'entity.parse.failed') return { status: 400, code: 'INVALID_JSON', message: 'The request body is not valid JSON' };
-  if (err?.type === 'entity.too.large') return { status: 413, code: 'PAYLOAD_TOO_LARGE', message: 'The request body is too large' };
+  if (err?.type === 'entity.parse.failed')
+    return { status: 400, code: 'INVALID_JSON', message: 'The request body is not valid JSON' };
+  if (err?.type === 'entity.too.large')
+    return { status: 413, code: 'PAYLOAD_TOO_LARGE', message: 'The request body is too large' };
   // Older code signals client-facing errors with err.statusCode and a safe message.
   const legacyStatus = Number(err?.statusCode);
   if (legacyStatus >= 400 && legacyStatus < 600) {
-    return { status: legacyStatus, code: CODE_FOR_STATUS[legacyStatus] || 'REQUEST_FAILED', message: err.message || 'Request could not be completed' };
+    return {
+      status: legacyStatus,
+      code: CODE_FOR_STATUS[legacyStatus] || 'REQUEST_FAILED',
+      message: err.message || 'Request could not be completed',
+    };
   }
   return { status: 500, code: 'INTERNAL_ERROR', message: 'Internal Server Error' };
 }

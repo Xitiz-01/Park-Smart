@@ -6,9 +6,20 @@ import { cn } from '@/lib/utils';
 export default function VehicleBrandLogo({ make, vehicleType, electric = false, className }) {
   const Icon = vehicleType === 'motorcycle' ? Bike : Car;
   return (
-    <span title={make || undefined} className={cn('relative grid size-11 shrink-0 place-items-center rounded-lg bg-surface-sunken text-text-muted', className)}>
+    <span
+      title={make || undefined}
+      className={cn(
+        'relative grid size-11 shrink-0 place-items-center rounded-lg bg-surface-sunken text-text-muted',
+        className,
+      )}
+    >
       <Icon aria-hidden="true" className="size-5" />
-      {electric && <Zap aria-hidden="true" className="absolute -right-1 -bottom-1 size-4 rounded-full bg-surface-raised p-0.5 text-slot-ev" />}
+      {electric && (
+        <Zap
+          aria-hidden="true"
+          className="absolute -right-1 -bottom-1 size-4 rounded-full bg-surface-raised p-0.5 text-slot-ev"
+        />
+      )}
     </span>
   );
 }

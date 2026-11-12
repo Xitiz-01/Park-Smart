@@ -15,7 +15,8 @@ import PasswordInput from '@/components/kit/PasswordInput';
 export function validateRegistration(form) {
   const errors = {};
   if (form.password.length < 8) errors.password = 'Use at least 8 characters.';
-  if (form.confirmPassword !== form.password) errors.confirmPassword = 'Passwords don’t match. Re-enter the same password.';
+  if (form.confirmPassword !== form.password)
+    errors.confirmPassword = 'Passwords don’t match. Re-enter the same password.';
   return errors;
 }
 
@@ -50,41 +51,97 @@ export default function RegisterPage() {
       navigate('/dashboard');
     } catch (error) {
       setServerError(error.message || 'Your account wasn’t created. Check your details and try again.');
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <AuthShell
       title="Create your account"
       description="Free to sign up. Find and reserve parking in a few taps."
-      footer={<p>Already have an account? <Link to="/login" className="font-medium text-brand underline-offset-4 hover:underline">Sign in</Link></p>}
+      footer={
+        <p>
+          Already have an account?{' '}
+          <Link to="/login" className="font-medium text-brand underline-offset-4 hover:underline">
+            Sign in
+          </Link>
+        </p>
+      }
     >
       <form ref={formRef} onSubmit={handleSubmit} className="grid gap-5">
         <FormField label="Full name">
-          <Input name="name" placeholder="Your full name" value={form.name} onChange={handleChange} autoComplete="name" required />
+          <Input
+            name="name"
+            placeholder="Your full name"
+            value={form.name}
+            onChange={handleChange}
+            autoComplete="name"
+            required
+          />
         </FormField>
         <div className="grid gap-5 sm:grid-cols-2">
           <FormField label="Email address">
-            <Input name="email" type="email" placeholder="you@example.com" value={form.email} onChange={handleChange} autoComplete="email" spellCheck={false} required />
+            <Input
+              name="email"
+              type="email"
+              placeholder="you@example.com"
+              value={form.email}
+              onChange={handleChange}
+              autoComplete="email"
+              spellCheck={false}
+              required
+            />
           </FormField>
           <FormField label="Phone number">
-            <Input name="phone" type="tel" inputMode="tel" placeholder="+91 98765 43210" value={form.phone} onChange={handleChange} autoComplete="tel" required />
+            <Input
+              name="phone"
+              type="tel"
+              inputMode="tel"
+              placeholder="+91 98765 43210"
+              value={form.phone}
+              onChange={handleChange}
+              autoComplete="tel"
+              required
+            />
           </FormField>
         </div>
         <FormField label="Password" description="At least 8 characters." error={errors.password}>
-          <PasswordInput name="password" value={form.password} onChange={handleChange} autoComplete="new-password" required />
+          <PasswordInput
+            name="password"
+            value={form.password}
+            onChange={handleChange}
+            autoComplete="new-password"
+            required
+          />
         </FormField>
         <FormField label="Confirm password" error={errors.confirmPassword}>
-          <PasswordInput name="confirmPassword" value={form.confirmPassword} onChange={handleChange} autoComplete="new-password" required />
+          <PasswordInput
+            name="confirmPassword"
+            value={form.confirmPassword}
+            onChange={handleChange}
+            autoComplete="new-password"
+            required
+          />
         </FormField>
         {serverError && (
-          <div role="alert" className="flex gap-2 rounded-lg border border-danger/30 bg-danger-soft px-3 py-2.5 text-sm text-danger">
+          <div
+            role="alert"
+            className="flex gap-2 rounded-lg border border-danger/30 bg-danger-soft px-3 py-2.5 text-sm text-danger"
+          >
             <AlertCircle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
             <span>{serverError}</span>
           </div>
         )}
         <Button type="submit" size="lg" className="w-full" disabled={loading}>
-          {loading ? <><Spinner data-icon="inline-start" />Creating account…</> : 'Create account'}
+          {loading ? (
+            <>
+              <Spinner data-icon="inline-start" />
+              Creating account…
+            </>
+          ) : (
+            'Create account'
+          )}
         </Button>
       </form>
     </AuthShell>

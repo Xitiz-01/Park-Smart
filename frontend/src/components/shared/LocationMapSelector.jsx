@@ -6,27 +6,43 @@ import L from 'leaflet';
 const markerIcon = L.divIcon({
   className: '',
   html: '<span class="ps-drop-pin"></span>',
-  iconSize: [28, 28], iconAnchor: [14, 28],
+  iconSize: [28, 28],
+  iconAnchor: [14, 28],
 });
 
 function Recenter({ position }) {
   const map = useMap();
-  useEffect(() => { map.setView(position, 16); }, [map, position]);
+  useEffect(() => {
+    map.setView(position, 16);
+  }, [map, position]);
   return null;
 }
 
 function DraggableMarker({ position, onMove }) {
   const markerRef = useRef(null);
-  const handlers = useMemo(() => ({
-    dragend() {
-      const marker = markerRef.current;
-      if (marker) {
-        const point = marker.getLatLng();
-        onMove({ latitude: point.lat, longitude: point.lng });
-      }
-    },
-  }), [onMove]);
-  return <Marker draggable position={position} icon={markerIcon} eventHandlers={handlers} ref={markerRef} title="Entrance pin. Drag to move it." alt="Entrance pin" />;
+  const handlers = useMemo(
+    () => ({
+      dragend() {
+        const marker = markerRef.current;
+        if (marker) {
+          const point = marker.getLatLng();
+          onMove({ latitude: point.lat, longitude: point.lng });
+        }
+      },
+    }),
+    [onMove],
+  );
+  return (
+    <Marker
+      draggable
+      position={position}
+      icon={markerIcon}
+      eventHandlers={handlers}
+      ref={markerRef}
+      title="Entrance pin. Drag to move it."
+      alt="Entrance pin"
+    />
+  );
 }
 
 export default function LocationMapSelector({ latitude, longitude, onMove }) {

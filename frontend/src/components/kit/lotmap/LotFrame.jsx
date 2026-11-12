@@ -37,7 +37,12 @@ export function useLotColumns(ref, { min = 3, max = 10, bay = 84, fallback = 6 }
 
 function ParkingSign() {
   return (
-    <span aria-hidden="true" className="grid size-8 shrink-0 place-items-center rounded-md bg-logo-tile font-display text-lg leading-none font-bold text-logo-glyph">P</span>
+    <span
+      aria-hidden="true"
+      className="grid size-8 shrink-0 place-items-center rounded-md bg-logo-tile font-display text-lg leading-none font-bold text-logo-glyph"
+    >
+      P
+    </span>
   );
 }
 
@@ -47,15 +52,34 @@ function Lane({ laneRef }) {
     <div ref={laneRef} className="relative flex h-12 items-center gap-3 rounded-t-lg bg-lot-aisle px-3">
       <ParkingSign />
       <span className="font-mono text-xs text-lot-text-muted">IN ›</span>
-      <span aria-hidden="true" className="h-0.5 flex-1 bg-[repeating-linear-gradient(90deg,var(--lot-dash)_0_14px,transparent_14px_26px)] opacity-60" />
+      <span
+        aria-hidden="true"
+        className="h-0.5 flex-1 bg-[repeating-linear-gradient(90deg,var(--lot-dash)_0_14px,transparent_14px_26px)] opacity-60"
+      />
       <span className="font-mono text-xs text-lot-text-muted">› OUT</span>
     </div>
   );
 }
 
-export function LotFrame({ heading, aside, legend, footer, children, className, containerRef, laneRef, gridRef, overlay }) {
+export function LotFrame({
+  heading,
+  aside,
+  legend,
+  footer,
+  children,
+  className,
+  containerRef,
+  laneRef,
+  gridRef,
+  overlay,
+}) {
   return (
-    <figure className={cn('relative overflow-hidden rounded-2xl bg-lot-asphalt text-lot-text shadow-raised ring-1 ring-black/5 dark:ring-white/10', className)}>
+    <figure
+      className={cn(
+        'relative overflow-hidden rounded-2xl bg-lot-asphalt text-lot-text shadow-raised ring-1 ring-black/5 dark:ring-white/10',
+        className,
+      )}
+    >
       {(heading || aside) && (
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-4 pt-4 sm:px-5">
           <div className="min-w-0">{heading}</div>
@@ -75,10 +99,11 @@ export function LotFrame({ heading, aside, legend, footer, children, className, 
 
 // Painted bay cell: side lines and a kerb line at the back. `rowEnd` closes
 // the row with a right-hand line.
-export const bayFrameClass = (rowEnd) => cn(
-  'relative flex min-h-[5.75rem] min-w-0 flex-col justify-between border-b-2 border-l-2 border-lot-line/45 p-1.5 sm:p-2',
-  rowEnd && 'border-r-2',
-);
+export const bayFrameClass = (rowEnd) =>
+  cn(
+    'relative flex min-h-[5.75rem] min-w-0 flex-col justify-between border-b-2 border-l-2 border-lot-line/45 p-1.5 sm:p-2',
+    rowEnd && 'border-r-2',
+  );
 
 // A car that drives in from the entry along the lane and, when a bay is
 // given, turns into it. Animates transform only; with reduced motion it just
@@ -101,7 +126,12 @@ export function ArrivingCar({ containerRef, laneRef, targetRef, onArrived }) {
     if (target) {
       const x = target.left - box.left + target.width / 2;
       const y = target.top - box.top + target.height / 2;
-      setPath({ x: [startX, x, x, x], y: [laneY, laneY, laneY, y], rotate: [90, 90, 180, 180], times: [0, 0.6, 0.7, 1] });
+      setPath({
+        x: [startX, x, x, x],
+        y: [laneY, laneY, laneY, y],
+        rotate: [90, 90, 180, 180],
+        times: [0, 0.6, 0.7, 1],
+      });
     } else {
       const x = laneBox.left - box.left + laneBox.width / 2;
       setPath({ x: [startX, x], y: [laneY, laneY], rotate: [90, 90], times: [0, 1] });
@@ -130,10 +160,14 @@ export function ArrivingCar({ containerRef, laneRef, targetRef, onArrived }) {
 
 export function LotLegend({ items, className }) {
   return (
-    <ul aria-label="Bay status legend" className={cn('flex list-none flex-wrap gap-x-4 gap-y-2 p-0 text-xs text-lot-text-muted', className)}>
+    <ul
+      aria-label="Bay status legend"
+      className={cn('flex list-none flex-wrap gap-x-4 gap-y-2 p-0 text-xs text-lot-text-muted', className)}
+    >
       {items.map(({ label, swatch }) => (
         <li key={label} className="inline-flex items-center gap-1.5">
-          <span aria-hidden="true" className={cn('size-3 rounded-[3px]', swatch)} />{label}
+          <span aria-hidden="true" className={cn('size-3 rounded-[3px]', swatch)} />
+          {label}
         </li>
       ))}
     </ul>

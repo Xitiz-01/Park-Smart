@@ -6,15 +6,19 @@ The shared infrastructure every backend module uses. Added in Phase 2; the domai
 
 ```
 backend/
-  server.js                  HTTP server, Socket.IO, MongoDB connection, signals (the process entry point)
+  server.js                  HTTP server, Socket.IO, MongoDB connection, signals (the API process)
+  worker.js                  the worker process: /health on WORKER_PORT; queue processors from Phase 8
+  Dockerfile                 one image for both processes (see LOCAL_DEV.md for the compose stack)
   src/
-    app.js                   createApp({ config, logger, healthChecks }): the Express app, no listeners
+    app.js                   createApp({ config, logger, healthChecks, redis }): the Express app, no listeners
     config/env.js            the only reader of process.env; zod-validated, frozen config
     schemas/                 zod request schemas (bookings, vehicles, parking locations, verification)
     platform/
       logger.js              pino logger with redaction
       errors/                AppError and its subclasses
       db.js                  MongoDB connect with retry, disconnect, ping
+      redis.js               the shared ioredis client (optional), ping, close
+      cache/                 cache-aside helper: versioned keys, TTL, single flight, fail open
       health.js              /health/live and /health/ready
       lifecycle.js           graceful shutdown and process error policy
       openapi.js             OpenAPI 3.1 document built from the schemas
@@ -25,6 +29,7 @@ backend/
         errorHandler.js      the error middleware and JSON 404
         asyncRoutes.js       forwards rejected async handlers to the error middleware
         versioning.js        /api deprecation headers and counters
+  scripts/seed.js            local seed data (refuses production and remote databases)
   auth/ controllers/ middleware/ models/ routes/ services/ ...   existing domain code
 ```
 
@@ -48,6 +53,10 @@ Messages name the variable and the rule, never the value. Code asks for `getConf
 | `CASHFREE_CLIENT_ID`, `CASHFREE_CLIENT_SECRET` | required when `CASHFREE_VERIFY_ENABLED=true` |
 | `CORS_ORIGINS` | defaults to the origins that used to be hard-coded |
 | `TRUST_PROXY` | defaults to `1` in production, `loopback` elsewhere |
+| `REDIS_URL` | optional; `redis://` or `rediss://`. Unset: no shared cache, rate limits per instance |
+| `REDIS_KEY_PREFIX` | first segment of every Redis key, default `ps` |
+| `WORKER_PORT` | the worker's health port, default 5002 |
+| `SEED_PASSWORD` | password for the local seed accounts; seeding only |
 | `CLERK_ENABLED`, `PAYMENTS_ENABLED`, `PASSES_ENABLED` | feature flags, all `false` |
 
 ## Requests
@@ -56,7 +65,7 @@ Middleware order in `createApp`: request id and logging → slow-request warning
 
 - **Request ids.** Each request gets the caller's `X-Request-Id` if it's 1–128 plain characters, otherwise a new UUID. It's returned in `X-Request-Id`, bound to `req.log`, and included in error bodies.
 - **Logging.** Use `req.log` inside a request and `logger` from `src/platform/logger.js` elsewhere, never `console`. JSON in production, pretty in development, silent in tests (`LOG_LEVEL` overrides). Credentials, cookies, tokens, PAN, GSTIN, Aadhaar and bank fields are redacted. Requests slower than `SLOW_REQUEST_MS` log a warning; health probes aren't logged.
-- **Rate limits.** Per IP: `RATE_LIMIT_MAX` (600) requests per `RATE_LIMIT_WINDOW_MS` (15 minutes) on `/api`, and `AUTH_RATE_LIMIT_MAX` (30) sign-in/sign-up attempts. The store is in memory, so limits are per instance until Redis (Phase 3/8). Behind a proxy, `TRUST_PROXY` must be right or every client shares one bucket.
+- **Rate limits.** Per IP: `RATE_LIMIT_MAX` (600) requests per `RATE_LIMIT_WINDOW_MS` (15 minutes) on `/api`, and `AUTH_RATE_LIMIT_MAX` (30) sign-in/sign-up attempts. With `REDIS_URL` the counts live in Redis (`<prefix>:v1:rate-limit:api:<ip>` and `…:auth:<ip>`), so every instance shares one budget; without it they're in memory, per instance. If Redis fails, requests pass unlimited and an alert is logged (see below). Behind a proxy, `TRUST_PROXY` must be right or every client shares one bucket.
 - **Input sanitising.** Keys starting with `$` or containing `.` are removed from body, query and params.
 
 ## Validation
@@ -101,14 +110,42 @@ Routes are served at `/api/v1/*`. The unversioned `/api/*` paths still work: the
 
 The OpenAPI 3.1 document is generated from the request schemas and served at `GET /api/docs` outside production. Paste it into any OpenAPI viewer, or run `npx @redocly/cli lint` on it.
 
+## Redis and the cache
+
+Redis is optional. `src/platform/redis.js` holds one client per process (`getRedis()`, null without `REDIS_URL`). It fails fast while Redis is down (no offline queue, one attempt per command), reconnects in the background with backoff, logs only when its state changes, and is closed on shutdown.
+
+```js
+const { getCache } = require('../src/platform/cache');
+const cache = getCache();
+
+const key = cache.key('location', locationId, 'detail');          // ps:v1:location:<id>:detail
+const location = await cache.wrap(key, 300, () => loadLocation(locationId));
+await cache.del(key);                                               // after an edit or publish
+```
+
+- **Keys** are `<prefix>:v<version>:<domain>:<id…>`. Bump `version` (`cache.key('location', id, { version: 2 })`) when a cached shape changes; old entries are never read again and expire.
+- **Every entry has a TTL** and an explicit invalidation trigger. The key families arrive in Phase 8 and are listed in `CACHING.md` then.
+- **Single flight:** concurrent `wrap()` calls for one key in a process share one Redis lookup and one loader call, so a hot key expiring doesn't stampede MongoDB.
+- **Values are JSON.** Dates come back as ISO strings; `undefined` and loader errors are never cached.
+- **Metrics:** `cache.stats()` gives hits, misses, sets, errors and loads; `createCache({ onEvent })` is the hook Phase 9 wires to metrics.
+
+### Degradation policy
+
+| What uses Redis | When Redis is down or slow |
+|---|---|
+| Cache | Fails **open**: reads are misses, writes are skipped, MongoDB answers. Errors are counted; the first after a healthy spell is logged. |
+| Rate limits | Fail **open**: requests pass unlimited. An error tagged `alert: "rate-limit-store"` is logged at most once a minute, with the count held back. |
+| `/health/ready` | Redis is reported but not critical: `{ "status": "degraded", "checks": { "mongo": "up", "redis": "down" } }` with 200, so instances stay in the load balancer. |
+| Locks, idempotency, anything about money (Phase 8+) | Never degrade silently: they need Redis or MongoDB to succeed, or the request fails. They don't use the cache helper. When queues depend on Redis (Phase 8), it becomes critical for the worker's readiness. |
+
 ## Health and lifecycle
 
 - `GET /health/live`: 200 while the process serves requests. Use it as the liveness probe.
-- `GET /health/ready`: 200 when every dependency check passes, otherwise 503 with `{ status, checks: { mongo: "up" | "down" } }`. Use it as the readiness probe.
+- `GET /health/ready`: 200 when every critical check passes, otherwise 503, with `{ status: "ok" | "degraded" | "unavailable", checks: { mongo, redis } }`. MongoDB is critical; Redis (listed only when configured) isn't. Use it as the readiness probe. The worker serves the same two endpoints on `WORKER_PORT`.
 - On boot, MongoDB is retried with backoff (0.5 s doubling to 8 s, six attempts) before the process gives up.
-- SIGTERM or SIGINT: stop accepting connections, drain, close Socket.IO, MongoDB and Better Auth, then exit 0. A shutdown that takes more than 10 seconds is forced to exit 1.
+- SIGTERM or SIGINT: stop accepting connections, drain, close Socket.IO, MongoDB, Redis and Better Auth, then exit 0. In Docker, tini passes the signal to node. A shutdown that takes more than 10 seconds is forced to exit 1.
 - An unhandled rejection or uncaught exception is logged and shuts the process down with exit code 1 so the host restarts it.
 
 ## Testing
 
-`createApp()` needs no server or database, so most platform tests use supertest against it (`tests/*.unit.test.js`). `npm run test:unit` runs them with no MongoDB. `npm run test:integration` runs the end-to-end suites against a replica set (see [CI_CD.md](CI_CD.md)).
+`createApp()` needs no server or database, so most platform tests use supertest against it (`tests/*.unit.test.js`). `npm run test:unit` runs them with no MongoDB or Redis. `npm run test:integration` runs the end-to-end suites against a replica set (`TEST_MONGODB_URI`) and Redis (`TEST_REDIS_URL`, default `redis://127.0.0.1:6390`); see [CI_CD.md](CI_CD.md), or `make test` against the compose stack ([LOCAL_DEV.md](LOCAL_DEV.md)).

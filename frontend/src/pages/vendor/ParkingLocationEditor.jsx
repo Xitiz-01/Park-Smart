@@ -23,7 +23,8 @@ export default function ParkingLocationEditor() {
     if (!id) return;
     setLoading(true);
     setFailed(false);
-    vendorsAPI.getLocation(id)
+    vendorsAPI
+      .getLocation(id)
       .then(({ data }) => setLocation(data.location))
       .catch(() => setFailed(true))
       .finally(() => setLoading(false));
@@ -39,34 +40,67 @@ export default function ParkingLocationEditor() {
       navigate('/vendor/locations');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Unable to save parking location');
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   };
 
   const deactivate = async () => {
-    if (!(await confirm({
-      title: `Deactivate ${location?.name || 'this location'}?`,
-      description: 'Drivers can no longer book it and its available EV bays go into maintenance. Booking history is kept.',
-      confirmLabel: 'Deactivate location', cancelLabel: 'Keep it live', tone: 'danger',
-    }))) return;
+    if (
+      !(await confirm({
+        title: `Deactivate ${location?.name || 'this location'}?`,
+        description:
+          'Drivers can no longer book it and its available EV bays go into maintenance. Booking history is kept.',
+        confirmLabel: 'Deactivate location',
+        cancelLabel: 'Keep it live',
+        tone: 'danger',
+      }))
+    )
+      return;
     try {
       await vendorsAPI.deactivateLocation(id);
       toast.success('Parking location deactivated');
       navigate('/vendor/locations');
-    } catch (error) { toast.error(error.response?.data?.message || 'Unable to deactivate location'); }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Unable to deactivate location');
+    }
   };
 
   const header = (
     <PageHeader
       eyebrow="Operator"
-      title={id ? (location?.name || 'Edit location') : 'Add a location'}
+      title={id ? location?.name || 'Edit location' : 'Add a location'}
       description="Details, address, prices and hours, then capacity. Review everything before saving."
-      actions={id && location?.status === 'active' && (
-        <Button variant="outline" className="text-danger hover:text-danger" onClick={deactivate}><Power data-icon="inline-start" />Deactivate</Button>
-      )}
+      actions={
+        id &&
+        location?.status === 'active' && (
+          <Button variant="outline" className="text-danger hover:text-danger" onClick={deactivate}>
+            <Power data-icon="inline-start" />
+            Deactivate
+          </Button>
+        )
+      }
     />
   );
 
-  if (loading) return <>{header}<ListSkeleton rows={2} /></>;
-  if (failed) return <>{header}<ErrorState description="This location didn’t load. Check your connection and try again." onRetry={load} /></>;
-  return <>{header}<ParkingLocationForm initialLocation={location} onSubmit={save} saving={saving} /></>;
+  if (loading)
+    return (
+      <>
+        {header}
+        <ListSkeleton rows={2} />
+      </>
+    );
+  if (failed)
+    return (
+      <>
+        {header}
+        <ErrorState description="This location didn’t load. Check your connection and try again." onRetry={load} />
+      </>
+    );
+  return (
+    <>
+      {header}
+      <ParkingLocationForm initialLocation={location} onSubmit={save} saving={saving} />
+    </>
+  );
 }

@@ -6,7 +6,7 @@ const migrate = async () => {
   await mongoose.connect(getConfig().mongodbUri);
   const result = await User.updateMany(
     { $or: [{ role: { $exists: false } }, { role: null }, { role: '' }] },
-    { $set: { role: 'customer' } }
+    { $set: { role: 'customer' } },
   );
   console.log(`User role migration complete: ${result.modifiedCount} account(s) updated`);
   await mongoose.disconnect();

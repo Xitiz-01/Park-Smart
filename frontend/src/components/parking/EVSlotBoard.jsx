@@ -5,7 +5,14 @@ import { SLOT_STATES, isSlotSelectable, slotDisplayStatus } from '@/lib/slotStat
 // Lot Map (same states, selection rules and accessible names).
 export { SLOT_STATES, isSlotSelectable, slotDisplayStatus };
 
-export default function EVSlotBoard({ slots = [], selectedId = '', onSelect, title = 'EV charging bays', subtitle, ...rest }) {
+export default function EVSlotBoard({
+  slots = [],
+  selectedId = '',
+  onSelect,
+  title = 'EV charging bays',
+  subtitle,
+  ...rest
+}) {
   return (
     <EvLotMap
       slots={slots}

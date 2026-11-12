@@ -39,7 +39,14 @@ const nearbyParking = async (req, res) => {
     const longitude = Number(req.query.lng);
     const radiusKm = req.query.radiusKm === undefined ? 10 : Number(req.query.radiusKm);
     const classification = requestedVehicle(req.query);
-    if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 || !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+    if (
+      !Number.isFinite(latitude) ||
+      latitude < -90 ||
+      latitude > 90 ||
+      !Number.isFinite(longitude) ||
+      longitude < -180 ||
+      longitude > 180
+    ) {
       return res.status(400).json({ success: false, message: 'Valid latitude and longitude are required' });
     }
     if (!Number.isFinite(radiusKm) || radiusKm <= 0 || radiusKm > 50) {
@@ -50,7 +57,10 @@ const nearbyParking = async (req, res) => {
     const window = parseSearchWindow(req.query);
     if (window.error) return res.status(400).json({ success: false, message: window.error });
 
-    const amenities = String(req.query.amenities || '').split(',').map((value) => value.trim()).filter(Boolean);
+    const amenities = String(req.query.amenities || '')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
     const aliases = inventoryAliasesFor(inventoryType);
     const query = { status: 'active', vehicleTypes: aliases.length === 1 ? aliases[0] : { $in: aliases } };
     if (inventoryType === 'ev' || req.query.ev === 'true') query.evSupported = true;
@@ -59,33 +69,42 @@ const nearbyParking = async (req, res) => {
       {
         $geoNear: {
           near: { type: 'Point', coordinates: [longitude, latitude] },
-          distanceField: 'distanceMeters', maxDistance: radiusKm * 1000,
-          spherical: true, query,
+          distanceField: 'distanceMeters',
+          maxDistance: radiusKm * 1000,
+          spherical: true,
+          query,
         },
       },
       { $limit: 100 },
     ]);
 
-    const enriched = await Promise.all(locations.map(async (location) => {
-      const availability = await getAvailability(location, inventoryType, window.startTime, window.endTime);
-      return {
-        ...location,
-        distanceKm: Number((location.distanceMeters / 1000).toFixed(2)),
-        pricePerHour: priceFor(location, inventoryType),
-        availability: { ...availability, evSlots: undefined },
-      };
-    }));
+    const enriched = await Promise.all(
+      locations.map(async (location) => {
+        const availability = await getAvailability(location, inventoryType, window.startTime, window.endTime);
+        return {
+          ...location,
+          distanceKm: Number((location.distanceMeters / 1000).toFixed(2)),
+          pricePerHour: priceFor(location, inventoryType),
+          availability: { ...availability, evSlots: undefined },
+        };
+      }),
+    );
     const maxPrice = req.query.maxPrice === undefined ? null : Number(req.query.maxPrice);
     if (req.query.maxPrice !== undefined && (!Number.isFinite(maxPrice) || maxPrice < 0)) {
       return res.status(400).json({ success: false, message: 'Maximum price must be a non-negative number' });
     }
-    let results = enriched.filter((location) => (
-      (!Number.isFinite(maxPrice) || location.pricePerHour <= maxPrice)
-      && (req.query.available !== 'true' || location.availability.available > 0)
-    ));
+    let results = enriched.filter(
+      (location) =>
+        (!Number.isFinite(maxPrice) || location.pricePerHour <= maxPrice) &&
+        (req.query.available !== 'true' || location.availability.available > 0),
+    );
     const sort = req.query.sort || 'nearest';
-    if (sort === 'lowest_price') results.sort((a, b) => a.pricePerHour - b.pricePerHour || a.distanceMeters - b.distanceMeters);
-    else if (sort === 'highest_availability') results.sort((a, b) => b.availability.available - a.availability.available || a.distanceMeters - b.distanceMeters);
+    if (sort === 'lowest_price')
+      results.sort((a, b) => a.pricePerHour - b.pricePerHour || a.distanceMeters - b.distanceMeters);
+    else if (sort === 'highest_availability')
+      results.sort(
+        (a, b) => b.availability.available - a.availability.available || a.distanceMeters - b.distanceMeters,
+      );
     else results.sort((a, b) => a.distanceMeters - b.distanceMeters);
 
     res.json({
@@ -106,7 +125,8 @@ const nearbyParking = async (req, res) => {
 
 const getParkingLocation = async (req, res) => {
   try {
-    if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid parking location ID' });
+    if (!mongoose.isValidObjectId(req.params.id))
+      return res.status(400).json({ success: false, message: 'Invalid parking location ID' });
     const classification = requestedVehicle(req.query);
     if (classification.error) return res.status(400).json({ success: false, message: classification.error });
     const { vehicle, inventoryType } = classification;

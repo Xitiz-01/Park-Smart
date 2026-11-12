@@ -20,7 +20,10 @@ function deprecatedAlias(resources) {
     res.setHeader('Deprecation', 'true');
     res.setHeader('Link', `</api/v1${req.url}>; rel="successor-version"`);
     if (count === 1 || count % 100 === 0) {
-      req.log?.info({ legacyPrefix, successorPrefix: `/api/v1/${resource}`, count }, 'deprecated unversioned API path used');
+      req.log?.info(
+        { legacyPrefix, successorPrefix: `/api/v1/${resource}`, count },
+        'deprecated unversioned API path used',
+      );
     }
     return next();
   };

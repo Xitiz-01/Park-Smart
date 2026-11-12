@@ -1,7 +1,6 @@
-export const isElectricVehicle = (vehicle) => (
-  String(vehicle?.fuelType || '').toLowerCase() === 'electric'
-  || String(vehicle?.vehicleType || '').toLowerCase() === 'ev'
-);
+export const isElectricVehicle = (vehicle) =>
+  String(vehicle?.fuelType || '').toLowerCase() === 'electric' ||
+  String(vehicle?.vehicleType || '').toLowerCase() === 'ev';
 
 export const physicalVehicleType = (vehicle) => {
   const type = String(vehicle?.vehicleType || 'car').toLowerCase();
@@ -17,24 +16,37 @@ export const bookingTypeForVehicle = (vehicle) => {
 
 export const shouldShowEVSlotBoard = (vehicle, legacy = false) => !legacy && isElectricVehicle(vehicle);
 
-export const bookingPayloadForVehicle = ({ legacy = false, legacySlotId, locationId, vehicle, vehicleId, evSlotId, startTime, endTime }) => ({
+export const bookingPayloadForVehicle = ({
+  legacy = false,
+  legacySlotId,
+  locationId,
+  vehicle,
+  vehicleId,
+  evSlotId,
+  startTime,
+  endTime,
+}) => ({
   ...(legacy
     ? { slotId: legacySlotId }
     : {
-      parkingLocationId: locationId,
-      bookingType: bookingTypeForVehicle(vehicle),
-      ...(isElectricVehicle(vehicle) ? { slotId: evSlotId } : {}),
-    }),
+        parkingLocationId: locationId,
+        bookingType: bookingTypeForVehicle(vehicle),
+        ...(isElectricVehicle(vehicle) ? { slotId: evSlotId } : {}),
+      }),
   vehicleId,
   startTime: new Date(startTime).toISOString(),
   expectedEndTime: new Date(endTime).toISOString(),
 });
 
-export const vehicleClassificationLabel = (vehicle) => [
-  physicalVehicleType(vehicle),
-  vehicle?.bodyStyle,
-  vehicle?.fuelType || (String(vehicle?.vehicleType).toLowerCase() === 'ev' ? 'electric' : null),
-].filter(Boolean).map((value) => value[0].toUpperCase() + value.slice(1)).join(' • ');
+export const vehicleClassificationLabel = (vehicle) =>
+  [
+    physicalVehicleType(vehicle),
+    vehicle?.bodyStyle,
+    vehicle?.fuelType || (String(vehicle?.vehicleType).toLowerCase() === 'ev' ? 'electric' : null),
+  ]
+    .filter(Boolean)
+    .map((value) => value[0].toUpperCase() + value.slice(1))
+    .join(' • ');
 
 export const vehicleFormPayload = (form) => ({
   ...form,
@@ -54,16 +66,21 @@ export const applyCatalogDetails = (form, details) => ({
   modelYear: details.modelYear || form.modelYear,
   vehicleType: details.vehicleType || form.vehicleType,
   bodyStyle: details.bodyStyle || (details.bodyStyles?.length === 1 ? details.bodyStyles[0] : form.bodyStyle),
-  fuelType: details.fuelTypes?.length === 1
-    ? details.fuelTypes[0]
-    : details.fuelTypes?.includes(form.fuelType) ? form.fuelType : '',
+  fuelType:
+    details.fuelTypes?.length === 1
+      ? details.fuelTypes[0]
+      : details.fuelTypes?.includes(form.fuelType)
+        ? form.fuelType
+        : '',
 });
 
-export const isAvailabilityEventForLocation = (event, locationId) => (
-  !event?.locationId || String(event.locationId) === String(locationId)
-);
+export const isAvailabilityEventForLocation = (event, locationId) =>
+  !event?.locationId || String(event.locationId) === String(locationId);
 
-export const parkingDetailsPath = (locationId, { startTime, endTime, vehicleType, fuelType, vehicleId, distanceKm }) => {
+export const parkingDetailsPath = (
+  locationId,
+  { startTime, endTime, vehicleType, fuelType, vehicleId, distanceKm },
+) => {
   const params = {
     startTime: new Date(startTime).toISOString(),
     endTime: new Date(endTime).toISOString(),

@@ -4,7 +4,11 @@ const Vehicle = require('../models/Vehicle');
 const { normalizeFuelType } = require('../utils/vehicleClassification');
 
 const args = new Set(process.argv.slice(2));
-const getArg = (prefix) => process.argv.slice(2).find((arg) => arg.startsWith(prefix))?.slice(prefix.length);
+const getArg = (prefix) =>
+  process.argv
+    .slice(2)
+    .find((arg) => arg.startsWith(prefix))
+    ?.slice(prefix.length);
 
 const migrateVehicleFuelTypes = async ({ collection = Vehicle.collection, apply = false, logger = console } = {}) => {
   const vehicles = await collection.find({}).toArray();
@@ -12,7 +16,12 @@ const migrateVehicleFuelTypes = async ({ collection = Vehicle.collection, apply 
   let conflicts = 0;
 
   for (const vehicle of vehicles) {
-    if (String(vehicle.vehicleType || '').trim().toLowerCase() !== 'ev') continue;
+    if (
+      String(vehicle.vehicleType || '')
+        .trim()
+        .toLowerCase() !== 'ev'
+    )
+      continue;
     const fuelType = normalizeFuelType(vehicle.fuelType);
     if (fuelType && fuelType !== 'electric') {
       // Do not overwrite an explicit, contradictory fuel classification.
@@ -61,9 +70,12 @@ const run = async () => {
   console.log(`${apply ? 'APPLY' : 'DRY RUN'}: inspecting vehicle classifications in ${databaseName}`);
   const report = await migrateVehicleFuelTypes({ apply });
   if (report.conflicts) {
-    console.warn(`${report.conflicts} legacy EV record(s) had a contradictory explicit fuelType and were left unchanged for manual review.`);
+    console.warn(
+      `${report.conflicts} legacy EV record(s) had a contradictory explicit fuelType and were left unchanged for manual review.`,
+    );
   }
-  if (!apply) console.log(`No data changed. To apply: npm run migrate:vehicle-fuel-type -- --apply --confirm-db=${databaseName}`);
+  if (!apply)
+    console.log(`No data changed. To apply: npm run migrate:vehicle-fuel-type -- --apply --confirm-db=${databaseName}`);
   await mongoose.disconnect();
 };
 

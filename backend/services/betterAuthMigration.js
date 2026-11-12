@@ -1,9 +1,7 @@
 const { ObjectId } = require('mongodb');
 const User = require('../models/User');
 
-const authRoleFor = (domainRole) => (
-  ['admin', 'super_admin'].includes(domainRole) ? domainRole : 'user'
-);
+const authRoleFor = (domainRole) => (['admin', 'super_admin'].includes(domainRole) ? domainRole : 'user');
 
 const ensureAuthIndexes = async (db) => {
   await Promise.all([
@@ -24,7 +22,9 @@ const migrateExistingUsers = async ({ db, dryRun = true, logger = console }) => 
   for (const domainUser of users) {
     const email = domainUser.email.trim().toLowerCase();
     let authUser = domainUser.authUserId
-      ? await authUsers.findOne({ _id: ObjectId.isValid(domainUser.authUserId) ? new ObjectId(domainUser.authUserId) : domainUser.authUserId })
+      ? await authUsers.findOne({
+          _id: ObjectId.isValid(domainUser.authUserId) ? new ObjectId(domainUser.authUserId) : domainUser.authUserId,
+        })
       : null;
 
     if (!authUser) authUser = await authUsers.findOne({ email });
@@ -61,7 +61,7 @@ const migrateExistingUsers = async ({ db, dryRun = true, logger = console }) => 
         },
         $setOnInsert: { image: null, createdAt: domainUser.createdAt || now },
       },
-      { upsert: true }
+      { upsert: true },
     );
 
     if (domainUser.password) {
@@ -78,7 +78,7 @@ const migrateExistingUsers = async ({ db, dryRun = true, logger = console }) => 
             updatedAt: now,
           },
         },
-        { upsert: true }
+        { upsert: true },
       );
     }
 
@@ -92,10 +92,7 @@ const migrateExistingUsers = async ({ db, dryRun = true, logger = console }) => 
   }
 
   if (!dryRun) {
-    await User.collection.createIndex(
-      { authUserId: 1 },
-      { unique: true, sparse: true, name: 'authUserId_1' }
-    );
+    await User.collection.createIndex({ authUserId: 1 }, { unique: true, sparse: true, name: 'authUserId_1' });
     await ensureAuthIndexes(db);
   }
   return summary;

@@ -7,7 +7,15 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Kbd } from '@/components/ui/kbd';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
@@ -41,12 +49,25 @@ import { STATUS_TONES } from '@/lib/status';
 // Sample data on this page is illustrative.
 
 const swatches = [
-  ['surface', 'bg-surface'], ['surface-raised', 'bg-surface-raised'], ['surface-sunken', 'bg-surface-sunken'],
-  ['border', 'bg-border'], ['border-strong', 'bg-border-strong'], ['text', 'bg-text'], ['text-muted', 'bg-text-muted'],
-  ['brand', 'bg-brand'], ['brand-strong', 'bg-brand-strong'], ['brand-soft', 'bg-brand-soft'],
-  ['road-yellow', 'bg-road-yellow'], ['asphalt', 'bg-asphalt'], ['danger', 'bg-danger'],
-  ['slot-available', 'bg-slot-available'], ['slot-reserved-solid', 'bg-slot-reserved-solid'], ['slot-occupied', 'bg-slot-occupied'],
-  ['slot-ev', 'bg-slot-ev'], ['slot-maintenance', 'bg-slot-maintenance'], ['slot-unavailable', 'bg-slot-unavailable'],
+  ['surface', 'bg-surface'],
+  ['surface-raised', 'bg-surface-raised'],
+  ['surface-sunken', 'bg-surface-sunken'],
+  ['border', 'bg-border'],
+  ['border-strong', 'bg-border-strong'],
+  ['text', 'bg-text'],
+  ['text-muted', 'bg-text-muted'],
+  ['brand', 'bg-brand'],
+  ['brand-strong', 'bg-brand-strong'],
+  ['brand-soft', 'bg-brand-soft'],
+  ['road-yellow', 'bg-road-yellow'],
+  ['asphalt', 'bg-asphalt'],
+  ['danger', 'bg-danger'],
+  ['slot-available', 'bg-slot-available'],
+  ['slot-reserved-solid', 'bg-slot-reserved-solid'],
+  ['slot-occupied', 'bg-slot-occupied'],
+  ['slot-ev', 'bg-slot-ev'],
+  ['slot-maintenance', 'bg-slot-maintenance'],
+  ['slot-unavailable', 'bg-slot-unavailable'],
 ];
 
 const bays = [
@@ -67,12 +88,27 @@ const bookings = Array.from({ length: 14 }, (_, i) => ({
 }));
 
 const columns = [
-  { accessorKey: 'code', header: 'Booking', meta: { mobile: 'title' }, cell: ({ getValue }) => <span className="font-mono">{getValue()}</span> },
+  {
+    accessorKey: 'code',
+    header: 'Booking',
+    meta: { mobile: 'title' },
+    cell: ({ getValue }) => <span className="font-mono">{getValue()}</span>,
+  },
   { accessorKey: 'location', header: 'Location', meta: { mobile: 'subtitle' } },
   { accessorKey: 'bay', header: 'Bay', cell: ({ getValue }) => <span className="font-mono">{getValue()}</span> },
   { accessorKey: 'status', header: 'Status', cell: ({ getValue }) => <StatusBadge status={getValue()} /> },
   { accessorKey: 'amount', header: 'Amount', cell: ({ getValue }) => <span className="font-mono">₹{getValue()}</span> },
-  { id: 'actions', header: () => <span className="sr-only">Actions</span>, enableSorting: false, meta: { mobile: 'actions' }, cell: () => <Button variant="outline" size="sm">View</Button> },
+  {
+    id: 'actions',
+    header: () => <span className="sr-only">Actions</span>,
+    enableSorting: false,
+    meta: { mobile: 'actions' },
+    cell: () => (
+      <Button variant="outline" size="sm">
+        View
+      </Button>
+    ),
+  },
 ];
 
 function Section({ title, children }) {
@@ -95,7 +131,9 @@ export default function DesignPage() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-20 border-b bg-surface/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <Link to="/" aria-label="ParkSmart home"><Brand /></Link>
+          <Link to="/" aria-label="ParkSmart home">
+            <Brand />
+          </Link>
           <div className="flex items-center gap-2">
             <span className="hidden text-sm text-text-muted sm:inline">Style guide · dev only</span>
             <ThemeToggle />
@@ -106,7 +144,9 @@ export default function DesignPage() {
       <main className="mx-auto max-w-6xl px-4 pb-24 sm:px-6">
         <Section title="Brand">
           <div className="flex flex-wrap items-center gap-8">
-            <Brand size="sm" /><Brand /><Brand size="lg" />
+            <Brand size="sm" />
+            <Brand />
+            <Brand size="lg" />
             <Logomark className="size-16" />
           </div>
         </Section>
@@ -119,16 +159,37 @@ export default function DesignPage() {
         </Section>
 
         <Section title="Lot Map">
-          <p className="text-sm text-text-muted">Illustrative data. On product pages the Lot Map only ever draws real availability.</p>
+          <p className="text-sm text-text-muted">
+            Illustrative data. On product pages the Lot Map only ever draws real availability.
+          </p>
           <EvLotMap
-            slots={bays.map((b) => ({ _id: b.value, slotNumber: b.id, chargerPowerKw: b.powerKw, connectorType: b.meta, availabilityStatus: b.state, available: b.state === 'available' }))}
+            slots={bays.map((b) => ({
+              _id: b.value,
+              slotNumber: b.id,
+              chargerPowerKw: b.powerKw,
+              connectorType: b.meta,
+              availabilityStatus: b.state,
+              available: b.state === 'available',
+            }))}
             selectedId={bay}
             onSelect={setBay}
             rate={60}
           />
           <div className="grid gap-4 lg:grid-cols-2">
-            <CapacityLotMap total={70} reserved={52} available={18} windowLabel="Today, 10:00–12:00" vehicleLabel="car spaces" />
-            <CapacityLotMap total={12} reserved={12} available={0} windowLabel="Today, 18:00–20:00" vehicleLabel="car spaces" />
+            <CapacityLotMap
+              total={70}
+              reserved={52}
+              available={18}
+              windowLabel="Today, 10:00–12:00"
+              vehicleLabel="car spaces"
+            />
+            <CapacityLotMap
+              total={12}
+              reserved={12}
+              available={0}
+              windowLabel="Today, 18:00–20:00"
+              vehicleLabel="car spaces"
+            />
           </div>
           <div className="flex flex-wrap items-stretch gap-4">
             <CapacityMini available={18} total={70} className="w-48" />
@@ -153,7 +214,10 @@ export default function DesignPage() {
             <p className="font-display text-display-xl font-semibold">Display XL · Find a bay</p>
             <p className="font-display text-display-lg font-semibold">Display LG · Reserve it</p>
             <p className="font-display text-display-md font-semibold">Display MD · Drive straight in</p>
-            <p className="max-w-prose text-pretty">Body text in Geist. Live availability updates as bays are reserved, occupied and freed, so the number you see is the number that is there.</p>
+            <p className="max-w-prose text-pretty">
+              Body text in Geist. Live availability updates as bays are reserved, occupied and freed, so the number you
+              see is the number that is there.
+            </p>
             <p className="text-sm text-text-muted">Muted supporting text for metadata and hints.</p>
             <p className="font-mono text-lg">MH12 AB 1234 · EV02 · ₹60/hr · 0123456789</p>
           </div>
@@ -168,25 +232,53 @@ export default function DesignPage() {
             <Button variant="link">Link</Button>
             <Button variant="destructive">Cancel booking</Button>
             <Button disabled>Disabled</Button>
-            <Button size="lg"><Plus data-icon="inline-start" />Add vehicle</Button>
+            <Button size="lg">
+              <Plus data-icon="inline-start" />
+              Add vehicle
+            </Button>
             <Button size="sm">Small</Button>
-            <Button size="icon" aria-label="Locate me"><MapPin /></Button>
+            <Button size="icon" aria-label="Locate me">
+              <MapPin />
+            </Button>
           </div>
         </Section>
 
         <Section title="Form controls">
           <div className="grid gap-6 md:grid-cols-2">
             <FormField label="Licence plate" description="As printed on the plate, e.g. MH12AB1234." required>
-              <Input name="plate" autoComplete="off" spellCheck={false} placeholder="MH12AB1234…" className="font-mono uppercase" />
+              <Input
+                name="plate"
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="MH12AB1234…"
+                className="font-mono uppercase"
+              />
             </FormField>
             <FormField label="Email" error="Enter an email address like name@example.com.">
               <Input type="email" name="email" autoComplete="email" defaultValue="not-an-email" />
             </FormField>
-            <SearchableSelect label="Make" value={make} onChange={setMake} options={['Tata Motors', 'Mahindra', 'Maruti Suzuki', 'Hyundai', 'MG', 'Kia']} placeholder="Choose a make" required />
-            <SearchableSelect label="Model" value="" onChange={() => {}} options={[]} placeholder="Choose a model" error="Couldn’t load models." onRetry={() => toast('Retrying…')} />
+            <SearchableSelect
+              label="Make"
+              value={make}
+              onChange={setMake}
+              options={['Tata Motors', 'Mahindra', 'Maruti Suzuki', 'Hyundai', 'MG', 'Kia']}
+              placeholder="Choose a make"
+              required
+            />
+            <SearchableSelect
+              label="Model"
+              value=""
+              onChange={() => {}}
+              options={[]}
+              placeholder="Choose a model"
+              error="Couldn’t load models."
+              onRetry={() => toast('Retrying…')}
+            />
             <FormField label="Vehicle type">
               <Select defaultValue="car">
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="car">Car</SelectItem>
                   <SelectItem value="motorcycle">Motorcycle</SelectItem>
@@ -204,11 +296,26 @@ export default function DesignPage() {
               <Textarea placeholder="Optional…" />
             </FormField>
             <div className="grid gap-4">
-              <label className="flex items-center gap-3 text-sm"><Checkbox defaultChecked />Set as default vehicle</label>
-              <label className="flex items-center gap-3 text-sm"><Switch defaultChecked />Available only</label>
+              <label className="flex items-center gap-3 text-sm">
+                <Checkbox defaultChecked />
+                Set as default vehicle
+              </label>
+              <label className="flex items-center gap-3 text-sm">
+                <Switch defaultChecked />
+                Available only
+              </label>
               <div className="grid gap-2">
-                <span id="radius-label" className="text-sm font-medium">Radius: <span className="font-mono">{radius[0]} km</span></span>
-                <Slider aria-labelledby="radius-label" min={1} max={20} step={1} value={radius} onValueChange={setRadius} />
+                <span id="radius-label" className="text-sm font-medium">
+                  Radius: <span className="font-mono">{radius[0]} km</span>
+                </span>
+                <Slider
+                  aria-labelledby="radius-label"
+                  min={1}
+                  max={20}
+                  step={1}
+                  value={radius}
+                  onValueChange={setRadius}
+                />
               </div>
               <ToggleGroup type="single" defaultValue="nearest" variant="outline" aria-label="Sort results">
                 <ToggleGroupItem value="nearest">Nearest</ToggleGroupItem>
@@ -217,83 +324,179 @@ export default function DesignPage() {
               </ToggleGroup>
             </div>
             <Card className="w-fit">
-              <CardContent><Calendar mode="single" selected={date} onSelect={setDate} /></CardContent>
+              <CardContent>
+                <Calendar mode="single" selected={date} onSelect={setDate} />
+              </CardContent>
             </Card>
           </div>
         </Section>
 
         <Section title="Status">
           <div className="flex flex-wrap gap-2">
-            {Object.keys(STATUS_TONES).map((status) => <StatusBadge key={status} status={status} />)}
-            <StatusBadge status="ev" tone="ev">EV bay</StatusBadge>
+            {Object.keys(STATUS_TONES).map((status) => (
+              <StatusBadge key={status} status={status} />
+            ))}
+            <StatusBadge status="ev" tone="ev">
+              EV bay
+            </StatusBadge>
           </div>
         </Section>
 
         <Section title="Bays">
-          <p className="text-sm text-text-muted">Illustrative bays. Arrow keys move between free bays; Enter selects.</p>
+          <p className="text-sm text-text-muted">
+            Illustrative bays. Arrow keys move between free bays; Enter selects.
+          </p>
           <SlotBoard label="EV charging bays" onValueChange={setBay}>
             {bays.map((b) => (
-              <SlotTile key={b.value} {...b} ev state={b.state === 'available' && b.value === bay ? 'selected' : b.state} />
+              <SlotTile
+                key={b.value}
+                {...b}
+                ev
+                state={b.state === 'available' && b.value === bay ? 'selected' : b.state}
+              />
             ))}
           </SlotBoard>
           <SlotLegend />
         </Section>
 
         <Section title="Page header and metrics">
-          <PageHeader eyebrow="Driver workspace" title="Good to see you, Asha" description="Live availability and your upcoming bookings." actions={<Button><MapPin data-icon="inline-start" />Find parking</Button>} />
+          <PageHeader
+            eyebrow="Driver workspace"
+            title="Good to see you, Asha"
+            description="Live availability and your upcoming bookings."
+            actions={
+              <Button>
+                <MapPin data-icon="inline-start" />
+                Find parking
+              </Button>
+            }
+          />
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <MetricCard label="Free bays nearby" value={128} detail="Illustrative" icon={<ParkingSquare />} tone="available" />
+            <MetricCard
+              label="Free bays nearby"
+              value={128}
+              detail="Illustrative"
+              icon={<ParkingSquare />}
+              tone="available"
+            />
             <MetricCard label="Upcoming bookings" value={3} icon={<CalendarDays />} />
             <MetricCard label="EV bays free" value={7} icon={<Zap />} tone="ev" />
-            <MetricCard label="Occupancy" value={62} format={(v) => `${Math.round(v)}%`} icon={<Gauge />} tone="reserved" />
+            <MetricCard
+              label="Occupancy"
+              value={62}
+              format={(v) => `${Math.round(v)}%`}
+              icon={<Gauge />}
+              tone="reserved"
+            />
           </div>
         </Section>
 
         <Section title="Data table">
-          <DataTable columns={columns} data={bookings} getRowId={(row) => row.code} searchLabel="Search bookings" searchPlaceholder="Search bookings…" pageSize={5} toolbar={<Button variant="outline" size="sm">Export</Button>} />
+          <DataTable
+            columns={columns}
+            data={bookings}
+            getRowId={(row) => row.code}
+            searchLabel="Search bookings"
+            searchPlaceholder="Search bookings…"
+            pageSize={5}
+            toolbar={
+              <Button variant="outline" size="sm">
+                Export
+              </Button>
+            }
+          />
         </Section>
 
         <Section title="Empty, error and loading">
           <div className="grid gap-4 md:grid-cols-2">
             <EmptyState title="No vehicles yet" description="Add a vehicle so we can match you with bays that fit it.">
-              <Button><Car data-icon="inline-start" />Add vehicle</Button>
+              <Button>
+                <Car data-icon="inline-start" />
+                Add vehicle
+              </Button>
             </EmptyState>
-            <ErrorState description="We couldn’t reach the server. Check your connection and try again." onRetry={() => toast('Retrying…')} />
+            <ErrorState
+              description="We couldn’t reach the server. Check your connection and try again."
+              onRetry={() => toast('Retrying…')}
+            />
           </div>
           <MetricGridSkeleton />
-          <div className="grid gap-4 md:grid-cols-2"><ListSkeleton /><CardGridSkeleton count={2} className="lg:grid-cols-2" /></div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <ListSkeleton />
+            <CardGridSkeleton count={2} className="lg:grid-cols-2" />
+          </div>
           <TableSkeleton rows={3} />
-          <div className="flex items-center gap-3 text-sm text-text-muted"><BayLoader /> Inline loader</div>
+          <div className="flex items-center gap-3 text-sm text-text-muted">
+            <BayLoader /> Inline loader
+          </div>
           <Progress value={64} aria-label="Upload progress" />
         </Section>
 
         <Section title="Overlays and feedback">
           <div className="flex flex-wrap items-center gap-3">
-            <Button variant="destructive" onClick={async () => { if (await confirm({ title: 'Cancel this booking?', description: 'The bay is released straight away.', confirmLabel: 'Cancel booking', cancelLabel: 'Keep booking', tone: 'danger' })) toast.success('Booking cancelled'); }}>Confirm dialog</Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                if (
+                  await confirm({
+                    title: 'Cancel this booking?',
+                    description: 'The bay is released straight away.',
+                    confirmLabel: 'Cancel booking',
+                    cancelLabel: 'Keep booking',
+                    tone: 'danger',
+                  })
+                )
+                  toast.success('Booking cancelled');
+              }}
+            >
+              Confirm dialog
+            </Button>
             <Dialog>
-              <DialogTrigger asChild><Button variant="outline">Dialog</Button></DialogTrigger>
+              <DialogTrigger asChild>
+                <Button variant="outline">Dialog</Button>
+              </DialogTrigger>
               <DialogContent>
-                <DialogHeader><DialogTitle>Booking details</DialogTitle><DialogDescription>Bay EV02 · 60 kW · CCS2</DialogDescription></DialogHeader>
-                <DialogFooter><Button>Done</Button></DialogFooter>
+                <DialogHeader>
+                  <DialogTitle>Booking details</DialogTitle>
+                  <DialogDescription>Bay EV02 · 60 kW · CCS2</DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button>Done</Button>
+                </DialogFooter>
               </DialogContent>
             </Dialog>
             <Sheet>
-              <SheetTrigger asChild><Button variant="outline">Sheet</Button></SheetTrigger>
+              <SheetTrigger asChild>
+                <Button variant="outline">Sheet</Button>
+              </SheetTrigger>
               <SheetContent>
-                <SheetHeader><SheetTitle>Filters</SheetTitle><SheetDescription>Narrow down the results.</SheetDescription></SheetHeader>
+                <SheetHeader>
+                  <SheetTitle>Filters</SheetTitle>
+                  <SheetDescription>Narrow down the results.</SheetDescription>
+                </SheetHeader>
               </SheetContent>
             </Sheet>
             <Popover>
-              <PopoverTrigger asChild><Button variant="outline">Popover</Button></PopoverTrigger>
+              <PopoverTrigger asChild>
+                <Button variant="outline">Popover</Button>
+              </PopoverTrigger>
               <PopoverContent>Popover content anchored to its trigger.</PopoverContent>
             </Popover>
             <Tooltip>
-              <TooltipTrigger asChild><Button variant="outline">Tooltip</Button></TooltipTrigger>
+              <TooltipTrigger asChild>
+                <Button variant="outline">Tooltip</Button>
+              </TooltipTrigger>
               <TooltipContent>B4 · Available · ₹60/hr</TooltipContent>
             </Tooltip>
-            <Button variant="outline" onClick={() => toast.success('Bay EV02 reserved')}>Success toast</Button>
-            <Button variant="outline" onClick={() => toast.error('That bay was just taken. Pick another.')}>Error toast</Button>
-            <span className="text-sm text-text-muted">Command palette <Kbd>⌘</Kbd> <Kbd>K</Kbd></span>
+            <Button variant="outline" onClick={() => toast.success('Bay EV02 reserved')}>
+              Success toast
+            </Button>
+            <Button variant="outline" onClick={() => toast.error('That bay was just taken. Pick another.')}>
+              Error toast
+            </Button>
+            <span className="text-sm text-text-muted">
+              Command palette <Kbd>⌘</Kbd> <Kbd>K</Kbd>
+            </span>
           </div>
           <Tabs defaultValue="drivers" className="max-w-xl">
             <TabsList>
@@ -301,9 +504,15 @@ export default function DesignPage() {
               <TabsTrigger value="operators">Operators</TabsTrigger>
               <TabsTrigger value="admins">Admins</TabsTrigger>
             </TabsList>
-            <TabsContent value="drivers" className="pt-3 text-sm text-text-muted">Find, reserve, park.</TabsContent>
-            <TabsContent value="operators" className="pt-3 text-sm text-text-muted">Publish locations and run bays.</TabsContent>
-            <TabsContent value="admins" className="pt-3 text-sm text-text-muted">Review operators and bookings.</TabsContent>
+            <TabsContent value="drivers" className="pt-3 text-sm text-text-muted">
+              Find, reserve, park.
+            </TabsContent>
+            <TabsContent value="operators" className="pt-3 text-sm text-text-muted">
+              Publish locations and run bays.
+            </TabsContent>
+            <TabsContent value="admins" className="pt-3 text-sm text-text-muted">
+              Review operators and bookings.
+            </TabsContent>
           </Tabs>
           <Accordion type="single" collapsible className="max-w-xl">
             <AccordionItem value="a">
@@ -312,7 +521,10 @@ export default function DesignPage() {
             </AccordionItem>
           </Accordion>
           <Card className="max-w-sm">
-            <CardHeader><CardTitle>Card</CardTitle><CardDescription>Hairline border, raised surface.</CardDescription></CardHeader>
+            <CardHeader>
+              <CardTitle>Card</CardTitle>
+              <CardDescription>Hairline border, raised surface.</CardDescription>
+            </CardHeader>
             <CardContent className="text-sm text-text-muted">Used for grouped content.</CardContent>
           </Card>
         </Section>

@@ -9,15 +9,22 @@ flowchart LR
   pr[Pull request / push to main] --> fe[frontend-ci]
   pr --> be[backend-ci]
   pr --> sec[security]
+  pr --> fmt[format]
+  pr --> dk[docker]
+  pr --> cs[compose-smoke]
   pr --> cq[codeql]
   pr --> ch[commit-hygiene]
   pr --> e2e[e2e]
   fe --> gate{ci-gate}
   be --> gate
   sec --> gate
+  fmt --> gate
+  dk --> gate
+  cs --> gate
   cq --> gate
   ch --> gate
   e2e --> gate
+  gate -->|push to main| img[publish-image: GHCR]
   tag[Tag v*] --> rel[release.yml]
   rel -->|reuses| ci[the whole CI workflow]
   ci --> pub[publish: GitHub Release]
@@ -28,24 +35,28 @@ flowchart LR
 | Job | What it does | Fails when |
 |---|---|---|
 | `frontend-ci` | `npm ci` → ESLint → Vitest → `vite build` → size-limit budget → uploads `frontend-build` | a lint error or more than the allowed warnings, a failing test, a broken build, or a bundle over budget |
-| `backend-ci` | `npm ci` → ESLint → unit tests → starts a single-node MongoDB replica set → all tests under c8 → uploads `backend-coverage` | a lint error, a failing test, or coverage under the floor |
+| `backend-ci` | `npm ci` → ESLint → unit tests → starts a single-node MongoDB replica set (Redis runs as a service container) → all tests under c8 → uploads `backend-coverage` | a lint error, a failing test, or coverage under the floor |
 | `security` | tests the audit check → `npm audit` of production dependencies → gitleaks over the full history → dependency review (PRs only) | a high or critical advisory that isn't allow-listed (or whose entry expired), a secret in any commit, or a PR adding a high-severity dependency |
+| `format` | `npm ci` at the root → `prettier --check .` | a JS, JSX, CSS, JSON or YAML file that isn't Prettier-formatted (run `npm run format` to fix) |
+| `docker` | builds the backend image → Trivy (checksum-verified binary) scans it | a high or critical vulnerability that has a fix and isn't in `.trivyignore.yaml` (or whose entry expired) |
+| `compose-smoke` | with `MONGO_IMAGE=mongo:7.0` (MongoDB 8 doesn't start on the runners' Linux 6.19+ kernel yet): `docker compose -f docker-compose.yml up --wait` with the production images and `.env.example` → `/health/ready` reports MongoDB and Redis up → the web proxy serves the app → the seeded vendor signs in → `down --volumes` | any service unhealthy, readiness not `ok`, or sign-in failing (all container logs are printed, and a summary is posted as an annotation) |
 | `codeql (javascript-typescript)`, `codeql (actions)` | CodeQL analysis of the app code and of the workflows, uploaded to code scanning | the analysis can't run. New alerts show up as GitHub's separate code-scanning check on the PR; a ruleset makes that check blocking (see the checklist) |
 | `commit-hygiene` | AI-attribution trailer scan and commitlint over every commit in the PR (or the pushed range) | a forbidden trailer or a non-conventional message |
 | `e2e` | placeholder; the Playwright suite lands in Phase 6 | never (yet) |
 | `ci-gate` | runs last, even if something failed | any job above didn't succeed (failed, cancelled or skipped) |
+| `publish-image` | pushes to `main` only, after `ci-gate`: rebuilds the backend image and pushes `ghcr.io/xitiz-01/parksmart-api:<git sha>` and `:latest` | the push fails (it's after the gate, so it never blocks a merge) |
 
 Settings shared by every job:
 
 - **Node** comes from `.nvmrc` (26, Active LTS since 2026-10-28; Node 24 is in maintenance until April 2028). Both packages declare `"engines": { "node": ">=24" }`.
-- **Least privilege:** the workflow token is `contents: read`. Only `codeql` adds `security-events: write`, and only `release.yml`'s `publish` job gets `contents: write`. Checkouts don't persist credentials.
+- **Least privilege:** the workflow token is `contents: read`. Only `codeql` adds `security-events: write`, only `publish-image` adds `packages: write`, and only `release.yml`'s `publish` job gets `contents: write`. Checkouts don't persist credentials.
 - **Pinned actions:** every third-party action is pinned to a full commit SHA with the version in a comment. Dependabot keeps them current.
 - **Concurrency:** a new push to a PR cancels its older run; runs on `main` always finish.
 - **No secrets:** nothing in CI needs a real credential, so PRs from forks work. Providers (Cashfree, Geoapify, vehicle catalogues) are mocked in the tests.
 
 ### Why the backend starts MongoDB itself
 
-Transactions (needed from Phase 7) only work on a replica set. GitHub service containers can't pass `--replSet` to `mongod`, so `scripts/start-mongo-replset.sh` runs `mongo:7.0` in Docker with `--replSet rs0` and initiates it. The member advertises `127.0.0.1:27028`, so the tests' plain `mongodb://127.0.0.1:27028` connection string finds the primary with no extra options. Redis joins CI in Phase 3, when the backend first uses it.
+Transactions (needed from Phase 7) only work on a replica set. GitHub service containers can't pass `--replSet` to `mongod`, so `scripts/start-mongo-replset.sh` runs `mongo:7.0` in Docker with `--replSet rs0` and initiates it. The member advertises `127.0.0.1:27028`, so the tests' plain `mongodb://127.0.0.1:27028` connection string finds the primary with no extra options. Redis needs no special arguments, so `backend-ci` runs it as a service container on port 6390 (`TEST_REDIS_URL`).
 
 ### Thresholds and how to ratchet them
 
@@ -58,6 +69,14 @@ Transactions (needed from Phase 7) only work on a replica set. GitHub service co
 | All CSS (gzip) | same | 32 kB | 30.2 kB |
 
 When a change improves a number, move the threshold with it in the same PR: raise the coverage floor, lower the warning cap. Raise a size budget only on purpose, and say why in the commit (for example, the axios security update added 6.7 kB to the entry chunk).
+
+### Image scanning
+
+Trivy runs as a binary from its immutable GitHub release, checked against a pinned SHA-256 (`TRIVY_VERSION` and `TRIVY_SHA256` in `ci.yml`), the same way gitleaks is installed. `aquasecurity/trivy-action` isn't used: in March 2026 its tags were force-pushed to credential-stealing code (CVE-2026-33634), so anything referencing it by tag ran the attacker's code. To upgrade Trivy, take the new version's `Linux-64bit.tar.gz` digest from the release's `checksums.txt`.
+
+`.trivyignore.yaml` holds accepted image findings, each with a statement and an `expired_at` date, mirroring the npm audit allow-list: today the two better-auth advisories (by GHSA and CVE id), until 2026-12-31. Only vulnerabilities with a fix fail the build (`--ignore-unfixed`); unfixed ones still show in the log.
+
+`publish-image` is the only job with `packages: write`. Because `release.yml` reuses this workflow, its `ci` job grants `packages: write` too; the job is skipped for tags.
 
 ### The audit allow-list
 
@@ -81,9 +100,11 @@ cd ../backend && npm ci
 npm run lint
 npm run test:unit              # no database needed
 ../scripts/start-mongo-replset.sh   # needs Docker; or run mongod --replSet rs0 yourself
-TEST_MONGODB_URI=mongodb://127.0.0.1:27028 npm run test:coverage
+docker run -d --rm --name parksmart-test-redis -p 127.0.0.1:6390:6379 redis:8-alpine   # or: redis-server --port 6390
+TEST_MONGODB_URI=mongodb://127.0.0.1:27028 TEST_REDIS_URL=redis://127.0.0.1:6390 npm run test:coverage
 
 cd ..
+npm run format:check                         # Prettier (npm run format fixes)
 node --test scripts/                         # tests for the audit check
 node scripts/audit-prod-deps.mjs             # production dependency audit
 gitleaks git --redact .                      # if you have gitleaks installed
@@ -104,10 +125,10 @@ Stop the Docker one with `docker stop parksmart-test-mongo` (it removes itself).
 
 `npm install` at the repo root runs Husky, which points `core.hooksPath` at `.husky/_` for this clone.
 
-- **pre-commit** runs lint-staged. Each package has its own `.lintstagedrc.json`, and a staged file uses the closest one: ESLint `--fix` on JavaScript, Prettier on JSON and YAML. A lint error stops the commit.
+- **pre-commit** runs lint-staged. Each package has its own `.lintstagedrc.json`, and a staged file uses the closest one: ESLint `--fix` then Prettier on JavaScript, Prettier on CSS, JSON and YAML. A lint error stops the commit.
 - **commit-msg** runs `scripts/strip-ai-trailers.sh`, which removes AI attribution lines (patterns in `scripts/commit-hygiene-patterns.txt`; real `Co-authored-by` lines are kept), then commitlint.
 
-Prettier is configured (`.prettierrc.json`: single quotes, 120 columns) but doesn't yet run on JS/JSX/CSS, because most source files predate it and formatting a whole file on its first touch would bury the real change. A one-time format commit would switch that on (see the Phase 1 report). It stays off Markdown on purpose: it pads tables to equal widths, so a one-cell edit rewrites the whole table.
+Prettier (`.prettierrc.json`: single quotes, 120 columns) formats JS, JSX, CSS, JSON and YAML, in the hook and in CI's `format` job. The whole codebase was formatted once in Phase 3; that commit is listed in `.git-blame-ignore-revs`, which GitHub's blame view skips automatically. Run `git config blame.ignoreRevsFile .git-blame-ignore-revs` once to get the same from `git blame`. Markdown stays out on purpose: Prettier pads tables to equal widths, so a one-cell edit rewrites the whole table. HTML is out too.
 
 `git worktree` checkouts don't get the hooks until you run `npm install` inside them, because `core.hooksPath` is relative.
 

@@ -1,8 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import {
-  applyTheme, isRedesignedPath, readThemePreference, resolveTheme, writeThemePreference,
-} from '@/lib/theme';
+import { applyTheme, isRedesignedPath, readThemePreference, resolveTheme, writeThemePreference } from '@/lib/theme';
 
 const ThemeContext = createContext(null);
 const DARK_QUERY = '(prefers-color-scheme: dark)';
@@ -26,7 +24,9 @@ export function ThemeProvider({ children }) {
   const theme = redesigned ? resolveTheme(preference, systemPrefersDark) : 'light';
   const surface = redesigned ? 'new' : 'legacy';
 
-  useEffect(() => { applyTheme(theme, surface); }, [theme, surface]);
+  useEffect(() => {
+    applyTheme(theme, surface);
+  }, [theme, surface]);
 
   const setPreference = useCallback((next) => {
     writeThemePreference(next);

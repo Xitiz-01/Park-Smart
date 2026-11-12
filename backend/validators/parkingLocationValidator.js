@@ -10,11 +10,13 @@ const validationError = (message) => ({ error: message });
 
 const validateParkingLocation = (body, existing = null) => {
   const name = String(body.name || '').trim();
-  if (name.length < 2 || name.length > 120) return validationError('Parking location name must be between 2 and 120 characters');
+  if (name.length < 2 || name.length > 120)
+    return validationError('Parking location name must be between 2 and 120 characters');
 
   const latitude = Number(body.latitude);
   const longitude = Number(body.longitude);
-  if (!GeocodingService.validCoordinate(latitude, longitude)) return validationError('Valid latitude and longitude are required');
+  if (!GeocodingService.validCoordinate(latitude, longitude))
+    return validationError('Valid latitude and longitude are required');
 
   let selected;
   if (body.selectionToken) {
@@ -24,7 +26,8 @@ const validateParkingLocation = (body, existing = null) => {
     const [oldLongitude, oldLatitude] = existing.location.coordinates;
     const sameAddress = body.address?.formattedAddress === existing.address.formattedAddress;
     const movedDistance = Math.abs(oldLatitude - latitude) + Math.abs(oldLongitude - longitude);
-    if (!sameAddress || movedDistance > 0.08) return validationError('Select the address again before changing its location');
+    if (!sameAddress || movedDistance > 0.08)
+      return validationError('Select the address again before changing its location');
     selected = { ...existing.address.toObject(), latitude, longitude };
   } else {
     return validationError('Select a valid address suggestion before saving');
@@ -49,7 +52,8 @@ const validateParkingLocation = (body, existing = null) => {
   const capacity = {};
   for (const type of vehicleTypes) {
     const price = Number(body.pricing?.[type]);
-    if (!Number.isFinite(price) || price < 0 || price > 100000) return validationError(`Enter a valid non-negative price for ${type}`);
+    if (!Number.isFinite(price) || price < 0 || price > 100000)
+      return validationError(`Enter a valid non-negative price for ${type}`);
     pricing[type] = Math.round(price * 100) / 100;
     if (type !== 'ev') {
       const value = Number(body.capacity?.[type]);
@@ -74,7 +78,8 @@ const validateParkingLocation = (body, existing = null) => {
   }
 
   const amenities = [...new Set(Array.isArray(body.amenities) ? body.amenities : [])];
-  if (amenities.some((value) => !AMENITIES.includes(value))) return validationError('One or more amenities are invalid');
+  if (amenities.some((value) => !AMENITIES.includes(value)))
+    return validationError('One or more amenities are invalid');
   const evSupported = Boolean(body.evSupported);
   if (vehicleTypes.includes('ev') !== evSupported) {
     return validationError('EV support and the EV vehicle type must be enabled or disabled together');
@@ -83,7 +88,9 @@ const validateParkingLocation = (body, existing = null) => {
   return {
     value: {
       name,
-      description: String(body.description || '').trim().slice(0, 1000),
+      description: String(body.description || '')
+        .trim()
+        .slice(0, 1000),
       address: {
         formattedAddress: selected.formattedAddress,
         addressLine1: selected.addressLine1 || selected.formattedAddress,
@@ -101,10 +108,16 @@ const validateParkingLocation = (body, existing = null) => {
       evSupported,
       evDetails: {
         slotCount: evSupported ? Math.max(0, Math.floor(Number(body.evDetails?.slotCount) || 0)) : 0,
-        chargerType: evSupported ? String(body.evDetails?.chargerType || '').trim().slice(0, 80) : '',
+        chargerType: evSupported
+          ? String(body.evDetails?.chargerType || '')
+              .trim()
+              .slice(0, 80)
+          : '',
       },
       operatingHours,
-      amenities: evSupported ? [...new Set([...amenities, 'ev_charging'])] : amenities.filter((item) => item !== 'ev_charging'),
+      amenities: evSupported
+        ? [...new Set([...amenities, 'ev_charging'])]
+        : amenities.filter((item) => item !== 'ev_charging'),
       pricing,
       capacity,
     },

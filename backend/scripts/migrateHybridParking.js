@@ -7,7 +7,11 @@ const Vehicle = require('../models/Vehicle');
 const ReservationLedger = require('../models/ReservationLedger');
 
 const args = new Set(process.argv.slice(2));
-const getArg = (prefix) => process.argv.slice(2).find((arg) => arg.startsWith(prefix))?.slice(prefix.length);
+const getArg = (prefix) =>
+  process.argv
+    .slice(2)
+    .find((arg) => arg.startsWith(prefix))
+    ?.slice(prefix.length);
 
 const run = async () => {
   const apply = args.has('--apply');
@@ -20,7 +24,9 @@ const run = async () => {
 
   const locations = await ParkingLocation.find();
   const bookings = await Booking.collection.find({}).toArray();
-  console.log(`${apply ? 'APPLY' : 'DRY RUN'}: ${locations.length} locations and ${bookings.length} bookings inspected in ${parsedDb}`);
+  console.log(
+    `${apply ? 'APPLY' : 'DRY RUN'}: ${locations.length} locations and ${bookings.length} bookings inspected in ${parsedDb}`,
+  );
   let locationUpdates = 0;
   let bookingUpdates = 0;
   let ledgerEntries = 0;
@@ -58,28 +64,50 @@ const run = async () => {
       const resourceKey = ledgerType === 'ev' ? `ev:${slot?._id}` : `regular:${parkingLocation}:${vehicleType}`;
       await ReservationLedger.updateOne(
         { resourceKey },
-        { $setOnInsert: {
-          resourceKey, resourceType: ledgerType, parkingLocation, vehicleType,
-          slot: ledgerType === 'ev' ? slot?._id : null,
-        } },
-        { upsert: true }
+        {
+          $setOnInsert: {
+            resourceKey,
+            resourceType: ledgerType,
+            parkingLocation,
+            vehicleType,
+            slot: ledgerType === 'ev' ? slot?._id : null,
+          },
+        },
+        { upsert: true },
       );
       const exists = await ReservationLedger.exists({ resourceKey, 'reservations.token': reservationToken });
       if (!exists) {
-        await ReservationLedger.updateOne({ resourceKey }, { $push: { reservations: {
-          token: reservationToken, booking: booking._id, user: booking.user,
-          startTime: booking.startTime, endTime: booking.expectedEndTime, createdAt: booking.createdAt || new Date(),
-        } } });
+        await ReservationLedger.updateOne(
+          { resourceKey },
+          {
+            $push: {
+              reservations: {
+                token: reservationToken,
+                booking: booking._id,
+                user: booking.user,
+                startTime: booking.startTime,
+                endTime: booking.expectedEndTime,
+                createdAt: booking.createdAt || new Date(),
+              },
+            },
+          },
+        );
         ledgerEntries += 1;
       }
     }
   }
 
   if (apply) {
-    await Promise.all([ParkingLocation.syncIndexes(), ParkingSlot.syncIndexes(), Booking.syncIndexes(), ReservationLedger.syncIndexes()]);
+    await Promise.all([
+      ParkingLocation.syncIndexes(),
+      ParkingSlot.syncIndexes(),
+      Booking.syncIndexes(),
+      ReservationLedger.syncIndexes(),
+    ]);
   }
   console.log(JSON.stringify({ locationUpdates, bookingUpdates, ledgerEntries, applied: apply }, null, 2));
-  if (!apply) console.log(`No data changed. To apply: npm run migrate:hybrid-parking -- --apply --confirm-db=${parsedDb}`);
+  if (!apply)
+    console.log(`No data changed. To apply: npm run migrate:hybrid-parking -- --apply --confirm-db=${parsedDb}`);
   await mongoose.disconnect();
 };
 

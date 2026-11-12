@@ -14,18 +14,31 @@ export default function OccupancyRing({ free = 0, total = 0, freeLabel = 'Free',
 
   return (
     <figure className={cn('m-0 flex flex-wrap items-center gap-6', className)}>
-      <svg viewBox="0 0 128 128" role="img" aria-label={`${safeFree} ${freeLabel.toLowerCase()} and ${taken} ${takenLabel.toLowerCase()} of ${safeTotal}`} className="size-36 shrink-0">
+      <svg
+        viewBox="0 0 128 128"
+        role="img"
+        aria-label={`${safeFree} ${freeLabel.toLowerCase()} and ${taken} ${takenLabel.toLowerCase()} of ${safeTotal}`}
+        className="size-36 shrink-0"
+      >
         <circle cx="64" cy="64" r={radius} fill="none" strokeWidth="14" className="stroke-chart-1" />
         {taken > 0 && (
           <circle
-            cx="64" cy="64" r={radius} fill="none" strokeWidth="14"
+            cx="64"
+            cy="64"
+            r={radius}
+            fill="none"
+            strokeWidth="14"
             strokeDasharray={`${circumference * takenShare} ${circumference}`}
             transform="rotate(-90 64 64)"
             className="stroke-chart-2"
           />
         )}
-        <text x="64" y="64" textAnchor="middle" className="fill-foreground font-display text-[22px] font-semibold">{percent}%</text>
-        <text x="64" y="80" textAnchor="middle" className="fill-text-muted text-[10px]">taken</text>
+        <text x="64" y="64" textAnchor="middle" className="fill-foreground font-display text-[22px] font-semibold">
+          {percent}%
+        </text>
+        <text x="64" y="80" textAnchor="middle" className="fill-text-muted text-[10px]">
+          taken
+        </text>
       </svg>
       <figcaption>
         <dl className="m-0 grid gap-3 text-sm">

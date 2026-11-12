@@ -49,9 +49,18 @@ function DriverPreview() {
           <StatusBadge status="upcoming" />
         </div>
         <ul className="mt-2 grid gap-1 text-sm text-text-muted">
-          <li className="flex items-center gap-2"><CalendarDays aria-hidden="true" className="size-4" />Today</li>
-          <li className="flex items-center gap-2"><Clock aria-hidden="true" className="size-4" /><span className="font-mono">10:00–12:00</span></li>
-          <li className="flex items-center gap-2"><MapPin aria-hidden="true" className="size-4" />0.4 km away</li>
+          <li className="flex items-center gap-2">
+            <CalendarDays aria-hidden="true" className="size-4" />
+            Today
+          </li>
+          <li className="flex items-center gap-2">
+            <Clock aria-hidden="true" className="size-4" />
+            <span className="font-mono">10:00–12:00</span>
+          </li>
+          <li className="flex items-center gap-2">
+            <MapPin aria-hidden="true" className="size-4" />
+            0.4 km away
+          </li>
         </ul>
       </TicketStub>
       <TicketStub stubValue="EV02">
@@ -59,7 +68,10 @@ function DriverPreview() {
           <p className="font-medium">Station Road EV Hub</p>
           <StatusBadge status="completed" />
         </div>
-        <p className="mt-2 flex items-center gap-2 text-sm text-text-muted"><Zap aria-hidden="true" className="size-4 text-slot-ev" />60 kW · CCS2</p>
+        <p className="mt-2 flex items-center gap-2 text-sm text-text-muted">
+          <Zap aria-hidden="true" className="size-4 text-slot-ev" />
+          60 kW · CCS2
+        </p>
       </TicketStub>
     </div>
   );
@@ -76,8 +88,15 @@ function OperatorPreview() {
         <StatusBadge status="active" />
       </div>
       <div>
-        <div className="flex justify-between text-sm"><span className="text-text-muted">Car capacity in use</span><span><span className="font-mono font-semibold">28</span> of <span className="font-mono">40</span></span></div>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-sunken" aria-hidden="true"><div className="h-full w-[70%] rounded-full bg-brand" /></div>
+        <div className="flex justify-between text-sm">
+          <span className="text-text-muted">Car capacity in use</span>
+          <span>
+            <span className="font-mono font-semibold">28</span> of <span className="font-mono">40</span>
+          </span>
+        </div>
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-sunken" aria-hidden="true">
+          <div className="h-full w-[70%] rounded-full bg-brand" />
+        </div>
       </div>
       <SlotBoard label="Sample EV bays at this location" className="grid-cols-3 sm:grid-cols-3">
         <SlotTile id="EV01" powerKw={22} detail="22 kW" state="occupied" ev />
@@ -97,10 +116,15 @@ const applications = [
 function AdminPreview() {
   return (
     <div className="overflow-hidden rounded-xl border bg-card">
-      <p className="border-b bg-surface-sunken px-4 py-2.5 text-sm font-medium text-text-muted">Operator verification</p>
+      <p className="border-b bg-surface-sunken px-4 py-2.5 text-sm font-medium text-text-muted">
+        Operator verification
+      </p>
       <ul>
         {applications.map((app) => (
-          <li key={app.name} className="flex items-center justify-between gap-3 border-b px-4 py-3 text-sm last:border-0">
+          <li
+            key={app.name}
+            className="flex items-center justify-between gap-3 border-b px-4 py-3 text-sm last:border-0"
+          >
             <span className="min-w-0 truncate font-medium">{app.name}</span>
             <StatusBadge status={app.status} />
           </li>
@@ -116,11 +140,19 @@ export default function Audiences() {
   return (
     <section id="who-its-for" aria-labelledby="audiences-title" className="scroll-mt-16 border-t bg-surface-raised">
       <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
-        <h2 id="audiences-title" className="max-w-2xl font-display text-display-xl font-semibold text-balance">One platform, three workspaces.</h2>
-        <p className="mt-4 max-w-2xl text-lg text-text-muted">Drivers, parking operators and administrators each get a workspace built for their job.</p>
+        <h2 id="audiences-title" className="max-w-2xl font-display text-display-xl font-semibold text-balance">
+          One platform, three workspaces.
+        </h2>
+        <p className="mt-4 max-w-2xl text-lg text-text-muted">
+          Drivers, parking operators and administrators each get a workspace built for their job.
+        </p>
         <Tabs defaultValue="drivers" className="mt-10">
           <TabsList aria-label="Who it’s for" className="h-11">
-            {audiences.map((a) => <TabsTrigger key={a.id} value={a.id} className="px-4">{a.label}</TabsTrigger>)}
+            {audiences.map((a) => (
+              <TabsTrigger key={a.id} value={a.id} className="px-4">
+                {a.label}
+              </TabsTrigger>
+            ))}
           </TabsList>
           {audiences.map((a) => {
             const Preview = previews[a.id];

@@ -44,7 +44,10 @@ test('the mobile lot (5 columns) tells the same story', () => {
 test('reducer ticks through the beats and wraps, resetting the target', () => {
   let state = initialLotState;
   const seen = [];
-  for (let i = 0; i < BEATS.length; i += 1) { seen.push(state.beat); state = lotReducer(state, { type: 'tick' }); }
+  for (let i = 0; i < BEATS.length; i += 1) {
+    seen.push(state.beat);
+    state = lotReducer(state, { type: 'tick' });
+  }
   expect(seen).toEqual(BEATS.map((beat) => beat.id));
   expect(state).toEqual(initialLotState);
 

@@ -25,27 +25,37 @@ export default function useCapacityTimeline({ locationId, vehicle, durationMs, e
   const fuelType = vehicle ? (isElectricVehicle(vehicle) ? 'electric' : vehicle.fuelType) : null;
 
   const load = useCallback(async () => {
-    if (!enabled || !locationId || !vehicleType) { setWindows([]); return; }
+    if (!enabled || !locationId || !vehicleType) {
+      setWindows([]);
+      return;
+    }
     setLoading(true);
     const starts = timelineStarts();
-    const results = await Promise.all(starts.map(async (start) => {
-      const end = new Date(start.getTime() + duration);
-      try {
-        const { data } = await parkingLocationsAPI.getById(locationId, {
-          vehicleType, fuelType, startTime: start.toISOString(), endTime: end.toISOString(),
-        });
-        const { available = 0, total = 0, isOpen = true } = data.location.availability || {};
-        return { start, end, available, total, isOpen };
-      } catch {
-        return { start, end, unknown: true };
-      }
-    }));
+    const results = await Promise.all(
+      starts.map(async (start) => {
+        const end = new Date(start.getTime() + duration);
+        try {
+          const { data } = await parkingLocationsAPI.getById(locationId, {
+            vehicleType,
+            fuelType,
+            startTime: start.toISOString(),
+            endTime: end.toISOString(),
+          });
+          const { available = 0, total = 0, isOpen = true } = data.location.availability || {};
+          return { start, end, available, total, isOpen };
+        } catch {
+          return { start, end, unknown: true };
+        }
+      }),
+    );
     setWindows(results);
     setLoading(false);
   }, [enabled, locationId, vehicleType, fuelType, duration]);
 
   useEffect(() => {
-    const timer = setTimeout(() => { load(); }, 300);
+    const timer = setTimeout(() => {
+      load();
+    }, 300);
     return () => clearTimeout(timer);
   }, [load]);
 

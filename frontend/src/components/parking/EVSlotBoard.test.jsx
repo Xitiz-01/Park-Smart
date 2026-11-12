@@ -2,7 +2,14 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import EVSlotBoard, { isSlotSelectable, slotDisplayStatus } from './EVSlotBoard';
 
 const slots = [
-  { _id: 'available', slotNumber: 'EV01', chargerPowerKw: 22, connectorType: 'Type 2', available: true, availabilityStatus: 'available' },
+  {
+    _id: 'available',
+    slotNumber: 'EV01',
+    chargerPowerKw: 22,
+    connectorType: 'Type 2',
+    available: true,
+    availabilityStatus: 'available',
+  },
   { _id: 'reserved', slotNumber: 'EV02', chargerPowerKw: 60, available: false, availabilityStatus: 'reserved' },
   { _id: 'maintenance', slotNumber: 'EV03', chargerPowerKw: 7, available: false, availabilityStatus: 'maintenance' },
   { _id: 'occupied', slotNumber: 'EV04', chargerPowerKw: 22, available: false, availabilityStatus: 'occupied' },

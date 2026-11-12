@@ -5,13 +5,29 @@ import { ChevronsLeft, ChevronsRight, LogOut, Menu, MoreHorizontal, Search, User
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
-  Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import {
-  CommandDialog, Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
+  CommandDialog,
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
 } from '@/components/ui/command';
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Kbd } from '@/components/ui/kbd';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -28,8 +44,20 @@ import { breadcrumbsFor } from './navigation';
 // breadcrumbs, a command menu (⌘K / Ctrl+K) and a user menu.
 
 const COLLAPSE_KEY = 'parksmart-sidebar-collapsed';
-const readCollapsed = () => { try { return window.localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; } };
-const writeCollapsed = (value) => { try { window.localStorage.setItem(COLLAPSE_KEY, value ? '1' : '0'); } catch { /* storage unavailable */ } };
+const readCollapsed = () => {
+  try {
+    return window.localStorage.getItem(COLLAPSE_KEY) === '1';
+  } catch {
+    return false;
+  }
+};
+const writeCollapsed = (value) => {
+  try {
+    window.localStorage.setItem(COLLAPSE_KEY, value ? '1' : '0');
+  } catch {
+    /* storage unavailable */
+  }
+};
 
 // A thin signage stripe in the role's colour: blue for drivers, road-paint
 // yellow for operators, graphite for admins. Deliberately not a status colour.
@@ -58,11 +86,13 @@ function NavList({ workspace, collapsed = false, onNavigate, layoutGroup }) {
             to={to}
             end={end}
             onClick={onNavigate}
-            className={({ isActive }) => cn(
-              'relative flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors pointer-coarse:h-11',
-              isActive ? 'text-foreground' : 'text-text-muted hover:bg-surface-sunken hover:text-foreground',
-              collapsed && 'justify-center px-0',
-            )}
+            className={({ isActive }) =>
+              cn(
+                'relative flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors pointer-coarse:h-11',
+                isActive ? 'text-foreground' : 'text-text-muted hover:bg-surface-sunken hover:text-foreground',
+                collapsed && 'justify-center px-0',
+              )
+            }
           >
             {({ isActive }) => (
               <>
@@ -79,7 +109,10 @@ function NavList({ workspace, collapsed = false, onNavigate, layoutGroup }) {
                     <span className="absolute inset-y-2 left-0 w-1 rounded-full bg-brand" />
                   </m.span>
                 )}
-                <Icon aria-hidden="true" className={cn('relative size-[1.125rem] shrink-0', isActive && 'text-brand-strong')} />
+                <Icon
+                  aria-hidden="true"
+                  className={cn('relative size-[1.125rem] shrink-0', isActive && 'text-brand-strong')}
+                />
                 <span className={cn('relative truncate', collapsed && 'sr-only')}>{label}</span>
               </>
             )}
@@ -92,10 +125,14 @@ function NavList({ workspace, collapsed = false, onNavigate, layoutGroup }) {
                 {/* A wrapper, not asChild on the link: Slot can't merge NavLink's
                     function className, so the link lost its classes (and the
                     active marker grew to cover the whole collapsed sidebar). */}
-                <TooltipTrigger asChild><span className="block">{link}</span></TooltipTrigger>
+                <TooltipTrigger asChild>
+                  <span className="block">{link}</span>
+                </TooltipTrigger>
                 <TooltipContent side="right">{label}</TooltipContent>
               </Tooltip>
-            ) : link}
+            ) : (
+              link
+            )}
           </li>
         );
       })}
@@ -107,7 +144,12 @@ function Identity({ identity, collapsed }) {
   const initial = (identity.name || 'P').charAt(0).toUpperCase();
   return (
     <div className={cn('flex items-center gap-3 rounded-lg p-2', collapsed && 'justify-center p-0')}>
-      <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-sunken font-display font-semibold text-foreground">{initial}</span>
+      <span
+        aria-hidden="true"
+        className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-sunken font-display font-semibold text-foreground"
+      >
+        {initial}
+      </span>
       {!collapsed && (
         <span className="min-w-0">
           <span className="block truncate text-sm font-medium text-foreground">{identity.name}</span>
@@ -146,8 +188,22 @@ function Sidebar({ workspace, identity, collapsed, onToggle }) {
       </nav>
       <div className="grid grid-cols-[minmax(0,1fr)] gap-2 border-t p-3">
         <Identity identity={identity} collapsed={collapsed} />
-        <Button variant="ghost" size={collapsed ? 'icon' : 'default'} onClick={onToggle} aria-expanded={!collapsed} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} className={cn(!collapsed && 'justify-start text-text-muted')}>
-          {collapsed ? <ChevronsRight /> : <><ChevronsLeft data-icon="inline-start" />Collapse</>}
+        <Button
+          variant="ghost"
+          size={collapsed ? 'icon' : 'default'}
+          onClick={onToggle}
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className={cn(!collapsed && 'justify-start text-text-muted')}
+        >
+          {collapsed ? (
+            <ChevronsRight />
+          ) : (
+            <>
+              <ChevronsLeft data-icon="inline-start" />
+              Collapse
+            </>
+          )}
         </Button>
       </div>
     </aside>
@@ -156,21 +212,35 @@ function Sidebar({ workspace, identity, collapsed, onToggle }) {
 
 function CommandMenu({ workspace, open, onOpenChange }) {
   const navigate = useNavigate();
-  const go = (to) => { onOpenChange(false); navigate(to); };
+  const go = (to) => {
+    onOpenChange(false);
+    navigate(to);
+  };
   return (
-    <CommandDialog open={open} onOpenChange={onOpenChange} title="Go to" description="Jump to a page or start a common task.">
+    <CommandDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Go to"
+      description="Jump to a page or start a common task."
+    >
       <Command>
         <CommandInput placeholder="Where to?" aria-label="Search pages and actions" />
         <CommandList>
           <CommandEmpty>Nothing matches. Try a page name like “bookings”.</CommandEmpty>
           <CommandGroup heading="Pages">
             {workspace.nav.map(({ to, icon: Icon, label }) => (
-              <CommandItem key={to} value={`page ${label}`} onSelect={() => go(to)}><Icon aria-hidden="true" />{label}</CommandItem>
+              <CommandItem key={to} value={`page ${label}`} onSelect={() => go(to)}>
+                <Icon aria-hidden="true" />
+                {label}
+              </CommandItem>
             ))}
           </CommandGroup>
           <CommandGroup heading="Actions">
             {workspace.actions.map(({ to, icon: Icon, label }) => (
-              <CommandItem key={label} value={`action ${label}`} onSelect={() => go(to)}><Icon aria-hidden="true" />{label}</CommandItem>
+              <CommandItem key={label} value={`action ${label}`} onSelect={() => go(to)}>
+                <Icon aria-hidden="true" />
+                {label}
+              </CommandItem>
             ))}
           </CommandGroup>
         </CommandList>
@@ -185,7 +255,10 @@ function UserMenu({ workspace, identity }) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" aria-label="Account menu" className="rounded-lg">
-          <span aria-hidden="true" className="grid size-8 place-items-center rounded-lg bg-surface-sunken font-display text-sm font-semibold text-foreground">
+          <span
+            aria-hidden="true"
+            className="grid size-8 place-items-center rounded-lg bg-surface-sunken font-display text-sm font-semibold text-foreground"
+          >
             {(identity.name || 'P').charAt(0).toUpperCase()}
           </span>
         </Button>
@@ -196,8 +269,18 @@ function UserMenu({ workspace, identity }) {
           <span className="block truncate text-xs text-text-muted">{identity.subtitle}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {workspace.profile && <DropdownMenuItem asChild><Link to={workspace.profile}><UserRound aria-hidden="true" />Profile</Link></DropdownMenuItem>}
-        <DropdownMenuItem onSelect={signOut}><LogOut aria-hidden="true" />Sign out</DropdownMenuItem>
+        {workspace.profile && (
+          <DropdownMenuItem asChild>
+            <Link to={workspace.profile}>
+              <UserRound aria-hidden="true" />
+              Profile
+            </Link>
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem onSelect={signOut}>
+          <LogOut aria-hidden="true" />
+          Sign out
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -213,8 +296,13 @@ function Breadcrumbs({ workspace, pathname }) {
           return (
             <Fragment key={`${crumb.label}-${index}`}>
               <BreadcrumbItem className={cn('min-w-0', !last && 'hidden sm:inline-flex')}>
-                {last ? <BreadcrumbPage className="truncate">{crumb.label}</BreadcrumbPage>
-                  : <BreadcrumbLink asChild><Link to={crumb.to}>{crumb.label}</Link></BreadcrumbLink>}
+                {last ? (
+                  <BreadcrumbPage className="truncate">{crumb.label}</BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink asChild>
+                    <Link to={crumb.to}>{crumb.label}</Link>
+                  </BreadcrumbLink>
+                )}
               </BreadcrumbItem>
               {!last && <BreadcrumbSeparator className="hidden sm:inline-flex" />}
             </Fragment>
@@ -231,7 +319,9 @@ function MobileMenu({ workspace, identity, open, onOpenChange }) {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="left" className="w-[min(18rem,85vw)] gap-0 p-0">
         <SheetHeader className="border-b">
-          <SheetTitle><Brand size="sm" /></SheetTitle>
+          <SheetTitle>
+            <Brand size="sm" />
+          </SheetTitle>
           <SheetDescription>{workspace.label} workspace</SheetDescription>
         </SheetHeader>
         <nav aria-label={`${workspace.label} navigation`} className="flex-1 overflow-y-auto p-3">
@@ -239,7 +329,10 @@ function MobileMenu({ workspace, identity, open, onOpenChange }) {
         </nav>
         <div className="grid gap-2 border-t p-3">
           <Identity identity={identity} />
-          <Button variant="outline" onClick={signOut}><LogOut data-icon="inline-start" />Sign out</Button>
+          <Button variant="outline" onClick={signOut}>
+            <LogOut data-icon="inline-start" />
+            Sign out
+          </Button>
         </div>
       </SheetContent>
     </Sheet>
@@ -250,14 +343,22 @@ function MobileMenu({ workspace, identity, open, onOpenChange }) {
 function TabBar({ workspace, onMore }) {
   const tabs = workspace.nav.filter((item) => item.tab);
   return (
-    <nav aria-label="Quick navigation" className="fixed inset-x-0 bottom-0 z-30 border-t bg-surface-raised/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+    <nav
+      aria-label="Quick navigation"
+      className="fixed inset-x-0 bottom-0 z-30 border-t bg-surface-raised/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+    >
       <ul className="grid list-none grid-cols-5 p-0">
         {tabs.map(({ to, icon: Icon, label, end }) => (
           <li key={to}>
             <NavLink
               to={to}
               end={end}
-              className={({ isActive }) => cn('flex h-16 flex-col items-center justify-center gap-1 text-[0.6875rem] font-medium', isActive ? 'text-brand-strong' : 'text-text-muted')}
+              className={({ isActive }) =>
+                cn(
+                  'flex h-16 flex-col items-center justify-center gap-1 text-[0.6875rem] font-medium',
+                  isActive ? 'text-brand-strong' : 'text-text-muted',
+                )
+              }
             >
               <Icon aria-hidden="true" className="size-5" />
               <span className="max-w-full truncate px-1">{label}</span>
@@ -265,8 +366,13 @@ function TabBar({ workspace, onMore }) {
           </li>
         ))}
         <li>
-          <button type="button" onClick={onMore} className="flex h-16 w-full flex-col items-center justify-center gap-1 text-[0.6875rem] font-medium text-text-muted">
-            <MoreHorizontal aria-hidden="true" className="size-5" />More
+          <button
+            type="button"
+            onClick={onMore}
+            className="flex h-16 w-full flex-col items-center justify-center gap-1 text-[0.6875rem] font-medium text-text-muted"
+          >
+            <MoreHorizontal aria-hidden="true" className="size-5" />
+            More
           </button>
         </li>
       </ul>
@@ -293,30 +399,69 @@ export default function WorkspaceShell({ workspace, identity }) {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const toggleCollapsed = () => setCollapsed((value) => { writeCollapsed(!value); return !value; });
+  const toggleCollapsed = () =>
+    setCollapsed((value) => {
+      writeCollapsed(!value);
+      return !value;
+    });
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <a href="#workspace-main" className="sr-only z-50 rounded-md bg-brand px-4 py-2 text-brand-foreground focus:not-sr-only focus:fixed focus:top-3 focus:left-3">
+      <a
+        href="#workspace-main"
+        className="sr-only z-50 rounded-md bg-brand px-4 py-2 text-brand-foreground focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+      >
         Skip to content
       </a>
       <Sidebar workspace={workspace} identity={identity} collapsed={collapsed} onToggle={toggleCollapsed} />
       <div className={cn('transition-[padding] duration-200', collapsed ? 'lg:pl-[4.5rem]' : 'lg:pl-64')}>
         <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b bg-surface/85 px-3 backdrop-blur supports-[backdrop-filter]:bg-surface/75 sm:px-6">
-          <Button variant="ghost" size="icon" className={cn('lg:hidden', hasTabs && 'max-lg:hidden')} aria-label="Open menu" onClick={() => setMenuOpen(true)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn('lg:hidden', hasTabs && 'max-lg:hidden')}
+            aria-label="Open menu"
+            onClick={() => setMenuOpen(true)}
+          >
             <Menu />
           </Button>
-          <Link to={workspace.home} aria-label="ParkSmart workspace home" className="rounded-md lg:hidden"><Logomark className="size-7" /></Link>
-          <div className="min-w-0 flex-1 px-1"><Breadcrumbs workspace={workspace} pathname={pathname} /></div>
-          <Button variant="outline" className="hidden h-9 gap-2 px-3 text-text-muted sm:inline-flex" onClick={() => setCommandOpen(true)}>
-            <Search data-icon="inline-start" />Go to…<Kbd className="ml-2">⌘K</Kbd>
+          <Link to={workspace.home} aria-label="ParkSmart workspace home" className="rounded-md lg:hidden">
+            <Logomark className="size-7" />
+          </Link>
+          <div className="min-w-0 flex-1 px-1">
+            <Breadcrumbs workspace={workspace} pathname={pathname} />
+          </div>
+          <Button
+            variant="outline"
+            className="hidden h-9 gap-2 px-3 text-text-muted sm:inline-flex"
+            onClick={() => setCommandOpen(true)}
+          >
+            <Search data-icon="inline-start" />
+            Go to…<Kbd className="ml-2">⌘K</Kbd>
           </Button>
-          <Button variant="ghost" size="icon" className="sm:hidden" aria-label="Go to a page" onClick={() => setCommandOpen(true)}><Search /></Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="sm:hidden"
+            aria-label="Go to a page"
+            onClick={() => setCommandOpen(true)}
+          >
+            <Search />
+          </Button>
           <ThemeToggle />
           <UserMenu workspace={workspace} identity={identity} />
         </header>
-        <main id="workspace-main" className={cn('mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8', hasTabs && 'pb-28 lg:pb-8')}>
-          <Suspense fallback={<div className="grid min-h-[50vh] place-items-center"><BayLoader /></div>}>
+        <main
+          id="workspace-main"
+          className={cn('mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8', hasTabs && 'pb-28 lg:pb-8')}
+        >
+          <Suspense
+            fallback={
+              <div className="grid min-h-[50vh] place-items-center">
+                <BayLoader />
+              </div>
+            }
+          >
             <Outlet />
           </Suspense>
         </main>

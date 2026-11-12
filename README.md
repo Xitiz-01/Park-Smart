@@ -6,11 +6,24 @@ A full-stack MERN application for real-time parking slot management.
 
 ---
 
+## Quick start with Docker
+
+```bash
+cp .env.example .env
+docker compose up --build --wait
+```
+
+Open http://localhost:8080 and sign in as `customer@parksmart.test`, `vendor@parksmart.test` or `admin@parksmart.test` with `SEED_PASSWORD` from `.env`. MongoDB (replica set), Redis, the API, the worker and the frontend all run in containers with hot reload for the backend. See [docs/platform/LOCAL_DEV.md](docs/platform/LOCAL_DEV.md) for the services, `make` targets and troubleshooting.
+
+The manual setup below still works if you'd rather run things directly.
+
+---
+
 ## Prerequisites
 
 Install these before anything else:
 
-1. **Node.js v20+** → https://nodejs.org (download LTS)
+1. **Node.js 24 or newer** (26 recommended; `nvm use` reads `.nvmrc`) → https://nodejs.org
 2. **MongoDB Community** → https://mongodb.com/try/download/community
    OR use **MongoDB Atlas** (free cloud) → https://cloud.mongodb.com
 3. **VS Code** → https://code.visualstudio.com
@@ -394,9 +407,9 @@ Routes are served under `/api/v1` (for example `/api/v1/bookings`). The unversio
 
 ## Tests
 
-The vendor integration suite requires a disposable MongoDB server. It always uses and deletes only the database named `parksmart-phase2-test`.
+The vendor integration suite requires a disposable MongoDB server. It always uses and deletes only the database named `parksmart-phase2-test`. The cache and rate-limit suites need a Redis server; they only touch keys under their own test prefixes and delete them afterwards. `make test` runs everything against the compose stack.
 
 ```bash
 cd backend
-TEST_MONGODB_URI=mongodb://127.0.0.1:27028 npm run test:integration
+TEST_MONGODB_URI=mongodb://127.0.0.1:27028 TEST_REDIS_URL=redis://127.0.0.1:6390 npm run test:integration
 ```

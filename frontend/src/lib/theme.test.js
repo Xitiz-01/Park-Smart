@@ -1,7 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
-  REDESIGNED_PATHS, THEME_COLORS, THEME_STORAGE_KEY, isRedesignedPath, readThemePreference, resolveTheme, writeThemePreference,
+  REDESIGNED_PATHS,
+  THEME_COLORS,
+  THEME_STORAGE_KEY,
+  isRedesignedPath,
+  readThemePreference,
+  resolveTheme,
+  writeThemePreference,
 } from './theme';
 
 describe('resolveTheme', () => {
@@ -32,8 +38,12 @@ describe('theme preference storage', () => {
   });
 
   test('survives storage that throws', () => {
-    const getItem = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
-    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
+    const getItem = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
     expect(readThemePreference()).toBe('system');
     expect(() => writeThemePreference('dark')).not.toThrow();
     getItem.mockRestore();

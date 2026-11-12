@@ -6,7 +6,9 @@ vi.mock('socket.io-client', () => ({
   io: vi.fn(() => {
     const handlers = {};
     const socket = {
-      on: vi.fn((name, fn) => { handlers[name] = fn; }),
+      on: vi.fn((name, fn) => {
+        handlers[name] = fn;
+      }),
       disconnect: vi.fn(),
       emit: (name, payload) => handlers[name]?.(payload),
     };
@@ -20,26 +22,45 @@ function Probe(props) {
   return null;
 }
 
-beforeEach(() => { sockets.length = 0; vi.useFakeTimers(); });
+beforeEach(() => {
+  sockets.length = 0;
+  vi.useFakeTimers();
+});
 afterEach(() => vi.useRealTimers());
 
 test('debounces bursts of events into one refresh', () => {
   const onChange = vi.fn();
   render(<Probe debounceMs={300} onChange={onChange} />);
-  act(() => { sockets[0].emit('availability:changed', {}); sockets[0].emit('availability:changed', {}); });
-  act(() => { vi.advanceTimersByTime(299); });
+  act(() => {
+    sockets[0].emit('availability:changed', {});
+    sockets[0].emit('availability:changed', {});
+  });
+  act(() => {
+    vi.advanceTimersByTime(299);
+  });
   expect(onChange).not.toHaveBeenCalled();
-  act(() => { vi.advanceTimersByTime(1); });
+  act(() => {
+    vi.advanceTimersByTime(1);
+  });
   expect(onChange).toHaveBeenCalledTimes(1);
 });
 
 test('ignores events for other locations but accepts untagged ones', () => {
   const onChange = vi.fn();
   render(<Probe locationId="loc-1" debounceMs={180} onChange={onChange} />);
-  act(() => { sockets[0].emit('availability:changed', { locationId: 'loc-2' }); vi.advanceTimersByTime(200); });
+  act(() => {
+    sockets[0].emit('availability:changed', { locationId: 'loc-2' });
+    vi.advanceTimersByTime(200);
+  });
   expect(onChange).not.toHaveBeenCalled();
-  act(() => { sockets[0].emit('availability:changed', { locationId: 'loc-1' }); vi.advanceTimersByTime(200); });
-  act(() => { sockets[0].emit('availability:changed', {}); vi.advanceTimersByTime(200); });
+  act(() => {
+    sockets[0].emit('availability:changed', { locationId: 'loc-1' });
+    vi.advanceTimersByTime(200);
+  });
+  act(() => {
+    sockets[0].emit('availability:changed', {});
+    vi.advanceTimersByTime(200);
+  });
   expect(onChange).toHaveBeenCalledTimes(2);
 });
 
@@ -49,7 +70,10 @@ test('a new callback does not reconnect; a new location does', () => {
   const { rerender } = render(<Probe locationId="loc-1" debounceMs={180} onChange={first} />);
   rerender(<Probe locationId="loc-1" debounceMs={180} onChange={second} />);
   expect(sockets).toHaveLength(1);
-  act(() => { sockets[0].emit('availability:changed', {}); vi.advanceTimersByTime(180); });
+  act(() => {
+    sockets[0].emit('availability:changed', {});
+    vi.advanceTimersByTime(180);
+  });
   expect(first).not.toHaveBeenCalled();
   expect(second).toHaveBeenCalledTimes(1);
 

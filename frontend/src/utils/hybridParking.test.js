@@ -20,12 +20,26 @@ test('EV vehicles use exact-slot booking while regular vehicles use capacity', (
 test('catalog selection safely prefills reliable body and electric metadata', () => {
   const form = applyCatalogDetails(
     { make: '', brand: '', model: '', vehicleType: '', bodyStyle: '', fuelType: '' },
-    { make: 'Mahindra', model: 'XEV 9e', vehicleType: 'car', bodyStyle: 'suv', bodyStyles: ['suv'], fuelTypes: ['electric'] }
+    {
+      make: 'Mahindra',
+      model: 'XEV 9e',
+      vehicleType: 'car',
+      bodyStyle: 'suv',
+      bodyStyles: ['suv'],
+      fuelTypes: ['electric'],
+    },
   );
-  expect(form).toMatchObject({ make: 'Mahindra', brand: 'Mahindra', model: 'XEV 9e', vehicleType: 'car', bodyStyle: 'suv', fuelType: 'electric' });
+  expect(form).toMatchObject({
+    make: 'Mahindra',
+    brand: 'Mahindra',
+    model: 'XEV 9e',
+    vehicleType: 'car',
+    bodyStyle: 'suv',
+    fuelType: 'electric',
+  });
   const multiFuel = applyCatalogDetails(
     { vehicleType: 'car', fuelType: 'diesel' },
-    { make: 'Hyundai', model: 'Creta', vehicleType: 'car', bodyStyle: 'suv', fuelTypes: ['petrol', 'diesel'] }
+    { make: 'Hyundai', model: 'Creta', vehicleType: 'car', bodyStyle: 'suv', fuelTypes: ['petrol', 'diesel'] },
   );
   expect(multiFuel.fuelType).toBe('diesel');
 });
@@ -61,9 +75,23 @@ test('parking details path preserves the selected discovery window', () => {
 });
 
 test('vehicle form payload submits fuel type separately from vehicle class', () => {
-  expect(vehicleFormPayload({ licensePlate: 'MH14EV1234', make: 'Mahindra', modelYear: '2026', bodyStyle: 'SUV', vehicleType: 'CAR', fuelType: 'Electric' })).toEqual({
-    licensePlate: 'MH14EV1234', make: 'Mahindra', brand: 'Mahindra', modelYear: 2026,
-    bodyStyle: 'suv', vehicleType: 'car', fuelType: 'electric',
+  expect(
+    vehicleFormPayload({
+      licensePlate: 'MH14EV1234',
+      make: 'Mahindra',
+      modelYear: '2026',
+      bodyStyle: 'SUV',
+      vehicleType: 'CAR',
+      fuelType: 'Electric',
+    }),
+  ).toEqual({
+    licensePlate: 'MH14EV1234',
+    make: 'Mahindra',
+    brand: 'Mahindra',
+    modelYear: 2026,
+    bodyStyle: 'suv',
+    vehicleType: 'car',
+    fuelType: 'electric',
   });
 });
 
@@ -75,9 +103,12 @@ test('only electric non-legacy bookings enter the visual slot flow', () => {
 
 test('selected EV slot is included in the authoritative booking payload', () => {
   const payload = bookingPayloadForVehicle({
-    locationId: 'location-1', vehicleId: 'vehicle-1', evSlotId: 'slot-2',
+    locationId: 'location-1',
+    vehicleId: 'vehicle-1',
+    evSlotId: 'slot-2',
     vehicle: { vehicleType: 'suv', fuelType: 'electric' },
-    startTime: '2026-09-28T12:30:00.000Z', endTime: '2026-09-28T14:30:00.000Z',
+    startTime: '2026-09-28T12:30:00.000Z',
+    endTime: '2026-09-28T14:30:00.000Z',
   });
   expect(payload.bookingType).toBe('ev');
   expect(payload.slotId).toBe('slot-2');

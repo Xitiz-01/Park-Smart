@@ -58,7 +58,12 @@ const loadMotionFeatures = () => import('./lib/motionFeatures').then((mod) => mo
 // Protected Route
 const ProtectedRoute = ({ children, roles, approvedVendor = false }) => {
   const { user, loading } = useAuth();
-  if (loading) return <div className="grid min-h-screen place-items-center"><BayLoader /></div>;
+  if (loading)
+    return (
+      <div className="grid min-h-screen place-items-center">
+        <BayLoader />
+      </div>
+    );
   if (!user) return <Navigate to="/login" replace />;
   if (roles && !roles.includes(user.role)) return <Navigate to={getDefaultRoute(user)} replace />;
   if (approvedVendor && user.vendorProfile?.vendorStatus !== 'active') {
@@ -71,52 +76,102 @@ const AppRoutes = () => {
   const { user } = useAuth();
 
   return (
-    <Suspense fallback={<div className="grid min-h-screen place-items-center"><BayLoader /></div>}>
-    <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={user ? <Navigate to={getDefaultRoute(user)} /> : <LoginPage />} />
-      <Route path="/register" element={user ? <Navigate to={getDefaultRoute(user)} /> : <RegisterPage />} />
+    <Suspense
+      fallback={
+        <div className="grid min-h-screen place-items-center">
+          <BayLoader />
+        </div>
+      }
+    >
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={user ? <Navigate to={getDefaultRoute(user)} /> : <LoginPage />} />
+        <Route path="/register" element={user ? <Navigate to={getDefaultRoute(user)} /> : <RegisterPage />} />
 
-      {/* Customer Routes */}
-      <Route path="/dashboard" element={<ProtectedRoute><CustomerLayout /></ProtectedRoute>}>
-        <Route index element={<CustomerDashboard />} />
-        <Route path="slots" element={<Navigate to="/dashboard/nearby" replace />} />
-        <Route path="nearby" element={<NearbyMapPage />} />
-        <Route path="parking/:locationId" element={<BookingPage />} />
-        <Route path="book/:slotId" element={<BookingPage legacy />} />
-        <Route path="bookings" element={<MyBookings />} />
-        <Route path="vehicles" element={<VehiclesPage />} />
-        <Route path="profile" element={<ProfilePage />} />
-      </Route>
+        {/* Customer Routes */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <CustomerLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<CustomerDashboard />} />
+          <Route path="slots" element={<Navigate to="/dashboard/nearby" replace />} />
+          <Route path="nearby" element={<NearbyMapPage />} />
+          <Route path="parking/:locationId" element={<BookingPage />} />
+          <Route path="book/:slotId" element={<BookingPage legacy />} />
+          <Route path="bookings" element={<MyBookings />} />
+          <Route path="vehicles" element={<VehiclesPage />} />
+          <Route path="profile" element={<ProfilePage />} />
+        </Route>
 
-      {/* Admin Routes */}
-      <Route path="/admin" element={<ProtectedRoute roles={['admin', 'super_admin']}><AdminLayout /></ProtectedRoute>}>
-        <Route index element={<AdminDashboard />} />
-        <Route path="slots" element={<AdminSlots />} />
-        <Route path="bookings" element={<AdminBookings />} />
-        <Route path="users" element={<AdminUsers />} />
-        <Route path="vendors" element={<AdminVendors />} />
-        <Route path="verifications" element={<AdminVerifications />} />
-      </Route>
+        {/* Admin Routes */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute roles={['admin', 'super_admin']}>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<AdminDashboard />} />
+          <Route path="slots" element={<AdminSlots />} />
+          <Route path="bookings" element={<AdminBookings />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="vendors" element={<AdminVendors />} />
+          <Route path="verifications" element={<AdminVerifications />} />
+        </Route>
 
-      <Route path="/vendor/apply" element={<ProtectedRoute roles={['customer']}><VendorApplication /></ProtectedRoute>} />
-      <Route path="/vendor/status" element={<ProtectedRoute roles={['customer', 'vendor']}><VendorStatus /></ProtectedRoute>} />
-      <Route path="/vendor" element={<ProtectedRoute roles={['vendor']} approvedVendor><VendorLayout /></ProtectedRoute>}>
-        <Route index element={<VendorDashboard />} />
-        <Route path="locations" element={<ParkingLocations />} />
-        <Route path="locations/new" element={<ParkingLocationEditor />} />
-        <Route path="locations/:id/edit" element={<ParkingLocationEditor />} />
-        <Route path="slots" element={<VendorSlots />} />
-        <Route path="bookings" element={<VendorBookings />} />
-        <Route path="profile" element={<VendorProfile />} />
-        <Route path="verification" element={<VendorVerification />} />
-        <Route path=":section" element={<VendorPlaceholder />} />
-      </Route>
+        <Route
+          path="/vendor/apply"
+          element={
+            <ProtectedRoute roles={['customer']}>
+              <VendorApplication />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor/status"
+          element={
+            <ProtectedRoute roles={['customer', 'vendor']}>
+              <VendorStatus />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vendor"
+          element={
+            <ProtectedRoute roles={['vendor']} approvedVendor>
+              <VendorLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<VendorDashboard />} />
+          <Route path="locations" element={<ParkingLocations />} />
+          <Route path="locations/new" element={<ParkingLocationEditor />} />
+          <Route path="locations/:id/edit" element={<ParkingLocationEditor />} />
+          <Route path="slots" element={<VendorSlots />} />
+          <Route path="bookings" element={<VendorBookings />} />
+          <Route path="profile" element={<VendorProfile />} />
+          <Route path="verification" element={<VendorVerification />} />
+          <Route path=":section" element={<VendorPlaceholder />} />
+        </Route>
 
-      {DesignPage && <Route path="/_design" element={<Suspense fallback={null}><DesignPage /></Suspense>} />}
+        {DesignPage && (
+          <Route
+            path="/_design"
+            element={
+              <Suspense fallback={null}>
+                <DesignPage />
+              </Suspense>
+            }
+          />
+        )}
 
-      <Route path="*" element={<Navigate to="/" />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
     </Suspense>
   );
 };

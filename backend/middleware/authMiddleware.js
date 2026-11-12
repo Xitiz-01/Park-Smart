@@ -1,9 +1,5 @@
 const User = require('../models/User');
-const {
-  getBetterAuthSession,
-  promoteBootstrapIdentity,
-  syncAuthIdentityRole,
-} = require('../auth/betterAuthBridge');
+const { getBetterAuthSession, promoteBootstrapIdentity, syncAuthIdentityRole } = require('../auth/betterAuthBridge');
 const { requirePermission } = require('../auth/permissions');
 const { bootstrapSuperAdminIds: bootstrapIds } = require('../src/config/env');
 
@@ -43,7 +39,7 @@ const resolveDomainUser = async (authUser) => {
         isActive: true,
       },
     },
-    { new: true, upsert: true, runValidators: true }
+    { new: true, upsert: true, runValidators: true },
   );
   return user;
 };

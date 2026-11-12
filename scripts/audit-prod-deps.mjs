@@ -26,7 +26,10 @@ export function advisoriesFrom(report) {
   for (const vulnerability of Object.values(report.vulnerabilities || {})) {
     for (const via of vulnerability.via || []) {
       if (typeof via !== 'object') continue;
-      const id = String(via.url || '').split('/').pop() || String(via.source);
+      const id =
+        String(via.url || '')
+          .split('/')
+          .pop() || String(via.source);
       if (!found.has(id)) {
         found.set(id, { id, package: via.name, severity: via.severity, title: via.title });
       }
@@ -50,8 +53,10 @@ export function evaluate(advisories, allowlist, today = new Date()) {
     if (!BLOCKING.has(advisory.severity)) continue;
     const entry = entries.get(advisory.id);
     if (!entry) blocking.push({ ...advisory, why: 'not on the allow-list' });
-    else if (!/^\d{4}-\d{2}-\d{2}$/.test(entry.expires || '')) blocking.push({ ...advisory, why: 'allow-list entry has no valid expiry date' });
-    else if (entry.expires < todayIso) blocking.push({ ...advisory, why: `allow-list entry expired on ${entry.expires}` });
+    else if (!/^\d{4}-\d{2}-\d{2}$/.test(entry.expires || ''))
+      blocking.push({ ...advisory, why: 'allow-list entry has no valid expiry date' });
+    else if (entry.expires < todayIso)
+      blocking.push({ ...advisory, why: `allow-list entry expired on ${entry.expires}` });
     else allowed.push({ ...advisory, expires: entry.expires, reason: entry.reason });
   }
   const seen = new Set(advisories.map((advisory) => advisory.id));
@@ -61,7 +66,13 @@ export function evaluate(advisories, allowlist, today = new Date()) {
 
 function auditReport(dir) {
   try {
-    return JSON.parse(execFileSync('npm', ['audit', '--omit=dev', '--json'], { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }));
+    return JSON.parse(
+      execFileSync('npm', ['audit', '--omit=dev', '--json'], {
+        cwd: dir,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      }),
+    );
   } catch (error) {
     // npm audit exits non-zero whenever it finds anything; the JSON is still on stdout.
     if (error.stdout) return JSON.parse(error.stdout);
@@ -80,12 +91,16 @@ function main(dirs) {
     advisories.forEach((advisory) => seenAnywhere.add(advisory.id));
     const { blocking, allowed } = evaluate(advisories, allowlist);
     console.log(`\n${dir}: ${advisories.length} advisories, ${blocking.length} blocking, ${allowed.length} allowed`);
-    for (const a of allowed) console.log(`  allowed  ${a.severity.padEnd(8)} ${a.id} ${a.package} (until ${a.expires}): ${a.reason}`);
-    for (const a of blocking) console.log(`::error title=npm audit (${dir})::${a.severity} ${a.id} in ${a.package}: ${a.title} — ${a.why}`);
+    for (const a of allowed)
+      console.log(`  allowed  ${a.severity.padEnd(8)} ${a.id} ${a.package} (until ${a.expires}): ${a.reason}`);
+    for (const a of blocking)
+      console.log(`::error title=npm audit (${dir})::${a.severity} ${a.id} in ${a.package}: ${a.title} — ${a.why}`);
     failed ||= blocking.length > 0;
   }
   for (const entry of allowlist.filter((e) => !seenAnywhere.has(e.id))) {
-    console.log(`::warning title=npm audit::${entry.id} (${entry.package}) is no longer reported; remove it from .github/audit-allowlist.json`);
+    console.log(
+      `::warning title=npm audit::${entry.id} (${entry.package}) is no longer reported; remove it from .github/audit-allowlist.json`,
+    );
   }
   if (failed) process.exit(1);
 }

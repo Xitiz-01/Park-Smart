@@ -16,10 +16,7 @@ const getVendorProfile = (userId) => VendorProfile.findOne({ userId });
 
 const getProfile = async (req, res) => {
   try {
-    const [user, vendorProfile] = await Promise.all([
-      User.findById(req.user._id),
-      getVendorProfile(req.user._id),
-    ]);
+    const [user, vendorProfile] = await Promise.all([User.findById(req.user._id), getVendorProfile(req.user._id)]);
     res.json({ success: true, user: publicUser(user), vendorProfile });
   } catch {
     res.status(500).json({ success: false, message: 'Unable to load account profile' });
@@ -35,11 +32,7 @@ const updateProfile = async (req, res) => {
     }
 
     await updateCurrentAuthUser({ headers: req.headers, data: { name, phone } });
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      { name, phone },
-      { new: true, runValidators: true }
-    );
+    const user = await User.findByIdAndUpdate(req.user._id, { name, phone }, { new: true, runValidators: true });
     return res.json({ success: true, user: publicUser(user) });
   } catch {
     return res.status(500).json({ success: false, message: 'Unable to update account profile' });
