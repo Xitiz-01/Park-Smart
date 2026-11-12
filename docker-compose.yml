@@ -39,7 +39,7 @@ services:
   mongo:
     # 8.0 matches Atlas. MONGO_IMAGE overrides it where MongoDB 8 can't start
     # (Linux 6.19+ kernels, SERVER-121912); CI's compose-smoke uses 7.0.
-    image: ${MONGO_IMAGE:-mongo:8.0@sha256:b9924c330a8bbc5800fe9c69f04a84e221eca7b28fd049a0354147d9908fa142}
+    image: ${MONGO_IMAGE:-mongo:8.2@sha256:e0ce8c35124d4a9f9785532d1f268f39e9728ffa1cb38f46fa482436424c4bd3}
     # A single-node replica set: transactions (bookings, the reservation
     # ledger, later payments) need one.
     command: ['--replSet', 'rs0', '--bind_ip_all']
