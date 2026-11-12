@@ -170,7 +170,7 @@ services:
 
   redis-insight:
     profiles: [tools]
-    image: redis/redisinsight:2.70
+    image: redis/redisinsight:3.8
     restart: unless-stopped
     ports:
       - '127.0.0.1:${REDIS_INSIGHT_PORT:-5540}:5540'
