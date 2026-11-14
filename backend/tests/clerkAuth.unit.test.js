@@ -9,6 +9,7 @@ const {
   createFakeAuthProvider,
   sessionFromClaims,
 } = require('../src/platform/auth/providers');
+const { bearerToken } = require('../middleware/authMiddleware');
 
 const base = { NODE_ENV: 'test' };
 const problemsOf = (source) => {
@@ -119,6 +120,14 @@ test('session claims: pending sessions and claims without a subject are signed o
   assert.equal(sessionFromClaims({ sub: 'user_1', sts: 'pending' }), null);
   assert.equal(sessionFromClaims({ sid: 'sess_1' }), null);
   assert.equal(sessionFromClaims(null), null);
+});
+
+test('only a well-formed Bearer header yields a token', () => {
+  assert.equal(bearerToken({ authorization: 'Bearer abc.def.ghi' }), 'abc.def.ghi');
+  assert.equal(bearerToken({ authorization: 'bearer   tok' }), 'tok');
+  for (const authorization of [undefined, '', 'Bearer', 'Bearer a b', 'Basic dXNlcjpwYXNz', ['Bearer x']]) {
+    assert.equal(bearerToken({ authorization }), null);
+  }
 });
 
 test('the fake provider only accepts tokens it issued, and forgets signed-out ones', async () => {
