@@ -13,6 +13,8 @@ const { buildOpenApiDocument } = require('./platform/openapi');
 const { healthRouter } = require('./platform/health');
 const { pingMongo } = require('./platform/db');
 const { getRedis, pingRedis } = require('./platform/redis');
+const { createAuthProvider } = require('./platform/auth/providers');
+const { clerkWebhookRouter } = require('./platform/auth/webhooks');
 
 /**
  * MongoDB is critical. Redis, when configured, is reported but not
@@ -49,6 +51,7 @@ const V1_RESOURCES = [
  *   logger?: import('pino').Logger,
  *   healthChecks?: Parameters<typeof healthRouter>[0],
  *   redis?: import('ioredis').Redis | null,
+ *   authProvider?: object | null,
  * }} [options]
  * @returns {import('express').Express}
  */
@@ -57,8 +60,15 @@ function createApp({
   logger = defaultLogger,
   healthChecks = defaultHealthChecks(config),
   redis = config.redis.url ? getRedis() : null,
+  authProvider = createAuthProvider(config, { logger }),
 } = {}) {
   const app = express();
+  // Clerk, when switched on: the identity provider, read by the auth
+  // middleware and the webhook. Null keeps every request on Better Auth.
+  app.set(
+    'clerk',
+    authProvider ? { provider: authProvider, logger, signingSecret: config.clerk.webhookSigningSecret } : null,
+  );
   const security = securityMiddleware(config.http, { redis, keyPrefix: config.redis.keyPrefix, logger });
   app.set('trust proxy', config.http.trustProxy);
 
@@ -78,6 +88,12 @@ function createApp({
   // Better Auth must receive the untouched request body. Keep this mount before
   // express.json() and express.urlencoded().
   app.all('/api/auth/*', betterAuthHandler);
+  // Clerk's webhook verifies its signature over the raw body, so it's
+  // mounted before the JSON parser too.
+  app.use(
+    '/api/v1/webhooks/clerk',
+    clerkWebhookRouter(() => app.get('clerk')),
+  );
   app.use(express.json({ limit: config.http.jsonBodyLimit }));
   app.use(express.urlencoded({ extended: true, limit: config.http.jsonBodyLimit }));
   app.use(security.parameterPollution);

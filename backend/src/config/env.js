@@ -101,6 +101,20 @@ const schema = z.object({
   // Password for the local seed accounts (scripts/seed.js). Never set in production.
   SEED_PASSWORD: optionalString.pipe(z.string().min(8, 'must be at least 8 characters').optional()),
 
+  // Clerk (Phase 4). Off until CLERK_ENABLED=true; Better Auth keeps
+  // signing people in until the frontend moves to Clerk (Phase 5).
+  // AUTH_PROVIDER=fake swaps Clerk for an in-memory stand-in in tests and
+  // CI; it refuses to run in production.
+  AUTH_PROVIDER: z.enum(['clerk', 'fake']).default('clerk'),
+  CLERK_SECRET_KEY: optionalString,
+  CLERK_PUBLISHABLE_KEY: optionalString,
+  // Optional PEM public key: verifies session tokens without fetching JWKS.
+  CLERK_JWT_KEY: optionalString,
+  CLERK_WEBHOOK_SIGNING_SECRET: optionalString,
+  // Origins allowed to have issued a session token (the azp claim).
+  // Defaults to the CORS origins.
+  CLERK_AUTHORIZED_PARTIES: z.string().default(''),
+
   // Feature flags for work that lands in later phases. All off by default.
   CLERK_ENABLED: flag(false),
   PAYMENTS_ENABLED: flag(false),
@@ -121,6 +135,19 @@ const crossFieldProblems = (source) => {
     }
     if (!has('ADDRESS_SELECTION_SECRET') && !has('JWT_SECRET')) {
       problems.push({ key: 'ADDRESS_SELECTION_SECRET', message: 'is required in production' });
+    }
+  }
+  const authProvider = String(source.AUTH_PROVIDER ?? '').trim() || 'clerk';
+  const clerkEnabled =
+    String(source.CLERK_ENABLED ?? '')
+      .trim()
+      .toLowerCase() === 'true';
+  if (authProvider === 'fake' && nodeEnv === 'production') {
+    problems.push({ key: 'AUTH_PROVIDER', message: 'fake is for tests and CI only, never production' });
+  }
+  if (clerkEnabled && authProvider === 'clerk') {
+    for (const key of ['CLERK_SECRET_KEY', 'CLERK_PUBLISHABLE_KEY']) {
+      if (!has(key)) problems.push({ key, message: 'is required when CLERK_ENABLED=true' });
     }
   }
   if (
@@ -181,6 +208,7 @@ const deepFreeze = (value) => {
  * @property {{ provider: string, localPath?: string }} verificationStorage
  * @property {{ enabled: boolean, clientId?: string, clientSecret?: string, baseUrl: string }} cashfree
  * @property {{ password?: string }} seed
+ * @property {{ enabled: boolean, provider: 'clerk'|'fake', secretKey?: string, publishableKey?: string, jwtKey?: string, webhookSigningSecret?: string, authorizedParties: string[] }} clerk
  * @property {{ clerk: boolean, payments: boolean, passes: boolean }} features
  */
 
@@ -244,6 +272,22 @@ function parseEnv(source) {
       baseUrl: env.CASHFREE_VERIFY_BASE_URL.replace(/\/$/, ''),
     },
     seed: { password: env.SEED_PASSWORD },
+    clerk: {
+      enabled: env.CLERK_ENABLED,
+      provider: env.AUTH_PROVIDER,
+      secretKey: env.CLERK_SECRET_KEY,
+      publishableKey: env.CLERK_PUBLISHABLE_KEY,
+      // Stored with literal \n in most dashboards' single-line fields.
+      jwtKey: env.CLERK_JWT_KEY?.replace(/\\n/g, '\n'),
+      webhookSigningSecret: env.CLERK_WEBHOOK_SIGNING_SECRET,
+      authorizedParties: list(env.CLERK_AUTHORIZED_PARTIES).length
+        ? list(env.CLERK_AUTHORIZED_PARTIES)
+        : [
+            ...new Set(
+              [env.CLIENT_URL, ...list(env.CORS_ORIGINS), ...list(env.BETTER_AUTH_TRUSTED_ORIGINS)].filter(Boolean),
+            ),
+          ],
+    },
     features: { clerk: env.CLERK_ENABLED, payments: env.PAYMENTS_ENABLED, passes: env.PASSES_ENABLED },
   });
 }

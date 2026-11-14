@@ -2,6 +2,7 @@ const User = require('../models/User');
 const { getBetterAuthSession, promoteBootstrapIdentity, syncAuthIdentityRole } = require('../auth/betterAuthBridge');
 const { requirePermission } = require('../auth/permissions');
 const { bootstrapSuperAdminIds: bootstrapIds } = require('../src/config/env');
+const { findOrCreateByClerkId } = require('../src/platform/auth/provisioning');
 
 const resolveDomainUser = async (authUser) => {
   let user = await User.findOne({ authUserId: authUser.id });
@@ -44,7 +45,34 @@ const resolveDomainUser = async (authUser) => {
   return user;
 };
 
-const authenticate = async (headers) => {
+/** The token from `Authorization: Bearer <token>`, or null. */
+const bearerToken = (headers) => {
+  const header = headers?.authorization;
+  if (typeof header !== 'string') return null;
+  const match = /^Bearer\s+(\S+)$/i.exec(header.trim());
+  return match ? match[1] : null;
+};
+
+const authenticateWithClerk = async (token, clerk) => {
+  const session = await clerk.provider.verifySessionToken(token);
+  if (!session) return null;
+  const user = await findOrCreateByClerkId(session.userId, clerk);
+  return { authSession: { provider: 'clerk', userId: session.userId, sessionId: session.sessionId }, user };
+};
+
+/**
+ * Who is making this request. Until the frontend moves to Clerk (Phase 5)
+ * two sign-ins work side by side: with Clerk switched on, a Bearer token
+ * is a Clerk session token and only Clerk decides it; anything else goes
+ * to Better Auth's session cookie, exactly as before.
+ *
+ * @param {import('http').IncomingHttpHeaders} headers
+ * @param {{ provider: object, logger?: object } | null} [clerk] set when Clerk is on
+ */
+const authenticate = async (headers, clerk = null) => {
+  const token = bearerToken(headers);
+  if (token && clerk?.provider) return authenticateWithClerk(token, clerk);
+
   const authSession = await getBetterAuthSession(headers);
   if (!authSession?.user) return null;
 
@@ -62,7 +90,7 @@ const authenticate = async (headers) => {
 
 const protect = async (req, res, next) => {
   try {
-    const identity = await authenticate(req.headers);
+    const identity = await authenticate(req.headers, req.app?.get('clerk'));
     if (!identity) {
       return res.status(401).json({ success: false, message: 'Authentication required' });
     }
@@ -101,4 +129,6 @@ module.exports = {
   requirePermission,
   authenticateSocket,
   resolveDomainUser,
+  authenticate,
+  bearerToken,
 };

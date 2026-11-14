@@ -57,7 +57,10 @@ Messages name the variable and the rule, never the value. Code asks for `getConf
 | `REDIS_KEY_PREFIX` | first segment of every Redis key, default `ps` |
 | `WORKER_PORT` | the worker's health port, default 5002 |
 | `SEED_PASSWORD` | password for the local seed accounts; seeding only |
-| `CLERK_ENABLED`, `PAYMENTS_ENABLED`, `PASSES_ENABLED` | feature flags, all `false` |
+| `CLERK_ENABLED` | `false`. When `true` (with `AUTH_PROVIDER=clerk`), `CLERK_SECRET_KEY` and `CLERK_PUBLISHABLE_KEY` are required; see [AUTH.md](AUTH.md) |
+| `AUTH_PROVIDER` | `clerk` (default) or `fake`; `fake` is refused in production |
+| `CLERK_JWT_KEY`, `CLERK_WEBHOOK_SIGNING_SECRET`, `CLERK_AUTHORIZED_PARTIES` | optional; the webhook answers 503 without its signing secret; authorized parties default to the CORS origins |
+| `PAYMENTS_ENABLED`, `PASSES_ENABLED` | feature flags, both `false` |
 
 ## Requests
 
