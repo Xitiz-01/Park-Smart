@@ -76,7 +76,7 @@ Trivy runs as a binary from its immutable GitHub release, checked against a pinn
 
 `.trivyignore.yaml` holds accepted image findings, each with a statement and an `expired_at` date, mirroring the npm audit allow-list: today the two better-auth advisories (by GHSA and CVE id), until 2026-12-31. Only vulnerabilities with a fix fail the build (`--ignore-unfixed`); unfixed ones still show in the log.
 
-`publish-image` is the only job with `packages: write`. Because `release.yml` reuses this workflow, its `ci` job grants `packages: write` too; the job is skipped for tags.
+`publish-image` is the only job with `packages: write`. It retries each push up to three times, because GHCR can refuse a new package's first manifest ("denied") and accept it seconds later; that's what failed the first run on `main`. The package `ghcr.io/xitiz-01/parksmart-api` is public, like the repository; nothing secret is baked into the image (`backend/.dockerignore` excludes `.env*`). Because `release.yml` reuses this workflow, its `ci` job grants `packages: write` too; the job is skipped for tags.
 
 ### The audit allow-list
 
