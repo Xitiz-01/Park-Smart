@@ -6,13 +6,16 @@
 //
 // Allow-list entries need an id (GHSA-…), the package, a reason and an
 // expiry date (YYYY-MM-DD). An expired entry fails the check, so every
-// accepted advisory gets looked at again.
+// accepted advisory gets looked at again. From WARN_DAYS before that date
+// every run warns, so the expiry never arrives unannounced.
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const BLOCKING = new Set(['high', 'critical']);
+const WARN_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ALLOWLIST_FILE = path.join(ROOT, '.github', 'audit-allowlist.json');
 
@@ -36,6 +39,21 @@ export function advisoriesFrom(report) {
     }
   }
   return [...found.values()];
+}
+
+/**
+ * List allow-list entries that expire within `days` days (today included).
+ * @param {{ id: string, expires: string }[]} allowlist
+ * @param {Date} today
+ * @param {number} days
+ * @returns {{ id: string, expires: string, daysLeft: number }[]}
+ */
+export function expiringSoon(allowlist, today = new Date(), days = WARN_DAYS) {
+  const start = Date.parse(today.toISOString().slice(0, 10));
+  return allowlist
+    .filter((entry) => /^\d{4}-\d{2}-\d{2}$/.test(entry.expires || ''))
+    .map((entry) => ({ ...entry, daysLeft: Math.round((Date.parse(entry.expires) - start) / DAY_MS) }))
+    .filter((entry) => entry.daysLeft >= 0 && entry.daysLeft <= days);
 }
 
 /**
@@ -100,6 +118,11 @@ function main(dirs) {
   for (const entry of allowlist.filter((e) => !seenAnywhere.has(e.id))) {
     console.log(
       `::warning title=npm audit::${entry.id} (${entry.package}) is no longer reported; remove it from .github/audit-allowlist.json`,
+    );
+  }
+  for (const entry of expiringSoon(allowlist)) {
+    console.log(
+      `::warning title=npm audit::${entry.id} (${entry.package}) leaves the allow-list on ${entry.expires} (${entry.daysLeft} days); after that this check fails`,
     );
   }
   if (failed) process.exit(1);

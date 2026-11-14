@@ -80,7 +80,7 @@ Trivy runs as a binary from its immutable GitHub release, checked against a pinn
 
 ### The audit allow-list
 
-`.github/audit-allowlist.json` lists advisories we've accepted, each with the GHSA id, the package, the reason and an expiry date. `scripts/audit-prod-deps.mjs` fails on any high or critical advisory that isn't listed, and on any listed one whose date has passed, so every exception gets looked at again. It warns when an entry is no longer needed. Today it holds better-auth's two advisories until 2026-12-31: both need OAuth or OAuth Proxy sign-in, which ParkSmart doesn't enable, and better-auth is removed in Phase 4.
+`.github/audit-allowlist.json` lists advisories we've accepted, each with the GHSA id, the package, the reason and an expiry date. `scripts/audit-prod-deps.mjs` fails on any high or critical advisory that isn't listed, and on any listed one whose date has passed, so every exception gets looked at again. It warns when an entry is no longer needed. Today it holds better-auth's two advisories until 2026-12-31: both need OAuth or OAuth Proxy sign-in, which ParkSmart doesn't enable, and better-auth is removed at the end of Phase 5, when the frontend signs in with Clerk. From 30 days before the date (2026-12-01) every run annotates a warning; the removal is tracked in a GitHub issue with that due date.
 
 Moderate advisories don't fail the build but should be read: today, react-router 6 has advisories that are only fixed in v7.
 

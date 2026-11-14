@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { advisoriesFrom, evaluate } from './audit-prod-deps.mjs';
+import { advisoriesFrom, evaluate, expiringSoon } from './audit-prod-deps.mjs';
 
 const report = {
   vulnerabilities: {
@@ -55,5 +55,19 @@ test('entries for advisories that are no longer reported are flagged as stale', 
   assert.deepEqual(
     stale.map((e) => e.id),
     ['GHSA-gone'],
+  );
+});
+
+test('entries expiring within 30 days are announced, with the days left', () => {
+  const allowlist = [
+    { id: 'GHSA-soon', expires: '2026-12-01' },
+    { id: 'GHSA-today', expires: '2026-11-01' },
+    { id: 'GHSA-later', expires: '2026-12-31' },
+    { id: 'GHSA-past', expires: '2026-10-31' },
+    { id: 'GHSA-undated' },
+  ];
+  assert.deepEqual(
+    expiringSoon(allowlist, today).map((e) => `${e.id}:${e.daysLeft}`),
+    ['GHSA-soon:30', 'GHSA-today:0'],
   );
 });
