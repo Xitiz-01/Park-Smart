@@ -420,6 +420,16 @@ jobs:
             --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
             --tag "${image}:${GITHUB_SHA}" --tag "${image}:latest" backend
           echo "$TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
-          docker push "${image}:${GITHUB_SHA}"
-          docker push "${image}:latest"
+          # GHCR can refuse the first manifest of a new tag or package
+          # ("denied") and accept it a moment later, so retry each push.
+          push() {
+            for attempt in 1 2 3; do
+              docker push "$1" && return 0
+              echo "::warning title=publish-image::push of $1 failed (attempt $attempt of 3)"
+              sleep $((attempt * 15))
+            done
+            return 1
+          }
+          push "${image}:${GITHUB_SHA}"
+          push "${image}:latest"
           docker logout ghcr.io
