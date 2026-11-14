@@ -175,7 +175,7 @@ Vite exposes both `VITE_*` and `REACT_APP_*` (`envPrefix` in `vite.config.js`), 
 
 | Environment | Protection | Secrets it will hold |
 |---|---|---|
-| `staging` | deploys from `main`; no reviewer needed | `MONGODB_URI` (staging database), Clerk test keys (Phase 4), Redis URL (Phase 3), Razorpay **test** keys and webhook secret (Phase 11), host deploy token (Phase 14) |
+| `staging` | deploys from `main`; no reviewer needed | `MONGODB_URI` (staging database), Clerk development keys (Phase 4), Redis URL (Phase 3), Razorpay **test** keys and webhook secret (Phase 11), host deploy token (Phase 14) |
 | `production` | required reviewer: the repository owner; deploy only from `v*` tags | the production equivalents of the above, Razorpay test keys until you go live |
 
 CI itself never uses these environments or their secrets.

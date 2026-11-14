@@ -138,6 +138,16 @@ await cache.del(key);                                               // after an 
 | `/health/ready` | Redis is reported but not critical: `{ "status": "degraded", "checks": { "mongo": "up", "redis": "down" } }` with 200, so instances stay in the load balancer. |
 | Locks, idempotency, anything about money (Phase 8+) | Never degrade silently: they need Redis or MongoDB to succeed, or the request fails. They don't use the cache helper. When queues depend on Redis (Phase 8), it becomes critical for the worker's readiness. |
 
+### Redis in production
+
+Production runs without Redis today: Render has no `REDIS_URL`, so every boot logs `REDIS_URL is not set: no shared cache, and rate limits are counted per instance`. With one instance that changes nothing users see. Add Redis before running a second instance, and before Phase 8 (queues and the Socket.IO adapter need it):
+
+1. Create it in the same region as the API. On Render: **New → Key Value**, a paid plan for persistence, and copy its **Internal Key Value URL** (`redis://red-…:6379`, reachable only from Render services). Outside Render, a managed Redis 7+ with TLS (`rediss://…`) works the same way.
+2. Set `REDIS_URL` on the API service (and on the worker once it's deployed). Leave `REDIS_KEY_PREFIX` unset unless two environments share one Redis.
+3. After the redeploy, `GET /health/ready` lists `"redis": "up"`, the boot warning is gone, and the `RateLimit` header counts the same on every instance.
+
+Set an eviction policy of `noeviction` once queues use it (Phase 8); until then the default is fine, since every cache entry has a TTL.
+
 ## Health and lifecycle
 
 - `GET /health/live`: 200 while the process serves requests. Use it as the liveness probe.
