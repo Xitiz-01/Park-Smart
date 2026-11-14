@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@better-auth/mongo-adapter": "1.7.6",
+    "@clerk/express": "2.1.88",
     "bcryptjs": "^2.4.3",
     "better-auth": "1.7.6",
     "compression": "^1.8.2",
