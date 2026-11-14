@@ -163,6 +163,10 @@ const login = async (email, password = 'secret12') => {
 test.before(async () => {
   await mongoose.connect(mongoUri);
   await mongoose.connection.dropDatabase();
+  // Connecting starts each model's index build in the background, and the
+  // drop above can land before or after it. Build every index again now, so
+  // $geoNear always finds its 2dsphere index and unique indexes hold.
+  await mongoose.connection.syncIndexes();
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   baseUrl = `http://127.0.0.1:${server.address().port}/api`;
   assert.ok(app.get('io'), 'Socket.IO is attached when the backend starts');
@@ -961,7 +965,7 @@ test('Better Auth, RBAC, migration, and ParkSmart domain flows work end-to-end',
     `/parking-locations/nearby?lat=${movedMoshi.latitude}&lng=${movedMoshi.longitude}&radiusKm=5&vehicleType=car&startTime=${encodeURIComponent(start.toISOString())}&endTime=${encodeURIComponent(end.toISOString())}`,
     { client: customerClient },
   );
-  assert.equal(discovered.status, 200, 'dynamic parking discovery works');
+  assert.equal(discovered.status, 200, `dynamic parking discovery works: ${discovered.payload?.message}`);
   assert.equal(
     discovered.payload.locations.find((item) => item._id === moshiId).availability.available,
     0,

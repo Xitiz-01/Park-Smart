@@ -18,6 +18,9 @@ test.after(async () => {
 });
 
 test('seed creates accounts that can sign in, plus the domain data', async () => {
+  // Like a running API: its indexes already exist when the reset drops them.
+  await mongoose.connect(process.env.MONGODB_URI);
+  await require('../models/ParkingLocation').init();
   await seed(['--reset']);
   const { db } = mongoose.connection;
 
@@ -44,6 +47,12 @@ test('seed creates accounts that can sign in, plus the domain data', async () =>
   assert.equal(await db.collection('parkinglocations').countDocuments({ status: 'draft' }), 1);
   assert.equal(await db.collection('parkingslots').countDocuments({ type: 'ev' }), 6);
   assert.equal(await db.collection('vehicles').countDocuments(), 2);
+  // The reset drops indexes too; nearby search needs the 2dsphere one back.
+  const indexes = await db.collection('parkinglocations').indexes();
+  assert.ok(
+    indexes.some((index) => index.key.location === '2dsphere'),
+    'the geo index is rebuilt after a reset',
+  );
   // Bookings are left to the app, so the reservation ledger stays untouched.
   assert.equal(await db.collection('bookings').countDocuments(), 0);
 

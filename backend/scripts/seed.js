@@ -232,6 +232,10 @@ async function seed(argv = process.argv.slice(2)) {
     throw new Error('refusing to seed: the database already has users (use --reset to start over)');
   }
 
+  // Dropping the database also drops the indexes the running API built at
+  // startup, and it won't build them again; without the 2dsphere index,
+  // nearby search fails. Build them before inserting anything.
+  await mongoose.connection.syncIndexes();
   const accounts = await createAccounts(config.seed.password);
   await createDomainData(accounts);
   logger.info(
