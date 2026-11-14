@@ -14,6 +14,7 @@ const { healthRouter } = require('./platform/health');
 const { pingMongo } = require('./platform/db');
 const { getRedis, pingRedis } = require('./platform/redis');
 const { createAuthProvider } = require('./platform/auth/providers');
+const { clerkWebhookRouter } = require('./platform/auth/webhooks');
 
 /**
  * MongoDB is critical. Redis, when configured, is reported but not
@@ -87,6 +88,12 @@ function createApp({
   // Better Auth must receive the untouched request body. Keep this mount before
   // express.json() and express.urlencoded().
   app.all('/api/auth/*', betterAuthHandler);
+  // Clerk's webhook verifies its signature over the raw body, so it's
+  // mounted before the JSON parser too.
+  app.use(
+    '/api/v1/webhooks/clerk',
+    clerkWebhookRouter(() => app.get('clerk')),
+  );
   app.use(express.json({ limit: config.http.jsonBodyLimit }));
   app.use(express.urlencoded({ extended: true, limit: config.http.jsonBodyLimit }));
   app.use(security.parameterPollution);
